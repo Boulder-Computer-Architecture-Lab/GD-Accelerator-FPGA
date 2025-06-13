@@ -1,0 +1,52 @@
+# Common OS cruft
+.DS_Store
+Thumbs.db
+
+# Vivado project files
+*.jou
+*.log
+*.str
+*.cache/
+*.webtalk/
+*.Xil/
+*.hw/
+*.runs/
+*.sim/
+*.ip_user_files/
+*.vivado/
+*.sdk/
+*.srcs/sources_1/bd/*/ip/*_bd.tcl
+*.srcs/sources_1/bd/*/ipshared/
+*.srcs/sources_1/bd/*/hdl/
+
+# Vitis / SDK files
+.sdk/
+.vitis/
+.mss/
+.metadata/
+hw_platform_*/
+
+# Temporary files
+*~ 
+*.tmp
+*.bak
+
+# SystemVerilog/Verilog/VHDL simulation outputs
+*.wdb
+*.vcd
+*.vvp
+*.dump
+*.fsdb
+*.svf
+
+# Simulation tools cache
+questa/
+modelsim.ini
+transcript
+vsim.wlf
+xsim.dir/
+
+# Lock files and misc
+*.lock
+*.xpr.cache/
+
