@@ -56,8 +56,8 @@ pagesize -pg 1 -db -bbox -sgen 0 0 2330 1240
    "Color Coded_ScaleFactor":"0.758509",
    "Color Coded_TopLeft":"-20,3",
    "Default View_Layers":"/processing_system7_0_FCLK_RESET0_N:true|/rst_ps7_0_100M_peripheral_aresetn:true|/processing_system7_0_FCLK_CLK0:true|",
-   "Default View_ScaleFactor":"0.740782",
-   "Default View_TopLeft":"375,229",
+   "Default View_ScaleFactor":"0.692171",
+   "Default View_TopLeft":"-170,3",
    "Display-PortTypeClock":"true",
    "Display-PortTypeOthers":"true",
    "Display-PortTypeReset":"true",
@@ -69,55 +69,58 @@ pagesize -pg 1 -db -bbox -sgen 0 0 2330 1240
    "PinnedPorts":"",
    "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0
 #  -string -flagsOSRD
-preplace port DDR -pg 1 -lvl 7 -x 2480 -y 810 -defaultsOSRD
-preplace port FIXED_IO -pg 1 -lvl 7 -x 2480 -y 840 -defaultsOSRD
-preplace inst processing_system7_0 -pg 1 -lvl 6 -x 2230 -y 870 -defaultsOSRD
-preplace inst axi_dma_0 -pg 1 -lvl 4 -x 1290 -y 490 -defaultsOSRD
-preplace inst rst_ps7_0_100M -pg 1 -lvl 2 -x 490 -y 1140 -defaultsOSRD
-preplace inst ps7_0_axi_periph -pg 1 -lvl 3 -x 840 -y 900 -defaultsOSRD
-preplace inst axi_mem_intercon -pg 1 -lvl 5 -x 1750 -y 840 -defaultsOSRD
-preplace inst axi_mem_intercon1 -pg 1 -lvl 5 -x 1750 -y 540 -defaultsOSRD
-preplace inst bram_stream_reader_0 -pg 1 -lvl 3 -x 840 -y 620 -defaultsOSRD
-preplace inst bram_stream_writer_0 -pg 1 -lvl 5 -x 1750 -y 310 -defaultsOSRD
-preplace inst blk_mem_gen_0 -pg 1 -lvl 6 -x 2230 -y 400 -defaultsOSRD
-preplace inst ila_0 -pg 1 -lvl 5 -x 1750 -y 100 -defaultsOSRD
-preplace inst ila_1 -pg 1 -lvl 6 -x 2230 -y 130 -defaultsOSRD
-preplace inst ila_2 -pg 1 -lvl 4 -x 1290 -y 810 -defaultsOSRD
-preplace inst ila_3 -pg 1 -lvl 6 -x 2230 -y 670 -defaultsOSRD
-preplace netloc Net 1 4 1 1500 100n
-preplace netloc Net1 1 3 1 1080 480n
-preplace netloc Net2 1 3 3 NJ 670 NJ 670 2010
-preplace netloc axi_dma_0_m_axis_mm2s_tdata 1 4 1 1490 120n
-preplace netloc axi_dma_0_m_axis_mm2s_tkeep 1 4 1 1580 280n
-preplace netloc axi_dma_0_m_axis_mm2s_tlast 1 4 1 1540 140n
-preplace netloc axi_dma_0_m_axis_mm2s_tvalid 1 4 1 1530 80n
-preplace netloc bram_stream_reader_0_bram_addr 1 3 3 NJ 710 NJ 710 1940
-preplace netloc bram_stream_reader_0_bram_en 1 3 3 1050J 660 NJ 660 2020
-preplace netloc bram_stream_reader_0_bram_we 1 3 3 1010J -20 NJ -20 2000
-preplace netloc bram_stream_reader_0_m00_axis_tdata 1 3 1 1060 440n
-preplace netloc bram_stream_reader_0_m00_axis_tlast 1 3 1 1070 460n
-preplace netloc bram_stream_reader_0_m00_axis_tvalid 1 3 1 1090 500n
-preplace netloc bram_stream_writer_0_bram_addr 1 5 1 1960 150n
-preplace netloc bram_stream_writer_0_bram_din 1 5 1 1950 170n
-preplace netloc bram_stream_writer_0_bram_en 1 5 1 1980 110n
-preplace netloc bram_stream_writer_0_bram_we 1 5 1 1940 130n
-preplace netloc processing_system7_0_FCLK_CLK0 1 1 6 310 940 670 770 1030 320 1520 680 1990 990 2450
-preplace netloc processing_system7_0_FCLK_RESET0_N 1 1 6 320 1020 NJ 1020 NJ 1020 NJ 1020 NJ 1020 2440
-preplace netloc rst_ps7_0_100M_peripheral_aresetn 1 2 4 660 470 1050 310 1560 0 1970
-preplace netloc axi_dma_0_M_AXIS_MM2S 1 4 1 1570 240n
-preplace netloc axi_dma_0_M_AXI_MM2S 1 4 1 1550 380n
-preplace netloc axi_dma_0_M_AXI_S2MM 1 4 1 1510 400n
-preplace netloc axi_mem_intercon1_M00_AXI 1 5 1 1950 540n
-preplace netloc axi_mem_intercon_M00_AXI 1 5 1 1920 840n
-preplace netloc bram_stream_reader_0_BRAM_PORT 1 3 3 1000J -30 NJ -30 2020
-preplace netloc bram_stream_reader_0_M00_AXIS 1 3 1 1020 420n
-preplace netloc bram_stream_writer_0_BRAM_PORT 1 5 1 N 270
-preplace netloc processing_system7_0_DDR 1 6 1 2460J 810n
-preplace netloc processing_system7_0_FIXED_IO 1 6 1 NJ 840
-preplace netloc processing_system7_0_M_AXI_GP0 1 2 5 680 -10 NJ -10 NJ -10 NJ -10 2450
-preplace netloc ps7_0_axi_periph_M00_AXI 1 3 1 1040 400n
-levelinfo -pg 1 -10 150 490 840 1290 1750 2230 2480
-pagesize -pg 1 -db -bbox -sgen -10 -50 2590 1240
+preplace port DDR -pg 1 -lvl 6 -x 2250 -y 950 -defaultsOSRD
+preplace port FIXED_IO -pg 1 -lvl 6 -x 2250 -y 980 -defaultsOSRD
+preplace inst processing_system7_0 -pg 1 -lvl 5 -x 1990 -y 1010 -defaultsOSRD
+preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1030 -y 200 -defaultsOSRD
+preplace inst rst_ps7_0_100M -pg 1 -lvl 1 -x 190 -y 780 -defaultsOSRD
+preplace inst ps7_0_axi_periph -pg 1 -lvl 2 -x 550 -y 700 -defaultsOSRD
+preplace inst axi_mem_intercon -pg 1 -lvl 4 -x 1500 -y 1010 -defaultsOSRD
+preplace inst axi_mem_intercon1 -pg 1 -lvl 4 -x 1500 -y 760 -defaultsOSRD
+preplace inst bram_stream_reader_0 -pg 1 -lvl 2 -x 550 -y 410 -defaultsOSRD
+preplace inst bram_stream_writer_0 -pg 1 -lvl 4 -x 1500 -y 310 -defaultsOSRD
+preplace inst blk_mem_gen_0 -pg 1 -lvl 5 -x 1990 -y 480 -defaultsOSRD
+preplace inst ila_0 -pg 1 -lvl 4 -x 1500 -y 100 -defaultsOSRD
+preplace inst ila_1 -pg 1 -lvl 5 -x 1990 -y 200 -defaultsOSRD
+preplace inst ila_2 -pg 1 -lvl 3 -x 1030 -y 480 -defaultsOSRD
+preplace inst ila_3 -pg 1 -lvl 5 -x 1990 -y 760 -defaultsOSRD
+preplace netloc Net 1 3 1 1300 100n
+preplace netloc Net1 1 2 1 830 190n
+preplace netloc Net2 1 2 3 750 600 NJ 600 1780
+preplace netloc axi_dma_0_m_axis_mm2s_tdata 1 3 1 1320 120n
+preplace netloc axi_dma_0_m_axis_mm2s_tkeep 1 3 1 1270 170n
+preplace netloc axi_dma_0_m_axis_mm2s_tlast 1 3 1 1310 140n
+preplace netloc axi_dma_0_m_axis_mm2s_tvalid 1 3 1 1290 80n
+preplace netloc bram_stream_reader_0_bram_addr 1 2 3 740 590 NJ 590 1720
+preplace netloc bram_stream_reader_0_bram_en 1 2 3 760 610 NJ 610 1750
+preplace netloc bram_stream_reader_0_bram_we 1 2 3 720 620 NJ 620 1770J
+preplace netloc bram_stream_reader_0_m00_axis_tdata 1 2 1 810 150n
+preplace netloc bram_stream_reader_0_m00_axis_tlast 1 2 1 820 170n
+preplace netloc bram_stream_reader_0_m00_axis_tvalid 1 2 1 770 210n
+preplace netloc bram_stream_writer_0_bram_addr 1 4 1 1770 210n
+preplace netloc bram_stream_writer_0_bram_din 1 4 1 1780 230n
+preplace netloc bram_stream_writer_0_bram_en 1 4 1 1750 170n
+preplace netloc bram_stream_writer_0_bram_we 1 4 1 1760 190n
+preplace netloc processing_system7_0_FCLK_CLK0 1 0 6 20 680 360 580 780 370 1260 440 1710 870 2210
+preplace netloc processing_system7_0_FCLK_RESET0_N 1 0 6 20 880 NJ 880 NJ 880 NJ 880 NJ 880 2220
+preplace netloc rst_ps7_0_100M_peripheral_aresetn 1 1 4 370 820 800 380 1240 450 1740
+preplace netloc bram_stream_writer_0_write_done 1 1 4 390 830 830J 630 NJ 630 1700
+preplace netloc bram_stream_reader_0_read_pointer_debug 1 2 3 710 640 NJ 640 1690J
+preplace netloc bram_stream_writer_0_write_pointer_debug 1 4 1 1730 250n
+preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1280 130n
+preplace netloc axi_dma_0_M_AXI_MM2S 1 3 1 1250 90n
+preplace netloc axi_dma_0_M_AXI_S2MM 1 3 1 1230 110n
+preplace netloc axi_mem_intercon1_M00_AXI 1 4 1 1680 760n
+preplace netloc axi_mem_intercon_M00_AXI 1 4 1 N 1010
+preplace netloc bram_stream_reader_0_BRAM_PORT 1 2 3 790 580 NJ 580 1730J
+preplace netloc bram_stream_reader_0_M00_AXIS 1 2 1 720 130n
+preplace netloc bram_stream_writer_0_BRAM_PORT 1 4 1 1740 240n
+preplace netloc processing_system7_0_DDR 1 5 1 2230J 950n
+preplace netloc processing_system7_0_FIXED_IO 1 5 1 NJ 980
+preplace netloc processing_system7_0_M_AXI_GP0 1 1 5 380 890 NJ 890 NJ 890 NJ 890 2200
+preplace netloc ps7_0_axi_periph_M00_AXI 1 2 1 730 110n
+levelinfo -pg 1 0 190 550 1030 1500 1990 2250
+pagesize -pg 1 -db -bbox -sgen 0 0 2360 1130
 "
 }
 {

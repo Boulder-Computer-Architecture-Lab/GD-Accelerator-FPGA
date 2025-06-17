@@ -43,7 +43,7 @@ Modified by Jeff Johnson http://www.fpgadeveloper.com
 module add_one_stream_v2_0 #
 (
     parameter ADDR_WIDTH = 12,
-    parameter C_AXIS_TDATA_WIDTH = 32
+    parameter C_AXIS_TDATA_WIDTH = 64
 )
 (
     /*
@@ -114,7 +114,7 @@ assign s00_axis_tready = ~full & ~s00_rst_sync3_reg;
 
 assign m00_axis_tvalid = m00_axis_tvalid_reg;
 
-assign mem_write_data = {s00_axis_tlast, s00_axis_tdata};
+assign mem_write_data = {s00_axis_tlast, s00_axis_tdata + 1}; // ADD ONE
 assign {m00_axis_tlast, m00_axis_tdata} = m00_data_reg;
 
 // reset synchronization
@@ -259,7 +259,7 @@ always @(posedge m00_axis_aclk) begin
     end
 
     if (store_output) begin
-        m00_data_reg <= mem_read_data_reg + 1;
+        m00_data_reg <= mem_read_data_reg;
     end
 end
 

@@ -19,6 +19,7 @@
         output wire        bram_en,
         output wire [3:0]  bram_we,
         output wire        bram_rst,
+        output wire        write_done,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -30,7 +31,9 @@
 		input wire [C_S00_AXIS_TDATA_WIDTH-1 : 0] s00_axis_tdata,
 		input wire [(C_S00_AXIS_TDATA_WIDTH/8)-1 : 0] s00_axis_tstrb,
 		input wire  s00_axis_tlast,
-		input wire  s00_axis_tvalid
+		input wire  s00_axis_tvalid,
+		
+		output wire [2:0] write_pointer_debug
 	);
 // Instantiation of Axi Bus Interface S00_AXIS
 	bram_stream_writer_v1_0_S00_AXIS # ( 
@@ -48,7 +51,9 @@
         .bram_din(bram_din),
         .bram_en(bram_en),
         .bram_we(bram_we),
-        .bram_rst(bram_rst)
+        .bram_rst(bram_rst),
+        .WRITE_DONE(write_done),
+        .write_pointer_debug(write_pointer_debug)
 	);
 
 	// Add user logic here

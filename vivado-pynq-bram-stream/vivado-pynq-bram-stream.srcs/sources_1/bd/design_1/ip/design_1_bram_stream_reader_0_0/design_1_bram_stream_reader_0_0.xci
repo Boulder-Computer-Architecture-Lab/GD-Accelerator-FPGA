@@ -4,17 +4,15 @@
     "xci_name": "design_1_bram_stream_reader_0_0",
     "cell_name": "bram_stream_reader_0",
     "component_reference": "xilinx.com:user:bram_stream_reader:1.0",
-    "ip_revision": "6",
+    "ip_revision": "14",
     "gen_directory": "../../../../../../vivado-pynq-bram-stream.gen/sources_1/bd/design_1/ip/design_1_bram_stream_reader_0_0",
     "parameters": {
       "component_parameters": {
         "C_M00_AXIS_TDATA_WIDTH": [ { "value": "32", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
-        "C_M00_AXIS_START_COUNT": [ { "value": "32", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Component_Name": [ { "value": "design_1_bram_stream_reader_0_0", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
-        "C_M00_AXIS_TDATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_M00_AXIS_START_COUNT": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ]
+        "C_M00_AXIS_TDATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "zynq" } ],
@@ -31,7 +29,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "6" } ],
+        "IPREVISION": [ { "value": "14" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../vivado-pynq-bram-stream.gen/sources_1/bd/design_1/ip/design_1_bram_stream_reader_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -47,13 +45,15 @@
         "bram_en": [ { "direction": "out" } ],
         "bram_rst": [ { "direction": "out" } ],
         "bram_we": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "write_done": [ { "direction": "in" } ],
         "m00_axis_aclk": [ { "direction": "in" } ],
         "m00_axis_aresetn": [ { "direction": "in" } ],
         "m00_axis_tvalid": [ { "direction": "out" } ],
         "m00_axis_tdata": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
         "m00_axis_tstrb": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
         "m00_axis_tlast": [ { "direction": "out" } ],
-        "m00_axis_tready": [ { "direction": "in" } ]
+        "m00_axis_tready": [ { "direction": "in" } ],
+        "read_pointer_debug": [ { "direction": "out", "size_left": "2", "size_right": "0" } ]
       },
       "interfaces": {
         "M00_AXIS": {

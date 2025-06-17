@@ -1,3 +1,0 @@
-C:/Users/mrflu/Projects/vitis-bram-stream/bram_stream_platform/zynq_fsbl/build/CMakeFiles/fsbl.elf.dir
-C:/Users/mrflu/Projects/vitis-bram-stream/bram_stream_platform/zynq_fsbl/build/CMakeFiles/edit_cache.dir
-C:/Users/mrflu/Projects/vitis-bram-stream/bram_stream_platform/zynq_fsbl/build/CMakeFiles/rebuild_cache.dir

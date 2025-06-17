@@ -7,7 +7,8 @@
       "name": "design_1",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2023.2"
+      "tool_version": "2023.2",
+      "validated": "true"
     },
     "design_tree": {
       "processing_system7_0": "",
@@ -2677,14 +2678,14 @@
       },
       "bram_stream_reader_0": {
         "vlnv": "xilinx.com:user:bram_stream_reader:1.0",
-        "ip_revision": "6",
+        "ip_revision": "14",
         "xci_name": "design_1_bram_stream_reader_0_0",
         "xci_path": "ip\\design_1_bram_stream_reader_0_0\\design_1_bram_stream_reader_0_0.xci",
         "inst_hier_path": "bram_stream_reader_0"
       },
       "bram_stream_writer_0": {
         "vlnv": "xilinx.com:user:bram_stream_writer:1.0",
-        "ip_revision": "6",
+        "ip_revision": "11",
         "xci_name": "design_1_bram_stream_writer_0_0",
         "xci_path": "ip\\design_1_bram_stream_writer_0_0\\design_1_bram_stream_writer_0_0.xci",
         "inst_hier_path": "bram_stream_writer_0"
@@ -2748,7 +2749,7 @@
             "value": "Native"
           },
           "C_NUM_OF_PROBES": {
-            "value": "4"
+            "value": "5"
           },
           "C_PROBE1_WIDTH": {
             "value": "4"
@@ -2758,6 +2759,9 @@
           },
           "C_PROBE3_WIDTH": {
             "value": "32"
+          },
+          "C_PROBE4_WIDTH": {
+            "value": "3"
           }
         }
       },
@@ -2790,13 +2794,16 @@
             "value": "Native"
           },
           "C_NUM_OF_PROBES": {
-            "value": "4"
+            "value": "5"
           },
           "C_PROBE0_WIDTH": {
             "value": "32"
           },
           "C_PROBE2_WIDTH": {
             "value": "32"
+          },
+          "C_PROBE4_WIDTH": {
+            "value": "3"
           }
         }
       }
@@ -2965,6 +2972,12 @@
           "axi_dma_0/s_axis_s2mm_tvalid"
         ]
       },
+      "bram_stream_reader_0_read_pointer_debug": {
+        "ports": [
+          "bram_stream_reader_0/read_pointer_debug",
+          "ila_3/probe4"
+        ]
+      },
       "bram_stream_writer_0_bram_addr": {
         "ports": [
           "bram_stream_writer_0/bram_addr",
@@ -2991,6 +3004,19 @@
           "bram_stream_writer_0/bram_we",
           "ila_1/probe1",
           "blk_mem_gen_0/wea"
+        ]
+      },
+      "bram_stream_writer_0_write_done": {
+        "ports": [
+          "bram_stream_writer_0/write_done",
+          "ila_3/probe3",
+          "bram_stream_reader_0/write_done"
+        ]
+      },
+      "bram_stream_writer_0_write_pointer_debug": {
+        "ports": [
+          "bram_stream_writer_0/write_pointer_debug",
+          "ila_1/probe4"
         ]
       },
       "processing_system7_0_FCLK_CLK0": {
@@ -3041,11 +3067,10 @@
           "axi_mem_intercon1/ARESETN",
           "axi_mem_intercon1/M00_ARESETN",
           "axi_mem_intercon1/S00_ARESETN",
-          "bram_stream_writer_0/s00_axis_aresetn",
           "blk_mem_gen_0/rstb",
           "blk_mem_gen_0/rsta",
-          "bram_stream_reader_0/m00_axis_aresetn",
-          "ila_3/probe3"
+          "bram_stream_writer_0/s00_axis_aresetn",
+          "bram_stream_reader_0/m00_axis_aresetn"
         ]
       }
     },

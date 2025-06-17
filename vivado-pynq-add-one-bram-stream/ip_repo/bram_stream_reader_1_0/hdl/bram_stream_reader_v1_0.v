@@ -10,8 +10,7 @@
 		// Do not modify the parameters beyond this line
 
 		// Parameters of Axi Master Bus Interface M00_AXIS
-		parameter integer C_M00_AXIS_TDATA_WIDTH = 32,
-		parameter integer C_M00_AXIS_START_COUNT = 32
+		parameter integer C_M00_AXIS_TDATA_WIDTH = 32
 	)
 	(
 		// Users to add ports here
@@ -20,6 +19,7 @@
         output wire        bram_en,
         output wire        bram_rst,
         output wire [3:0]  bram_we,
+        input  wire        write_done,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -31,13 +31,14 @@
 		output wire [C_M00_AXIS_TDATA_WIDTH-1 : 0] m00_axis_tdata,
 		output wire [(C_M00_AXIS_TDATA_WIDTH/8)-1 : 0] m00_axis_tstrb,
 		output wire  m00_axis_tlast,
-		input  wire  m00_axis_tready
+		input  wire  m00_axis_tready,
+		
+		output wire [2:0] read_pointer_debug
 	); 
 	
     // Instantiation of Axi Bus Interface M00_AXIS
 	bram_stream_reader_v1_0_M00_AXIS # ( 
-		.C_M_AXIS_TDATA_WIDTH(C_M00_AXIS_TDATA_WIDTH),
-		.C_M_START_COUNT(C_M00_AXIS_START_COUNT)
+		.C_M_AXIS_TDATA_WIDTH(C_M00_AXIS_TDATA_WIDTH)
 		
 	) bram_stream_reader_v1_0_M00_AXIS_inst (
 		.M_AXIS_ACLK(m00_axis_aclk),
@@ -52,7 +53,9 @@
         .bram_dout(bram_dout),
         .bram_en(bram_en),
         .bram_rst(bram_rst),
-        .bram_we(bram_we)
+        .bram_we(bram_we),
+        .write_done(write_done),
+        .read_pointer_debug(read_pointer_debug)
 	);
 
 	// Add user logic here
