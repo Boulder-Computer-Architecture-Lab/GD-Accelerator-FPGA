@@ -1,3 +1,0 @@
-domain_path: C:\Users\mrflu\Projects\vitis-hello-world\pynq_hello_world_platform\zynq_fsbl\zynq_fsbl_bsp
-app_src_dir: C:\Xilinx\Vitis\Vitis\2023.2\data\embeddedsw\lib\sw_apps\zynq_fsbl
-template: zynq_fsbl

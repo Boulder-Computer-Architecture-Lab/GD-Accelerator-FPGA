@@ -1,3 +1,0 @@
-C:/Users/mrflu/Projects/vitis-add-one-stream/add_one_stream_platform/zynq_fsbl/build/CMakeFiles/fsbl.elf.dir
-C:/Users/mrflu/Projects/vitis-add-one-stream/add_one_stream_platform/zynq_fsbl/build/CMakeFiles/edit_cache.dir
-C:/Users/mrflu/Projects/vitis-add-one-stream/add_one_stream_platform/zynq_fsbl/build/CMakeFiles/rebuild_cache.dir
