@@ -7,7 +7,7 @@ design_name="${1:-design_1}"
 targetdev="xilinx@192.168.2.99"
 projname="vivado-accelerator"
 
-basedir="/mnt/c/Users/mrflu/Projects"
+basedir="$(pwd)"
 projdir="$basedir/Vivado/$projname"
 targetdir="/home/xilinx/mvm-project/hw"
 

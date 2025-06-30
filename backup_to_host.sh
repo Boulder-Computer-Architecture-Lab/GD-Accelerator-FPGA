@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Local base directory
-basedir="/mnt/c/Users/mrflu/Projects"
+basedir="$(pwd)"
 backup_root="$basedir/Board"
 
 # Timestamped backup directory
