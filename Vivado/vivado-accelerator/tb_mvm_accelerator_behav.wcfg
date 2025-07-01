@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_mvm_accelerator_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="tb_mvm_accelerator" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="290.401 ns"></ZoomEndTime>
+      <Cursor1Time time="45.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="962"></NameColumnWidth>
+      <ValueColumnWidth column_width="220"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="33" />
+   <wvobject fp_name="/tb_mvm_accelerator/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/rstn" type="logic">
+      <obj_property name="ElementShortName">rstn</obj_property>
+      <obj_property name="ObjectShortName">rstn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tdata" type="array">
+      <obj_property name="ElementShortName">s_axis_a_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tkeep" type="array">
+      <obj_property name="ElementShortName">s_axis_a_tkeep[7:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tkeep[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tvalid" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tready" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_tready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tlast" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_tlast</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_tuser" type="array">
+      <obj_property name="ElementShortName">s_axis_a_tuser[0:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_tuser[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tdata" type="array">
+      <obj_property name="ElementShortName">s_axis_b_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tkeep" type="array">
+      <obj_property name="ElementShortName">s_axis_b_tkeep[7:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tkeep[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tvalid" type="logic">
+      <obj_property name="ElementShortName">s_axis_b_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tready" type="logic">
+      <obj_property name="ElementShortName">s_axis_b_tready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tlast" type="logic">
+      <obj_property name="ElementShortName">s_axis_b_tlast</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_b_tuser" type="array">
+      <obj_property name="ElementShortName">s_axis_b_tuser[0:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_b_tuser[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tdata" type="array">
+      <obj_property name="ElementShortName">m_axis_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tkeep" type="array">
+      <obj_property name="ElementShortName">m_axis_tkeep[7:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tkeep[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tvalid" type="logic">
+      <obj_property name="ElementShortName">m_axis_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tready" type="logic">
+      <obj_property name="ElementShortName">m_axis_tready</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tlast" type="logic">
+      <obj_property name="ElementShortName">m_axis_tlast</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_tuser" type="array">
+      <obj_property name="ElementShortName">m_axis_tuser[0:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_tuser[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/i" type="array">
+      <obj_property name="ElementShortName">i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/a_values" type="array">
+      <obj_property name="ElementShortName">a_values[0:3]</obj_property>
+      <obj_property name="ObjectShortName">a_values[0:3]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/b_values" type="array">
+      <obj_property name="ElementShortName">b_values[0:3]</obj_property>
+      <obj_property name="ObjectShortName">b_values[0:3]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/DATA_WIDTH" type="array">
+      <obj_property name="ElementShortName">DATA_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">DATA_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/KEEP_WIDTH" type="array">
+      <obj_property name="ElementShortName">KEEP_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">KEEP_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/USER_WIDTH" type="array">
+      <obj_property name="ElementShortName">USER_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">USER_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/s_axis_c_tvalid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">s_axis_c_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_c_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/s_axis_c_tready" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">s_axis_c_tready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_c_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/s_axis_c_tdata" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">s_axis_c_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_c_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/m_axis_result_tvalid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_result_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_result_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/m_axis_result_tready" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_result_tready</obj_property>
+      <obj_property name="ObjectShortName">m_axis_result_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/m_axis_result_tdata" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_result_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_result_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/u_fp64_fma/m_axis_result_tlast" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_result_tlast</obj_property>
+      <obj_property name="ObjectShortName">m_axis_result_tlast</obj_property>
+   </wvobject>
+</wave_config>
