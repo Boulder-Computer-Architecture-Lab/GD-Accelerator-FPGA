@@ -16,6 +16,8 @@ remotedir="/home/xilinx/mvm-project"
 mkdir -p "$destdir"
 
 # Use rsync to copy all files except the excluded one
-rsync -avz --exclude="trmult_reduced.bin" \
-    -e ssh "$targetdev:$remotedir/" "$destdir/mvm-project/"
+rsync -avz \
+	--exclude="trmult_reduced.bin" \
+	--exclude="*.un~" \
+    -e ssh "$targetdev:$remotedir/" "$destdir/"
 

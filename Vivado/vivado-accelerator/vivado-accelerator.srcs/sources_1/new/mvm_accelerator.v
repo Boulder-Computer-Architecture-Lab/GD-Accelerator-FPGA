@@ -11,7 +11,7 @@ module mvm_accelerator #(
     input wire clk,
     input wire rstn,
 
-    // FIFO A output
+    // Input stream A
     input  wire [DATA_WIDTH-1:0]  s_axis_a_tdata,
     input  wire [KEEP_WIDTH-1:0]  s_axis_a_tkeep,
     input  wire                   s_axis_a_tvalid,
@@ -19,7 +19,7 @@ module mvm_accelerator #(
     input  wire                   s_axis_a_tlast,
     input  wire [USER_WIDTH-1:0]  s_axis_a_tuser,
 
-    // FIFO B output
+    // Input stream B
     input  wire [DATA_WIDTH-1:0]  s_axis_b_tdata,
     input  wire [KEEP_WIDTH-1:0]  s_axis_b_tkeep,
     input  wire                   s_axis_b_tvalid,
@@ -28,44 +28,79 @@ module mvm_accelerator #(
     input  wire [USER_WIDTH-1:0]  s_axis_b_tuser,
 
     // Output stream
-    output wire [DATA_WIDTH-1:0]  m_axis_tdata,
-    output reg  [KEEP_WIDTH-1:0]  m_axis_tkeep,
-    output wire                   m_axis_tvalid,
+    output reg  [DATA_WIDTH-1:0]  m_axis_tdata,
+    output wire [KEEP_WIDTH-1:0]  m_axis_tkeep,
+    output reg                    m_axis_tvalid,
     input  wire                   m_axis_tready,
     output reg                    m_axis_tlast,
-    output reg  [USER_WIDTH-1:0]  m_axis_tuser
+    output wire [USER_WIDTH-1:0]  m_axis_tuser
 );
 
-// Instantiate floating-point adder
-fp64_adder u_fp64_adder (
-    .aclk(clk),
-    .aresetn(rstn),
+    assign m_axis_tkeep = KEEP_ENABLE ? {KEEP_WIDTH{1'b1}} : {KEEP_WIDTH{1'b0}};
+    assign m_axis_tuser = {USER_WIDTH{1'b0}};
 
-    .s_axis_a_tvalid(s_axis_a_tvalid),
-    .s_axis_a_tready(s_axis_a_tready),
-    .s_axis_a_tdata(s_axis_a_tdata),
-    .s_axis_a_tlast(s_axis_a_tlast),
+    reg  [DATA_WIDTH-1:0] acc_data;
+    wire                  acc_ready;
+    reg                   acc_valid;
 
-    .s_axis_b_tvalid(s_axis_b_tvalid),
-    .s_axis_b_tready(s_axis_b_tready),
-    .s_axis_b_tdata(s_axis_b_tdata),
-    .s_axis_b_tlast(s_axis_b_tlast),
+    wire [DATA_WIDTH-1:0] fma_result;
+    wire                  fma_result_valid;
 
-    .m_axis_result_tvalid(m_axis_tvalid),
-    .m_axis_result_tready(m_axis_tready),
-    .m_axis_result_tdata(m_axis_tdata)
-);
+    reg got_last;
 
-always @(posedge clk) begin
-    if (!rstn) begin
-        m_axis_tkeep <= 0;
-        m_axis_tuser <= 0;
-        m_axis_tlast <= 0;
-    end else begin
-        m_axis_tkeep <= KEEP_ENABLE ? s_axis_a_tkeep : {KEEP_WIDTH{1'b1}};
-        m_axis_tuser <= USER_ENABLE ? s_axis_a_tuser : {USER_WIDTH{1'b0}};
-        m_axis_tlast <= LAST_ENABLE ? s_axis_a_tlast : 1'b0;
+    // Floating-point FMA
+    fp64_fma u_fp64_fma (
+        .aclk(clk),
+        .aresetn(rstn),
+
+        .s_axis_a_tvalid(s_axis_a_tvalid),
+        .s_axis_a_tready(s_axis_a_tready),
+        .s_axis_a_tdata(s_axis_a_tdata),
+
+        .s_axis_b_tvalid(s_axis_b_tvalid),
+        .s_axis_b_tready(s_axis_b_tready),
+        .s_axis_b_tdata(s_axis_b_tdata),
+
+        .s_axis_c_tvalid(acc_valid),
+        .s_axis_c_tready(acc_ready),
+        .s_axis_c_tdata(acc_data),
+
+        .m_axis_result_tvalid(fma_result_valid),
+        .m_axis_result_tready(acc_ready),
+        .m_axis_result_tdata(fma_result)
+    );
+
+    // Accumulate and output
+    always @(posedge clk) begin
+        if (!rstn) begin
+            acc_data      <= 64'd0;
+            acc_valid     <= 1'b0;
+            m_axis_tvalid <= 1'b0;
+            m_axis_tlast  <= 1'b0;
+            got_last      <= 1'b0;
+        end else begin
+            if (acc_ready) begin
+                acc_valid <= 1'b1;
+            end
+            
+            if (fma_result_valid) begin
+                acc_data <= fma_result;
+            end
+            
+            if (s_axis_a_tvalid && s_axis_a_tlast && acc_ready) begin
+                got_last <= 1'b1;
+            end
+
+            if (got_last && fma_result_valid) begin
+                m_axis_tvalid <= 1'b1;
+                m_axis_tlast  <= 1'b1;
+                m_axis_tdata  <= fma_result;
+                got_last      <= 1'b0;
+            end else if (m_axis_tvalid && m_axis_tready) begin
+                m_axis_tvalid <= 1'b0;
+                m_axis_tlast  <= 1'b0;
+            end
+        end
     end
-end
 
 endmodule
