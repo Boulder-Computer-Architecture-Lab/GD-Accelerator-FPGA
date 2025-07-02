@@ -5,10 +5,11 @@ module tb_mvm_accelerator;
     parameter DATA_WIDTH = 64;
     parameter KEEP_WIDTH = DATA_WIDTH / 8;
     parameter USER_WIDTH = 1;
-    parameter VECTOR_LEN = 32;
+    parameter VECTOR_LEN = 64;
+    parameter NUM_TRANSFERS = 2;
 
     reg clk = 0;
-    reg rstn = 0;
+    reg rstn = 1;
 
     // Inputs
     reg  [DATA_WIDTH-1:0] s_axis_a_tdata;
@@ -34,7 +35,7 @@ module tb_mvm_accelerator;
     wire [USER_WIDTH-1:0] m_axis_tuser;
 
     // Instantiate DUT
-    mvm_accelerator uut (
+    mvm_accelerator #(.WORDS_PER_TRANSFER(VECTOR_LEN)) uut (
         .clk(clk),
         .rstn(rstn),
         .s_axis_a_tdata(s_axis_a_tdata),
@@ -62,62 +63,69 @@ module tb_mvm_accelerator;
     // Clock generation
     always #5 clk = ~clk;
 
-    // Helper: convert real to IEEE 754
-    function [63:0] real_to_bits(input real r);
-        begin
-            real_to_bits = $realtobits(r);
-        end
-    endfunction
-
-    integer i;
-    real a_values [0:VECTOR_LEN-1];
-    real b_values [0:VECTOR_LEN-1];
+    integer i, j;
+    real a_values [0:VECTOR_LEN*NUM_TRANSFERS-1];
+    real b_values [0:VECTOR_LEN*NUM_TRANSFERS-1];
+    real expected = 0.0;
 
     initial begin
 
-        for (i = 0; i < VECTOR_LEN; i = i + 1) begin
-            a_values[i] = i;
-            b_values[i] = 10.0 * i;
+        for (i = 0; i < VECTOR_LEN*NUM_TRANSFERS; i = i + 1) begin
+            a_values[i] = (i+1) / 10.0;
+            b_values[i] = (i+1) / 100.0;
+            $display("a[%2d]: %h, %f | b[%2d]: %h, %f", i, $realtobits(a_values[i]), a_values[i], i, $realtobits(b_values[i]), b_values[i]);
         end
         
-        // Init
-        s_axis_a_tvalid = 0;
-        s_axis_b_tvalid = 0;
-        s_axis_a_tkeep  = 8'hFF;
-        s_axis_b_tkeep  = 8'hFF;
-        s_axis_a_tuser  = 0;
-        s_axis_b_tuser  = 0;
-        s_axis_a_tlast  = 0;
-        s_axis_b_tlast  = 0;
-
+        rstn = 0;
         #45 rstn = 1;
-
-        // Stimulus
-        for (i = 0; i < VECTOR_LEN; i = i + 1) begin
-            @(posedge clk);
-            s_axis_a_tdata  <= real_to_bits(a_values[i]);
-            s_axis_b_tdata  <= real_to_bits(b_values[i]);
-            s_axis_a_tvalid <= 1;
-            s_axis_b_tvalid <= 1;
-            s_axis_a_tlast  <= (i == VECTOR_LEN-1);
-            s_axis_b_tlast  <= (i == VECTOR_LEN-1);
-
-            // Wait for ready
-            wait (s_axis_a_tready && s_axis_b_tready);
-            @(posedge clk);
-            s_axis_a_tvalid <= 0;
-            s_axis_b_tvalid <= 0;
+                            
+        for (j = 0; j < NUM_TRANSFERS; j = j + 1) begin
+            
+            // Init
+            s_axis_a_tvalid = 0;
+            s_axis_b_tvalid = 0;
+            s_axis_a_tkeep  = 8'hFF;
+            s_axis_b_tkeep  = 8'hFF;
+            s_axis_a_tuser  = 0;
+            s_axis_b_tuser  = 0;
+            s_axis_a_tlast  = 0;
+            s_axis_b_tlast  = 0;
+        
+            // Stimulus
+            for (i = j*VECTOR_LEN; i < (j+1)*VECTOR_LEN; i = i + 1) begin
+                expected = expected + (a_values[i] * b_values[i]);
+            
+                @(posedge clk);
+                s_axis_a_tdata  <= $realtobits(a_values[i]);
+                s_axis_b_tdata  <= $realtobits(b_values[i]);
+                s_axis_a_tvalid <= 1;
+                s_axis_b_tvalid <= 1;
+                s_axis_a_tlast  <= (i == ((j+1)*VECTOR_LEN - 1));
+                s_axis_b_tlast  <= (i == ((j+1)*VECTOR_LEN - 1));
+    
+                // Wait for ready
+                wait (s_axis_a_tready && s_axis_b_tready);
+                @(posedge clk);
+                s_axis_a_tvalid <= 0;
+                s_axis_b_tvalid <= 0;
+                s_axis_a_tlast = 0;
+                s_axis_b_tlast = 0;
+            end
+            
+            wait (m_axis_tvalid);
+            @(posedge clk)
+            $display("Result #%0d (IEEE 754): %h", j, m_axis_tdata);
+            $display("Result #%0d (real):     %f", j, $bitstoreal(m_axis_tdata));
+            $display("Expected result #%0d: %f", j, expected);
+    
+            // Wait until DUT deasserts valid (i.e., result consumed)
+            wait (!m_axis_tvalid);
+            #50;
+        
         end
-        
-        s_axis_a_tlast = 0;
-        s_axis_b_tlast = 0;
-        
-        // Wait for result
-        wait (m_axis_tvalid);
-        $display("Dot product result (IEEE 754): %h", m_axis_tdata);
-        $display("Dot product result (real):     %f", $bitstoreal(m_axis_tdata));
         
         #100;
         $finish;
     end
+
 endmodule

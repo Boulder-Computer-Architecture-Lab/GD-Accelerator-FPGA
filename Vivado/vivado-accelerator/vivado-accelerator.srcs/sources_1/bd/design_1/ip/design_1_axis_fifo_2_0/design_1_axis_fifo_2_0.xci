@@ -8,7 +8,7 @@
     "gen_directory": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_axis_fifo_2_0",
     "parameters": {
       "component_parameters": {
-        "DEPTH": [ { "value": "512", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "DEPTH": [ { "value": "4", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "DATA_WIDTH": [ { "value": "64", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "KEEP_ENABLE": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "KEEP_WIDTH": [ { "value": "8", "resolve_type": "user", "format": "long", "usage": "all" } ],
