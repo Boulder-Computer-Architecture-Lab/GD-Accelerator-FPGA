@@ -5,7 +5,7 @@ module tb_mvm_accelerator;
     parameter DATA_WIDTH = 64;
     parameter KEEP_WIDTH = DATA_WIDTH / 8;
     parameter USER_WIDTH = 1;
-    parameter VECTOR_LEN = 16;
+    parameter VECTOR_LEN = 32;
 
     reg clk = 0;
     reg rstn = 0;
@@ -108,7 +108,10 @@ module tb_mvm_accelerator;
             s_axis_a_tvalid <= 0;
             s_axis_b_tvalid <= 0;
         end
-
+        
+        s_axis_a_tlast = 0;
+        s_axis_b_tlast = 0;
+        
         // Wait for result
         wait (m_axis_tvalid);
         $display("Dot product result (IEEE 754): %h", m_axis_tdata);

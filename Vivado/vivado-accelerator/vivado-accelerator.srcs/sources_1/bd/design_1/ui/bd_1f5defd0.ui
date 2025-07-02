@@ -1,7 +1,7 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"1.32394",
-   "Default View_TopLeft":"-180,-313",
+   "Default View_ScaleFactor":"1.74464",
+   "Default View_TopLeft":"135,-44",
    "ExpandedHierarchyInLayout":"",
    "PinnedBlocks":"/axi_dma_0|/axi_dma_1|/axis_fifo_1|/processing_system7_0|/ps7_0_axi_periph|/rst_ps7_0_100M|/axis_fifo_0|/axis_pipeline_fifo_0|/axis_pipeline_fifo_1|/axis_fifo_2|/mvm_accelerator_0|",
    "PinnedPorts":"",

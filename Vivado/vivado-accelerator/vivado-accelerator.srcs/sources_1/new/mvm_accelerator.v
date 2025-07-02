@@ -65,11 +65,35 @@ module mvm_accelerator #(
         .m_axis_result_tready(fma_result_ready),
         .m_axis_result_tdata(fma_result_data)
     );
-
-    reg got_last;
     
-    assign fma_result_ready = 1'b1;
-        
+    // ========================================
+    reg tlast_a_reg, tlast_b_reg;
+    wire tlast;
+    
+    assign tlast = tlast_a_reg && tlast_b_reg;
+    
+    always @* begin
+        if (!rstn) begin
+            tlast_a_reg <= 1'b0;
+            tlast_b_reg <= 1'b0;
+        end else begin
+            if (s_axis_a_tlast)
+                tlast_a_reg <= 1'b1;
+            if (s_axis_b_tlast)
+                tlast_b_reg <= 1'b1;
+            
+            // Done
+            if (m_axis_tvalid && m_axis_tready) begin
+                tlast_a_reg <= 1'b0;
+                tlast_b_reg <= 1'b0;
+            end
+        end
+    end
+    
+    // ========================================
+    
+    assign fma_result_ready = s_axis_c_tready;
+    
     always @(posedge clk) begin
         if (!rstn) begin
             s_axis_c_tdata   <= 64'd0;
@@ -77,26 +101,32 @@ module mvm_accelerator #(
             m_axis_tvalid    <= 1'b0;
             m_axis_tdata     <= 1'b0;
             m_axis_tlast     <= 1'b0;
-            got_last         <= 1'b0;
         end else begin
+            // Check for valid FMA output
+            if (fma_result_valid && fma_result_ready) begin
+                if (!tlast) begin
+                    s_axis_c_tdata <= fma_result_data; // Loopback
+                    s_axis_c_tvalid <= 1'b1;
+                end
+            end
+            
+            // FMA output consumed by accumulator
             if (s_axis_c_tvalid && s_axis_c_tready) begin
                 s_axis_c_tvalid <= 1'b0;
             end 
             
-            if (fma_result_valid && !s_axis_a_tlast) begin
-                s_axis_c_tdata <= fma_result_data;
-                s_axis_c_tvalid <= 1'b1;
-            end else if (s_axis_a_tlast) begin
-                got_last <= 1'b1;
-            end
-            
-            if (got_last && fma_result_valid) begin
+            // If last forward to output
+            if (tlast && fma_result_valid && m_axis_tready) begin
                 m_axis_tdata  <= fma_result_data;
                 m_axis_tvalid <= 1'b1;
-                got_last      <= 1'b0;
-            end else if (!got_last) begin
+                m_axis_tlast  <= 1'b1; 
+            end
+            
+            // Done
+            if (m_axis_tvalid && m_axis_tready) begin
                 m_axis_tvalid <= 1'b0;
                 m_axis_tlast  <= 1'b0;
+                //s_axis_c_tvalid <= 1'b1; // Prepare for next transfer (this still gets reset after 1 cycle, need to fix)
             end
         end
     end
