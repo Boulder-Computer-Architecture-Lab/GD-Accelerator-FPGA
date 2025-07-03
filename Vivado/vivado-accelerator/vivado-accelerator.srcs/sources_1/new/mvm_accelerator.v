@@ -75,7 +75,7 @@ module mvm_accelerator #(
     reg state;
     localparam [1:0] IDLE   = 2'b00, 
                      ACTIVE = 2'b01;
-    
+        
     always@(posedge clk) begin
         if (!rstn) begin
             state <= IDLE;
@@ -118,22 +118,30 @@ module mvm_accelerator #(
     // ========================================
     // Dot product logic
     
-    assign s_axis_c_tvalid = s_axis_a_tvalid; // need a better solution, this only works in simulation
+    reg s_axis_c_tvalid_reg; // allows accumulation across multiple transfers
+    
     assign fma_result_ready = s_axis_c_tready;
+    assign s_axis_c_tvalid = (state == ACTIVE) ? s_axis_c_tvalid_reg : s_axis_a_tvalid;
     
     always @(posedge clk) begin
         if (!rstn) begin
-            s_axis_c_tdata   <= 64'd0;
-            //s_axis_c_tvalid  <= 1'b1;
-            m_axis_tvalid    <= 1'b0;
-            m_axis_tdata     <= 1'b0;
-            m_axis_tlast     <= 1'b0;
+            s_axis_c_tdata      <= 64'd0;
+            s_axis_c_tvalid_reg <= 1'b1;
+            m_axis_tvalid       <= 1'b0;
+            m_axis_tdata        <= 1'b0;
+            m_axis_tlast        <= 1'b0;
         end else if (state == ACTIVE) begin
             // Check for valid FMA output
             if (fma_result_valid && fma_result_ready) begin
                 if (!tlast) begin
                     s_axis_c_tdata <= fma_result_data; // Loopback
+                    s_axis_c_tvalid_reg <= 1'b1;
                 end
+            end
+            
+            // FMA output consumed by accumulator
+            if (s_axis_c_tvalid && s_axis_c_tready) begin
+                s_axis_c_tvalid_reg <= 1'b0;
             end
             
             // If last forward to output
@@ -145,9 +153,9 @@ module mvm_accelerator #(
             
             // Done
             if (m_axis_tvalid && m_axis_tready) begin
-                s_axis_c_tdata  <= fma_result_data;
-                m_axis_tvalid <= 1'b0;
-                m_axis_tlast  <= 1'b0;
+                s_axis_c_tdata <= fma_result_data;
+                m_axis_tvalid  <= 1'b0;
+                m_axis_tlast   <= 1'b0;
             end
         end
     end
