@@ -2,52 +2,41 @@
 
 module mvm_accelerator #(
     parameter DATA_WIDTH = 64,
-    parameter KEEP_ENABLE = (DATA_WIDTH > 8),
-    parameter KEEP_WIDTH = (DATA_WIDTH + 7) / 8,
-    parameter LAST_ENABLE = 1,
-    parameter USER_ENABLE = 0,
-    parameter USER_WIDTH = 1,
-    parameter WORDS_PER_TRANSFER = 64
+    parameter WORDS_PER_TRANSFER = 17048
 )(
     input wire clk,
     input wire rstn,
 
     // Input stream A
     input  wire [DATA_WIDTH-1:0]  s_axis_a_tdata,
-    input  wire [KEEP_WIDTH-1:0]  s_axis_a_tkeep,
     input  wire                   s_axis_a_tvalid,
     output wire                   s_axis_a_tready,
-    input  wire                   s_axis_a_tlast,
-    input  wire [USER_WIDTH-1:0]  s_axis_a_tuser,
 
     // Input stream B
     input  wire [DATA_WIDTH-1:0]  s_axis_b_tdata,
-    input  wire [KEEP_WIDTH-1:0]  s_axis_b_tkeep,
     input  wire                   s_axis_b_tvalid,
     output wire                   s_axis_b_tready,
-    input  wire                   s_axis_b_tlast,
-    input  wire [USER_WIDTH-1:0]  s_axis_b_tuser,
 
     // Output stream
     output reg  [DATA_WIDTH-1:0]  m_axis_tdata,
-    output wire [KEEP_WIDTH-1:0]  m_axis_tkeep,
     output reg                    m_axis_tvalid,
     input  wire                   m_axis_tready,
-    output reg                    m_axis_tlast,
-    output wire [USER_WIDTH-1:0]  m_axis_tuser
+    output wire                   m_axis_tlast
 );
+  
     // ========================================
-    // FMA instantiation
+    // FMA
 
-    // Accumulator reg
-    wire                  s_axis_c_tvalid;
+    // s_axis_c (accumulator)
+    reg                   s_axis_c_tvalid;
     wire                  s_axis_c_tready;
     reg  [DATA_WIDTH-1:0] s_axis_c_tdata;
     // FMA output
     wire                  fma_result_valid;
     wire                  fma_result_ready;
     wire [DATA_WIDTH-1:0] fma_result_data;
-
+    
+    // Instance
     fp64_fma u_fp64_fma (
         .aclk(clk),
         .aresetn(rstn),
@@ -70,33 +59,9 @@ module mvm_accelerator #(
     );
     
     // ========================================
-    // State machine for consecutive transfers
-    
-    reg state;
-    localparam [1:0] IDLE   = 2'b00, 
-                     ACTIVE = 2'b01;
-        
-    always@(posedge clk) begin
-        if (!rstn) begin
-            state <= IDLE;
-        end else begin
-            case (state)
-                IDLE: begin
-                    if (s_axis_a_tvalid && s_axis_a_tready) 
-                        state <= ACTIVE;
-                end
-                ACTIVE: begin
-                    if (m_axis_tvalid && m_axis_tready)
-                        state <= IDLE;
-                end
-            endcase
-        end
-    end
-    
-    // ========================================
     // Internal counter (not using axis_tlast)
     
-    reg [$clog2(WORDS_PER_TRANSFER):0] word_count;
+    reg [$clog2(WORDS_PER_TRANSFER+1):0] word_count;
     wire tlast;
     
     assign tlast = (word_count == WORDS_PER_TRANSFER-1);
@@ -104,67 +69,55 @@ module mvm_accelerator #(
     always @(posedge clk) begin
         if (!rstn) begin
             word_count <= 0;
-        end else if (state == ACTIVE) begin
+        end else begin
             if (!tlast) begin
-                if (s_axis_a_tvalid && s_axis_a_tready) begin
+                if (fma_result_valid && fma_result_ready) begin
                     word_count <= word_count + 1;
                 end
             end else if (m_axis_tvalid && m_axis_tready) begin
-                    word_count <= 0;
+                word_count <= 0;
             end
         end
     end
     
     // ========================================
-    // Dot product logic
+    // Accumulator logic
     
-    reg s_axis_c_tvalid_reg; // allows accumulation across multiple transfers
-    
-    assign fma_result_ready = s_axis_c_tready;
-    assign s_axis_c_tvalid = (state == ACTIVE) ? s_axis_c_tvalid_reg : s_axis_a_tvalid;
+    assign fma_result_ready = s_axis_c_tready; // accumulator loopback
+    assign m_axis_tlast = m_axis_tvalid; // only one output value
     
     always @(posedge clk) begin
         if (!rstn) begin
             s_axis_c_tdata      <= 64'd0;
-            s_axis_c_tvalid_reg <= 1'b1;
+            s_axis_c_tvalid     <= 1'b1;
             m_axis_tvalid       <= 1'b0;
             m_axis_tdata        <= 1'b0;
-            m_axis_tlast        <= 1'b0;
-        end else if (state == ACTIVE) begin
-            // Check for valid FMA output
-            if (fma_result_valid && fma_result_ready) begin
-                if (!tlast) begin
-                    s_axis_c_tdata <= fma_result_data; // Loopback
-                    s_axis_c_tvalid_reg <= 1'b1;
+        end else begin
+            if (!tlast) begin
+                // Accumulate fma_result
+                if (fma_result_valid && fma_result_ready) begin
+                    s_axis_c_tdata <= fma_result_data;
+                    s_axis_c_tvalid <= 1'b1;
+                end
+            end else begin
+                // Forward data to output
+                if (fma_result_valid) begin
+                    m_axis_tdata  <= fma_result_data;
+                    m_axis_tvalid <= 1'b1;
+                end
+                // Reset accumulator once output is consumed
+                if (m_axis_tvalid && m_axis_tready) begin
+                    m_axis_tvalid   <= 1'b0;
+                    s_axis_c_tdata  <= 64'd0;
+                    s_axis_c_tvalid <= 1'b1;
                 end
             end
-            
-            // FMA output consumed by accumulator
+            // FMA should always consume s_axis_c
             if (s_axis_c_tvalid && s_axis_c_tready) begin
-                s_axis_c_tvalid_reg <= 1'b0;
-            end
-            
-            // If last forward to output
-            if (tlast && fma_result_valid && m_axis_tready) begin
-                m_axis_tdata  <= fma_result_data;
-                m_axis_tvalid <= 1'b1;
-                m_axis_tlast  <= 1'b1;
-            end
-            
-            // Done
-            if (m_axis_tvalid && m_axis_tready) begin
-                s_axis_c_tdata <= fma_result_data;
-                m_axis_tvalid  <= 1'b0;
-                m_axis_tlast   <= 1'b0;
+                s_axis_c_tvalid <= 1'b0;
             end
         end
     end
-    
-    // ========================================
-    // Bypass for unused signals
-
-    assign m_axis_tkeep = KEEP_ENABLE ? {KEEP_WIDTH{1'b1}} : {KEEP_WIDTH{1'b0}};
-    assign m_axis_tuser = {USER_WIDTH{1'b0}};
     
     // ========================================
 
