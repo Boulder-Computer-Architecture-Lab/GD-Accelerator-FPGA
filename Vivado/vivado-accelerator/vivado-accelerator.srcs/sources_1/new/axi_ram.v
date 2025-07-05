@@ -36,7 +36,7 @@ module axi_ram #
     // Width of data bus in bits
     parameter DATA_WIDTH = 64,
     // Width of address bus in bits
-    parameter ADDR_WIDTH = 16,
+    parameter ADDR_WIDTH = 18,
     // Width of wstrb (width of data bus in words)
     parameter STRB_WIDTH = (DATA_WIDTH/8),
     // Width of ID signal
@@ -143,7 +143,7 @@ reg [DATA_WIDTH-1:0] s_axi_rdata_pipe_reg = {DATA_WIDTH{1'b0}};
 reg s_axi_rlast_pipe_reg = 1'b0;
 reg s_axi_rvalid_pipe_reg = 1'b0;
 
-(* RAM_STYLE="BLOCK" *) reg [DATA_WIDTH-1:0] mem[(2**VALID_ADDR_WIDTH)-1:0];
+(* RAM_STYLE="BLOCK" *) reg [DATA_WIDTH-1:0] mem[17047:0]; // Manually set width to fit matrix row
 
 wire [VALID_ADDR_WIDTH-1:0] s_axi_awaddr_valid = s_axi_awaddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);
 wire [VALID_ADDR_WIDTH-1:0] s_axi_araddr_valid = s_axi_araddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);

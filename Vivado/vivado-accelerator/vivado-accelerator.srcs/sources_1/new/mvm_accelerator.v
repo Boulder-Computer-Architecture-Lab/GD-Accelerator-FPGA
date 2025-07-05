@@ -82,8 +82,7 @@ module mvm_accelerator #(
     
     // ========================================
     // Accumulator logic
-    
-    assign fma_result_ready = s_axis_c_tready; // accumulator loopback
+    assign fma_result_ready = tlast ? m_axis_tready : s_axis_c_tready; // accumulator loopback
     assign m_axis_tlast = m_axis_tvalid; // only one output value
     
     always @(posedge clk) begin
@@ -91,7 +90,7 @@ module mvm_accelerator #(
             s_axis_c_tdata      <= 64'd0;
             s_axis_c_tvalid     <= 1'b1;
             m_axis_tvalid       <= 1'b0;
-            m_axis_tdata        <= 1'b0;
+            m_axis_tdata        <= 64'd0;
         end else begin
             if (!tlast) begin
                 // Accumulate fma_result
@@ -101,7 +100,7 @@ module mvm_accelerator #(
                 end
             end else begin
                 // Forward data to output
-                if (fma_result_valid) begin
+                if (fma_result_valid && !m_axis_tvalid) begin
                     m_axis_tdata  <= fma_result_data;
                     m_axis_tvalid <= 1'b1;
                 end

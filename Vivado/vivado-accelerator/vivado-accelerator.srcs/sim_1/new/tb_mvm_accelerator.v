@@ -3,7 +3,7 @@
 module tb_mvm_accelerator;
 
     parameter DATA_WIDTH = 64;
-    parameter VECTOR_LEN = 64;
+    parameter VECTOR_LEN = 256;
     parameter NUM_TRANSFERS = 2;
 
     reg clk = 0;
