@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define DMA_MAP_SIZE 0x10000
 
