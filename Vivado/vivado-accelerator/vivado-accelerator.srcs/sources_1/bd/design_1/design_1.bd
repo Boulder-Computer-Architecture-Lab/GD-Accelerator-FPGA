@@ -3680,7 +3680,7 @@
         "inst_hier_path": "axis_data_fifo_0",
         "parameters": {
           "FIFO_DEPTH": {
-            "value": "16384"
+            "value": "8192"
           },
           "TDATA_NUM_BYTES": {
             "value": "8"
@@ -3695,7 +3695,7 @@
         "inst_hier_path": "axis_data_fifo_1",
         "parameters": {
           "FIFO_DEPTH": {
-            "value": "16384"
+            "value": "8192"
           },
           "TDATA_NUM_BYTES": {
             "value": "8"
@@ -3829,11 +3829,11 @@
           "axi_interconnect_0/ACLK",
           "axi_interconnect_0/M00_ACLK",
           "axi_interconnect_0/S00_ACLK",
-          "mvm_accelerator_0/clk",
           "axi_ram_0/clk",
           "axi_interconnect_0/S01_ACLK",
           "axis_data_fifo_0/s_axis_aclk",
-          "axis_data_fifo_1/s_axis_aclk"
+          "axis_data_fifo_1/s_axis_aclk",
+          "mvm_accelerator_0/clk"
         ]
       },
       "processing_system7_0_FCLK_RESET0_N": {
@@ -3855,11 +3855,11 @@
           "axi_interconnect_0/ARESETN",
           "axi_interconnect_0/M00_ARESETN",
           "axi_interconnect_0/S00_ARESETN",
-          "mvm_accelerator_0/rstn",
           "axi_ram_0/rstn",
           "axi_interconnect_0/S01_ARESETN",
           "axis_data_fifo_0/s_axis_aresetn",
-          "axis_data_fifo_1/s_axis_aresetn"
+          "axis_data_fifo_1/s_axis_aresetn",
+          "mvm_accelerator_0/rstn"
         ]
       }
     },
