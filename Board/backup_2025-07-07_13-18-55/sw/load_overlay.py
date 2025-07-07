@@ -12,6 +12,7 @@ OVERLAY_PATH = f"/sys/kernel/config/device-tree/overlays/{OVERLAY_NAME}"
 
 DMA0_BASE = 0x40400000
 DMA1_BASE = 0x40440000
+DMA2_BASE = 0x40480000
 DMA_MAP_SIZE = 0x40000
 
 def reset_dma(base_addr):
@@ -49,5 +50,6 @@ if __name__ == "__main__":
     # Explicitly reset DMAs (sanity check)
     reset_dma(DMA0_BASE)
     reset_dma(DMA1_BASE)
+    reset_dma(DMA2_BASE)
     print("DMAs reset.")
 
