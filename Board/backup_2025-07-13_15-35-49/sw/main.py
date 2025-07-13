@@ -17,27 +17,32 @@ DEBUG = 0
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
-BRAM_BASE = 0x80000000 # AXI_RAM_0 base
+
+BRAM_BASE = 0x80000000 
 
 N = 17048 # Row size (fixed in hardware)
-P = 4     # Number of partitions per row
+P = 2     # Number of partitions per row
 I = 1000  # Number of rows to process
 CHUNK_WORDS = N // P
 
 assert N % P == 0
 
-NUM_WORKERS = 2 # Number of `a` channels in block design
+ROWS_PER_BATCH = 300 # Rows in each ping-pong buffer
+NUM_WORKERS = 2      # Parallel DMA engines (capped by hardware)
 
 # ==============================================================================
 #  GLOBALS
 # ==============================================================================
 
 # Buffers (declared globally for cleanup)
-dma_bufs = [allocate(shape=(N,), dtype=np.float64) for _ in range(NUM_WORKERS)]
+a_chunks = [
+    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+]
 result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
 
 # Asynchronous row processing
-work_queue = queue.Queue()
+work_queue = queue.Queue(maxsize=8 * ROWS_PER_BATCH)
 threads = []
 
 # Gracefully exit on interrupt
@@ -53,21 +58,23 @@ def cleanup():
     for t in threads:
         t.join(timeout=1)
 
-    for buf in dma_bufs + result_bufs:
-        if buf is not None:
-            buf.freebuffer()
+    for buf in a_chunks + result_bufs:
+        try: 
+            if buf is not None:
+                buf.freebuffer()
+        except Exception as e:
+            print(f"[WARNING] Failed to free buffer: {e}")
 
 def handle_interrupt(sig, frame):
     global stop_requested
     print("Interrupt received.")
     stop_requested = True
-    cleanup()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_interrupt)
 
 # ==============================================================================
-#  HELPERS
+#  WORKER + LOADER 
 # ==============================================================================
 
 def process_row(row_num, a, b, result, dma):
@@ -82,25 +89,53 @@ def process_row(row_num, a, b, result, dma):
         dma.sendchannel.wait()
     dma.recvchannel.wait()
 
-    if DEBUG:
+    if DEBUG > 1:
         actual = float(result[0])
         expected = np.dot(a, b)
-        print(f"({row_num}) Result -> Actual: {actual:.24f} | Expected: {expected:.24f}")
+        print(f"({row_num}) Actual: {actual:.24f} | Expected: {expected:.24f}")
 
 def worker(worker_id, b, dma):
     while not stop_requested:
-        try: row_num, a_buf, result_buf = work_queue.get(timeout=1)
-        except queue.Empty: break
-        process_row(row_num, a_buf, b, result_buf, dma)
+        try: chunk_idx, local_row, global_row = work_queue.get(timeout=1)
+        except queue.Empty: return
+
+        process_row(global_row, a_chunks[chunk_idx][local_row], b, result_bufs[worker_id], dma)
         work_queue.task_done()
+
+        if DEBUG > 1: print(f"[WORKER {worker_id}] Completed row {global_row}")
+
+def loader_thread(f):
+    chunk_index = 0
+    row_idx = 0
+
+    while row_idx < I and not stop_requested:
+        buf = a_chunks[chunk_index]
+        rows_to_load = min(ROWS_PER_BATCH, I - row_idx)
+
+        for i in range(rows_to_load):
+            view = memoryview(buf[i]).cast("B")
+            if f.readinto(view) != N * 8: return # End of file
+
+        for i in range(rows_to_load):
+            global_row = row_idx + i
+            work_queue.put((chunk_index, i, global_row))
+
+        if DEBUG:
+            print(f"[LOADER] Loaded chunk {chunk_index}, rows {row_idx} to {row_idx + rows_to_load - 1}")
+            print(f"[DEBUG] Queue size: {work_queue.qsize()}")
+
+        chunk_index ^= 1  # switch to the other buffer
+        row_idx += rows_to_load
 
 # ==============================================================================
 #  MAIN
 # ==============================================================================
 
 if __name__ == "__main__":
-
-    if DEBUG: print(f"N={N}, P={P}, I={I}, WORDS_PER_CHUNK={CHUNK_WORDS}")
+    if DEBUG: 
+        print(f"Parameters:")
+        print(f"    N={N}, P={P}, I={I}, CHUNK_WORDS={CHUNK_WORDS},")
+        print(f"    NUM_WORKERS={NUM_WORKERS}, ROWS_PER_BATCH={ROWS_PER_BATCH}")
 
     try:
         # Load bitstream and initialize DMAs
@@ -117,35 +152,37 @@ if __name__ == "__main__":
             bram_mmio.write(i * 8, val64 & 0xFFFFFFFF)
             bram_mmio.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
 
-        print("Initialization complete.")
-
-        # Fill work queue
-        with open(MTRX_PATH, "rb") as a_file:
-            for i in range(I):
-                buf_idx = i % NUM_WORKERS
-                a_buf = dma_bufs[buf_idx]
-                result_buf = result_bufs[buf_idx]
-
-                view = memoryview(a_buf).cast("B")
-                if a_file.readinto(view) != N * 8: break
-                work_queue.put((i, a_buf, result_buf))
-
-        # Initialize threads
+        # Create worker threads
         threads = [
             threading.Thread(target=worker, args=(i, b, dmas[i]))
             for i in range(NUM_WORKERS)
         ]
 
-        # Execute computation
-        start_time = time.perf_counter()
+        with open(MTRX_PATH, "rb") as a_file:
+            # Create loader thread
+            loader = threading.Thread(target=loader_thread, args=(a_file,))
 
-        for t in threads: t.start() # start threads
-        work_queue.join()           # wait for rows to process
-        for t in threads: t.join()  # wait for threads to exit
+            print("Initialization complete.")
 
-        end_time = time.perf_counter()
+            # Execute and time
+            t0 = time.perf_counter()
+            loader.start()
 
-        print(f"Done. Compute time: {end_time - start_time:.6f} seconds")
+            for t in threads: t.start()
+            t1 = time.perf_counter()
+
+            loader.join()
+            t2 = time.perf_counter()
+
+            work_queue.join()
+            for t in threads: t.join() 
+            t3 = time.perf_counter()
+
+        # Finished
+        print(f"Done.")
+        print(f"Loader time:  {t2 - t0:.6f} seconds")
+        print(f"Compute time: {t3 - t1:.6f} seconds")
+        print(f"Total time:   {t3 - t0:.6f} seconds")
 
     finally: cleanup()
 
