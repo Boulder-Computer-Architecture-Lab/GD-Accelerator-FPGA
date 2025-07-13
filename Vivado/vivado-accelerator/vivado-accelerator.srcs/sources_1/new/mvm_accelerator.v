@@ -5,20 +5,33 @@ module mvm_accelerator #(
     parameter ADDR_WIDTH = 32,
     parameter STRB_WIDTH = (DATA_WIDTH/8),
     parameter ID_WIDTH = 4,
-    parameter WORDS_PER_TRANSFER = 17048
+    parameter WORDS_PER_TRANSFER = 17048,
+    parameter NUM_CHANNELS = 2
 )(
     input wire clk,
     input wire rstn,
 
-    // Input stream A_0
+    // Input stream 0
     input  wire [DATA_WIDTH-1:0]  s_axis_a_0_tdata,
     input  wire                   s_axis_a_0_tvalid,
     output wire                   s_axis_a_0_tready,    
-
-    // Input stream A_1
+    
+    // Output stream 0
+    output wire [DATA_WIDTH-1:0]  m_axis_0_tdata,
+    output wire                   m_axis_0_tvalid,
+    input  wire                   m_axis_0_tready,
+    output wire                   m_axis_0_tlast,
+    
+    // Input stream 1
     input  wire [DATA_WIDTH-1:0]  s_axis_a_1_tdata,
     input  wire                   s_axis_a_1_tvalid,
     output wire                   s_axis_a_1_tready,
+      
+    // Output stream 1
+    output wire [DATA_WIDTH-1:0]  m_axis_1_tdata,
+    output wire                   m_axis_1_tvalid,
+    input  wire                   m_axis_1_tready,
+    output wire                   m_axis_1_tlast,
 
     // S-AXI interface (for writing vector b)
     input  wire [7:0]             s_axi_b_awid,
@@ -55,29 +68,14 @@ module mvm_accelerator #(
     output wire [1:0]             s_axi_b_rresp,
     output wire                   s_axi_b_rlast,
     output wire                   s_axi_b_rvalid,
-    input  wire                   s_axi_b_rready,
-
-    // Output stream 0
-    output wire [DATA_WIDTH-1:0]  m_axis_0_tdata,
-    output wire                   m_axis_0_tvalid,
-    input  wire                   m_axis_0_tready,
-    output wire                   m_axis_0_tlast,
-      
-    // Output stream 1
-    output wire [DATA_WIDTH-1:0]  m_axis_1_tdata,
-    output wire                   m_axis_1_tvalid,
-    input  wire                   m_axis_1_tready,
-    output wire                   m_axis_1_tlast
+    input  wire                   s_axi_b_rready
 );
+
     // =============================================================
     //                         CHANNEL 0
     // =============================================================
-    // DMA 0
     
-    wire [DATA_WIDTH-1:0] dma0_axis_tdata;
-    wire                  dma0_axis_tvalid;
-    wire                  dma0_axis_tready;
-    
+    wire [ID_WIDTH-1:0]   dma0_m_axi_arid;
     wire [ADDR_WIDTH-1:0] dma0_m_axi_araddr;
     wire [7:0]            dma0_m_axi_arlen;
     wire [2:0]            dma0_m_axi_arsize;
@@ -87,158 +85,57 @@ module mvm_accelerator #(
     wire [2:0]            dma0_m_axi_arprot;
     wire                  dma0_m_axi_arvalid;
     wire                  dma0_m_axi_arready;
-    wire [ID_WIDTH-1:0]   dma0_m_axi_arid;
+    wire [ID_WIDTH-1:0]   dma0_m_axi_rid;
     wire [DATA_WIDTH-1:0] dma0_m_axi_rdata;
+    wire [1:0]            dma0_m_axi_rresp;
     wire                  dma0_m_axi_rlast;
     wire                  dma0_m_axi_rvalid;
     wire                  dma0_m_axi_rready;
-    wire [1:0]            dma0_m_axi_rresp;
-    wire [ID_WIDTH-1:0]   dma0_m_axi_rid;
-
-    // Descriptor signals for dma0
-    reg [ADDR_WIDTH-1:0] dma0_read_desc_addr = 32'h80000000;
-    reg [19:0]           dma0_read_desc_len  = WORDS_PER_TRANSFER * STRB_WIDTH;
-    reg [7:0]            dma0_read_desc_tag  = 8'h0;
     
-    reg        dma0_read_desc_valid;
-    wire       dma0_read_desc_ready;
-    
-    wire [7:0] dma0_status_tag;
-    wire [3:0] dma0_status_error;
-    wire       dma0_status_valid;
-    
-    reg dma0_triggered = 0;
-    
-    always @(posedge clk) begin
-        if (!rstn) begin
-            dma0_read_desc_valid <= 1'b0;
-            dma0_triggered <= 1'b0;
-        end else begin
-            if (!dma0_triggered && s_axis_a_0_tvalid && s_axis_a_0_tready) begin
-                dma0_read_desc_valid <= 1'b1;
-                dma0_triggered <= 1'b1;
-            end else if (dma0_read_desc_valid && dma0_read_desc_ready) begin
-                dma0_read_desc_valid <= 1'b0;
-            end
-            
-            if (dma0_triggered && m_axis_0_tvalid && m_axis_0_tready && m_axis_0_tlast) begin
-                dma0_triggered <= 1'b0;
-            end
-        end
-    end
-
-    axi_dma_rd #(
-        .AXI_DATA_WIDTH(DATA_WIDTH),
-        .AXI_ADDR_WIDTH(ADDR_WIDTH),
-        .AXI_STRB_WIDTH(8),
-        .AXI_ID_WIDTH(4),
-        .AXI_MAX_BURST_LEN(256),
-        .AXIS_DATA_WIDTH(DATA_WIDTH),
-        .AXIS_KEEP_ENABLE(1),
-        .AXIS_LAST_ENABLE(0),
-        .AXIS_USER_ENABLE(0),
-        .LEN_WIDTH(20),
-        .TAG_WIDTH(8),
-        .ENABLE_SG(0),
-        .ENABLE_UNALIGNED(1)
-    ) dma0 (
-        .clk(clk),
-        .rstn(rstn),
-    
-        .s_axis_read_desc_addr(dma0_read_desc_addr),
-        .s_axis_read_desc_len(dma0_read_desc_len),
-        .s_axis_read_desc_tag(dma0_read_desc_tag),
-        .s_axis_read_desc_id(8'd0),
-        .s_axis_read_desc_dest(8'd0),
-        .s_axis_read_desc_user(1'b0),
-        .s_axis_read_desc_valid(dma0_read_desc_valid),
-        .s_axis_read_desc_ready(dma0_read_desc_ready),
-    
-        .m_axis_read_desc_status_tag(dma0_status_tag),
-        .m_axis_read_desc_status_error(dma0_status_error),
-        .m_axis_read_desc_status_valid(dma0_status_valid),
-    
-        .m_axis_read_data_tdata(dma0_axis_tdata),
-        .m_axis_read_data_tkeep(),
-        .m_axis_read_data_tvalid(dma0_axis_tvalid),
-        .m_axis_read_data_tready(dma0_axis_tready),
-        .m_axis_read_data_tlast(),
-        .m_axis_read_data_tid(),
-        .m_axis_read_data_tdest(),
-        .m_axis_read_data_tuser(),
-    
-        .m_axi_arid(dma0_m_axi_arid),
-        .m_axi_araddr(dma0_m_axi_araddr),
-        .m_axi_arlen(dma0_m_axi_arlen),
-        .m_axi_arsize(dma0_m_axi_arsize),
-        .m_axi_arburst(dma0_m_axi_arburst),
-        .m_axi_arlock(dma0_m_axi_arlock),
-        .m_axi_arcache(dma0_m_axi_arcache),
-        .m_axi_arprot(dma0_m_axi_arprot),
-        .m_axi_arvalid(dma0_m_axi_arvalid),
-        .m_axi_arready(dma0_m_axi_arready),
-        .m_axi_rid(dma0_m_axi_rid),
-        .m_axi_rdata(dma0_m_axi_rdata),
-        .m_axi_rresp(dma0_m_axi_rresp),
-        .m_axi_rlast(dma0_m_axi_rlast),
-        .m_axi_rvalid(dma0_m_axi_rvalid),
-        .m_axi_rready(dma0_m_axi_rready),
-    
-        .enable(1'b1)
-    );
-
-    // =============================================================
-    // FMA 0
-    
-    wire [DATA_WIDTH-1:0] fifo0_axis_tdata;
-    wire                  fifo0_axis_tvalid;
-    wire                  fifo0_axis_tready;
-    
-    axis_pipeline_fifo #(
+    mvm_channel #(
         .DATA_WIDTH(DATA_WIDTH),
-        .LENGTH(8)
-    ) fifo0 (
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .STRB_WIDTH(STRB_WIDTH),
+        .ID_WIDTH(ID_WIDTH),
+        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
+        .TAG(8'h0)
+    ) channel_0 (
         .clk(clk),
         .rstn(rstn),
-    
-        .s_axis_tdata(dma0_axis_tdata),
-        .s_axis_tvalid(dma0_axis_tvalid),
-        .s_axis_tready(dma0_axis_tready),
-
-        .m_axis_tdata(fifo0_axis_tdata),
-        .m_axis_tvalid(fifo0_axis_tvalid),
-        .m_axis_tready(fifo0_axis_tready)
-    );
-    
-    fma_wrapper #(
-        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
-    ) fma0 (
-        .clk(clk),
-        .rstn(rstn),
-    
+        
         .s_axis_a_tdata(s_axis_a_0_tdata),
         .s_axis_a_tvalid(s_axis_a_0_tvalid),
         .s_axis_a_tready(s_axis_a_0_tready),
-    
-        .s_axis_b_tdata(fifo0_axis_tdata),
-        .s_axis_b_tvalid(fifo0_axis_tvalid),
-        .s_axis_b_tready(fifo0_axis_tready),
-    
+        
         .m_axis_tdata(m_axis_0_tdata),
         .m_axis_tvalid(m_axis_0_tvalid),
         .m_axis_tready(m_axis_0_tready),
-        .m_axis_tlast(m_axis_0_tlast)
+        .m_axis_tlast(m_axis_0_tlast),
+        
+        // AXI Master Interface (to interconnect)
+        .m_axi_arid    (dma0_m_axi_arid),
+        .m_axi_araddr  (dma0_m_axi_araddr),
+        .m_axi_arlen   (dma0_m_axi_arlen),
+        .m_axi_arsize  (dma0_m_axi_arsize),
+        .m_axi_arburst (dma0_m_axi_arburst),
+        .m_axi_arlock  (dma0_m_axi_arlock),
+        .m_axi_arcache (dma0_m_axi_arcache),
+        .m_axi_arprot  (dma0_m_axi_arprot),
+        .m_axi_arvalid (dma0_m_axi_arvalid),
+        .m_axi_arready (dma0_m_axi_arready),
+        .m_axi_rid     (dma0_m_axi_rid),
+        .m_axi_rdata   (dma0_m_axi_rdata),
+        .m_axi_rresp   (dma0_m_axi_rresp),
+        .m_axi_rlast   (dma0_m_axi_rlast),
+        .m_axi_rvalid  (dma0_m_axi_rvalid),
+        .m_axi_rready  (dma0_m_axi_rready)
     );
 
     // =============================================================
     //                         CHANNEL 1
     // =============================================================
-    // DMA 1
     
-    wire [DATA_WIDTH-1:0] dma1_axis_tdata;
-    wire                  dma1_axis_tvalid;
-    wire                  dma1_axis_tready;
-    
+    wire [ID_WIDTH-1:0]   dma1_m_axi_arid;
     wire [ADDR_WIDTH-1:0] dma1_m_axi_araddr;
     wire [7:0]            dma1_m_axi_arlen;
     wire [2:0]            dma1_m_axi_arsize;
@@ -248,156 +145,59 @@ module mvm_accelerator #(
     wire [2:0]            dma1_m_axi_arprot;
     wire                  dma1_m_axi_arvalid;
     wire                  dma1_m_axi_arready;
-    wire [ID_WIDTH-1:0]   dma1_m_axi_arid;
+    wire [ID_WIDTH-1:0]   dma1_m_axi_rid;
     wire [DATA_WIDTH-1:0] dma1_m_axi_rdata;
+    wire [1:0]            dma1_m_axi_rresp;
     wire                  dma1_m_axi_rlast;
     wire                  dma1_m_axi_rvalid;
     wire                  dma1_m_axi_rready;
-    wire [1:0]            dma1_m_axi_rresp;
-    wire [ID_WIDTH-1:0]   dma1_m_axi_rid;
-
-    // Descriptor signals for dma1
-    reg [ADDR_WIDTH-1:0] dma1_read_desc_addr = 32'h80000000;
-    reg [19:0]           dma1_read_desc_len  = WORDS_PER_TRANSFER * STRB_WIDTH;
-    reg [7:0]            dma1_read_desc_tag  = 8'h1;
     
-    reg        dma1_read_desc_valid;
-    wire       dma1_read_desc_ready;
-    
-    wire [7:0] dma1_status_tag;
-    wire [3:0] dma1_status_error;
-    wire       dma1_status_valid;
-    
-    reg dma1_triggered = 0;
-    
-    always @(posedge clk) begin
-        if (!rstn) begin
-            dma1_read_desc_valid <= 1'b0;
-            dma1_triggered <= 1'b0;
-        end else begin
-            if (!dma1_triggered && s_axis_a_1_tvalid && s_axis_a_1_tready) begin
-                dma1_read_desc_valid <= 1'b1;
-                dma1_triggered <= 1'b1;
-            end else if (dma1_read_desc_valid && dma1_read_desc_ready) begin
-                dma1_read_desc_valid <= 1'b0;
-            end
-            
-            if (dma1_triggered && m_axis_1_tvalid && m_axis_1_tready && m_axis_1_tlast) begin
-                dma1_triggered <= 1'b0;
-            end
-        end
-    end
-
-    axi_dma_rd #(
-        .AXI_DATA_WIDTH(DATA_WIDTH),
-        .AXI_ADDR_WIDTH(ADDR_WIDTH),
-        .AXI_STRB_WIDTH(8),
-        .AXI_ID_WIDTH(4),
-        .AXI_MAX_BURST_LEN(256),
-        .AXIS_DATA_WIDTH(DATA_WIDTH),
-        .AXIS_KEEP_ENABLE(1),
-        .AXIS_LAST_ENABLE(0),
-        .AXIS_USER_ENABLE(0),
-        .LEN_WIDTH(20),
-        .TAG_WIDTH(8),
-        .ENABLE_SG(0),
-        .ENABLE_UNALIGNED(1)
-    ) dma1 (
-        .clk(clk),
-        .rstn(rstn),
-    
-        .s_axis_read_desc_addr(dma1_read_desc_addr),
-        .s_axis_read_desc_len(dma1_read_desc_len),
-        .s_axis_read_desc_tag(dma1_read_desc_tag),
-        .s_axis_read_desc_id(8'd0),
-        .s_axis_read_desc_dest(8'd0),
-        .s_axis_read_desc_user(1'b0),
-        .s_axis_read_desc_valid(dma1_read_desc_valid),
-        .s_axis_read_desc_ready(dma1_read_desc_ready),
-    
-        .m_axis_read_desc_status_tag(dma1_status_tag),
-        .m_axis_read_desc_status_error(dma1_status_error),
-        .m_axis_read_desc_status_valid(dma1_status_valid),
-    
-        .m_axis_read_data_tdata(dma1_axis_tdata),
-        .m_axis_read_data_tkeep(),
-        .m_axis_read_data_tvalid(dma1_axis_tvalid),
-        .m_axis_read_data_tready(dma1_axis_tready),
-        .m_axis_read_data_tlast(),
-        .m_axis_read_data_tid(),
-        .m_axis_read_data_tdest(),
-        .m_axis_read_data_tuser(),
-    
-        .m_axi_arid(dma1_m_axi_arid),
-        .m_axi_araddr(dma1_m_axi_araddr),
-        .m_axi_arlen(dma1_m_axi_arlen),
-        .m_axi_arsize(dma1_m_axi_arsize),
-        .m_axi_arburst(dma1_m_axi_arburst),
-        .m_axi_arlock(dma1_m_axi_arlock),
-        .m_axi_arcache(dma1_m_axi_arcache),
-        .m_axi_arprot(dma1_m_axi_arprot),
-        .m_axi_arvalid(dma1_m_axi_arvalid),
-        .m_axi_arready(dma1_m_axi_arready),
-        .m_axi_rid(dma1_m_axi_rid),
-        .m_axi_rdata(dma1_m_axi_rdata),
-        .m_axi_rresp(dma1_m_axi_rresp),
-        .m_axi_rlast(dma1_m_axi_rlast),
-        .m_axi_rvalid(dma1_m_axi_rvalid),
-        .m_axi_rready(dma1_m_axi_rready),
-    
-        .enable(1'b1)
-    );
-    
-    // =============================================================
-    // FMA 1
-    
-    wire [DATA_WIDTH-1:0] fifo1_axis_tdata;
-    wire                  fifo1_axis_tvalid;
-    wire                  fifo1_axis_tready;
-    
-    axis_pipeline_fifo #(
+    mvm_channel #(
         .DATA_WIDTH(DATA_WIDTH),
-        .LENGTH(8)
-    ) fifo1 (
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .STRB_WIDTH(STRB_WIDTH),
+        .ID_WIDTH(ID_WIDTH),
+        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
+        .TAG(8'h1)
+    ) channel_1 (
         .clk(clk),
         .rstn(rstn),
-    
-        .s_axis_tdata(dma1_axis_tdata),
-        .s_axis_tvalid(dma1_axis_tvalid),
-        .s_axis_tready(dma1_axis_tready),
-
-        .m_axis_tdata(fifo1_axis_tdata),
-        .m_axis_tvalid(fifo1_axis_tvalid),
-        .m_axis_tready(fifo1_axis_tready)
-    );
-    
-    fma_wrapper #(
-        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
-    ) fma1 (
-        .clk(clk),
-        .rstn(rstn),
-    
+        
         .s_axis_a_tdata(s_axis_a_1_tdata),
         .s_axis_a_tvalid(s_axis_a_1_tvalid),
         .s_axis_a_tready(s_axis_a_1_tready),
-    
-        .s_axis_b_tdata(fifo1_axis_tdata),
-        .s_axis_b_tvalid(fifo1_axis_tvalid),
-        .s_axis_b_tready(fifo1_axis_tready),
-    
+        
         .m_axis_tdata(m_axis_1_tdata),
         .m_axis_tvalid(m_axis_1_tvalid),
         .m_axis_tready(m_axis_1_tready),
-        .m_axis_tlast(m_axis_1_tlast)
+        .m_axis_tlast(m_axis_1_tlast),
+        
+        // AXI Master Interface (to interconnect)
+        .m_axi_arid    (dma1_m_axi_arid),
+        .m_axi_araddr  (dma1_m_axi_araddr),
+        .m_axi_arlen   (dma1_m_axi_arlen),
+        .m_axi_arsize  (dma1_m_axi_arsize),
+        .m_axi_arburst (dma1_m_axi_arburst),
+        .m_axi_arlock  (dma1_m_axi_arlock),
+        .m_axi_arcache (dma1_m_axi_arcache),
+        .m_axi_arprot  (dma1_m_axi_arprot),
+        .m_axi_arvalid (dma1_m_axi_arvalid),
+        .m_axi_arready (dma1_m_axi_arready),
+        .m_axi_rid     (dma1_m_axi_rid),
+        .m_axi_rdata   (dma1_m_axi_rdata),
+        .m_axi_rresp   (dma1_m_axi_rresp),
+        .m_axi_rlast   (dma1_m_axi_rlast),
+        .m_axi_rvalid  (dma1_m_axi_rvalid),
+        .m_axi_rready  (dma1_m_axi_rready)
     );
     
     // =============================================================
-    //                   AXI_RAM + Interconnect
+    //                   AXI INTERCONNECT
     // =============================================================
-    // AXI INTERCONNECT
+    
+    localparam M_ID_WIDTH = NUM_CHANNELS * ID_WIDTH;
 
-    // Interconnect wires
-    wire [7:0]             ram_m_axi_arid;
+    wire [M_ID_WIDTH-1:0]  ram_m_axi_arid;
     wire [ADDR_WIDTH-1:0]  ram_m_axi_araddr;
     wire [7:0]             ram_m_axi_arlen;
     wire [2:0]             ram_m_axi_arsize;
@@ -407,7 +207,7 @@ module mvm_accelerator #(
     wire [2:0]             ram_m_axi_arprot;
     wire                   ram_m_axi_arvalid;
     wire                   ram_m_axi_arready;
-    wire [7:0]             ram_m_axi_rid;
+    wire [M_ID_WIDTH-1:0]  ram_m_axi_rid;
     wire [DATA_WIDTH-1:0]  ram_m_axi_rdata;
     wire [1:0]             ram_m_axi_rresp;
     wire                   ram_m_axi_rlast;
@@ -459,7 +259,7 @@ module mvm_accelerator #(
         .S01_AXI_RVALID   (dma1_m_axi_rvalid),
         .S01_AXI_RREADY   (dma1_m_axi_rready),
     
-        // Master Interface (to AXI RAM)
+        // Master Interface (to BRAM)
         .M00_AXI_ACLK(clk),
         .M00_AXI_ARESET_OUT_N(),
         .M00_AXI_ARID     (ram_m_axi_arid),
@@ -510,54 +310,8 @@ module mvm_accelerator #(
     );
     
     // =============================================================
-    // AXI RAM
-
-    /*
-    axi_ram axi_ram_inst (
-        .clk(clk),
-        .rstn(rstn),
-
-        // AXI Full Slave (write vector b)
-        .s_axi_awid(s_axi_b_awid),
-        .s_axi_awaddr(s_axi_b_awaddr[17:0]), // truncate 32 bit address
-        .s_axi_awlen(s_axi_b_awlen),
-        .s_axi_awsize(s_axi_b_awsize),
-        .s_axi_awburst(s_axi_b_awburst),
-        .s_axi_awlock(s_axi_b_awlock),
-        .s_axi_awcache(s_axi_b_awcache),
-        .s_axi_awprot(s_axi_b_awprot),
-        .s_axi_awvalid(s_axi_b_awvalid),
-        .s_axi_awready(s_axi_b_awready),
-        .s_axi_wdata(s_axi_b_wdata),
-        .s_axi_wstrb(s_axi_b_wstrb),
-        .s_axi_wlast(s_axi_b_wlast),
-        .s_axi_wvalid(s_axi_b_wvalid),
-        .s_axi_wready(s_axi_b_wready),
-        .s_axi_bid(s_axi_b_bid),
-        .s_axi_bresp(s_axi_b_bresp),
-        .s_axi_bvalid(s_axi_b_bvalid),
-        .s_axi_bready(s_axi_b_bready),
-
-        // AXI Master read for DMA (from interconnect)
-        .s_axi_arid(ram_m_axi_arid),
-        .s_axi_araddr(ram_m_axi_araddr[17:0]), // truncate 32 bit address
-        .s_axi_arlen(ram_m_axi_arlen),
-        .s_axi_arsize(ram_m_axi_arsize),
-        .s_axi_arburst(ram_m_axi_arburst),
-        .s_axi_arlock(ram_m_axi_arlock),
-        .s_axi_arcache(ram_m_axi_arcache),
-        .s_axi_arprot(ram_m_axi_arprot),
-        .s_axi_arvalid(ram_m_axi_arvalid),
-        .s_axi_arready(ram_m_axi_arready),
-    
-        .s_axi_rid(ram_m_axi_rid),
-        .s_axi_rdata(ram_m_axi_rdata),
-        .s_axi_rresp(ram_m_axi_rresp),
-        .s_axi_rlast(ram_m_axi_rlast),
-        .s_axi_rvalid(ram_m_axi_rvalid),
-        .s_axi_rready(ram_m_axi_rready)
-    );
-    */
+    //        BRAM CONTROLLER + INTERNAL MEMORY GENERATOR
+    // =============================================================
 
     axi_bram_ctrl_0 axi_bram_ctrl_inst (
         .s_axi_aclk    (clk),
@@ -565,7 +319,7 @@ module mvm_accelerator #(
     
         // Write address channel
         .s_axi_awid    (s_axi_b_awid),
-        .s_axi_awaddr  (s_axi_b_awaddr),
+        .s_axi_awaddr  (s_axi_b_awaddr[17:0]),
         .s_axi_awlen   (s_axi_b_awlen),
         .s_axi_awsize  (s_axi_b_awsize),
         .s_axi_awburst (s_axi_b_awburst),
@@ -590,7 +344,7 @@ module mvm_accelerator #(
     
         // Read address channel
         .s_axi_arid    (ram_m_axi_arid),
-        .s_axi_araddr  (ram_m_axi_araddr),
+        .s_axi_araddr  (ram_m_axi_araddr[17:0]),
         .s_axi_arlen   (ram_m_axi_arlen),
         .s_axi_arsize  (ram_m_axi_arsize),
         .s_axi_arburst (ram_m_axi_arburst),

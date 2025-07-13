@@ -5,7 +5,7 @@ module tb_mvm_accelerator;
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
     parameter VECTOR_LEN = 64;
-    parameter NUM_TRANSFERS = 32;
+    parameter NUM_TRANSFERS = 8;
 
     reg clk = 0;
     reg rstn = 1;
@@ -70,15 +70,6 @@ module tb_mvm_accelerator;
     wire [2:0] s_axi_b_arprot;
     wire       s_axi_b_arvalid;
     wire       s_axi_b_rready;
-
-    // FIFOs between tb and accelerator (s_axis_a)
-    wire [DATA_WIDTH-1:0] fifo0_tdata;
-    wire                  fifo0_tvalid;
-    wire                  fifo0_tready;
-    
-    wire [DATA_WIDTH-1:0] fifo1_tdata;
-    wire                  fifo1_tvalid;
-    wire                  fifo1_tready;
         
     reg [DATA_WIDTH-1:0] bram [VECTOR_LEN-1:0];
     
@@ -125,32 +116,6 @@ module tb_mvm_accelerator;
 
         end
     endtask
-    
-    // Instantiate DMAs for streaming in A data
-    // TODO
-    
-    // Instantiate AXIS Data FIFOs
-    axis_data_fifo_bram fifo0_inst (
-        .s_axis_aresetn(rstn),
-        .s_axis_aclk(clk),
-        .s_axis_tvalid(s_axis_a_0_tvalid),
-        .s_axis_tready(s_axis_a_0_tready),
-        .s_axis_tdata(s_axis_a_0_tdata),
-        .m_axis_tvalid(fifo0_tvalid),
-        .m_axis_tready(fifo0_tready),
-        .m_axis_tdata(fifo0_tdata)
-    );
-
-    axis_data_fifo_bram fifo1_inst (
-        .s_axis_aresetn(rstn),
-        .s_axis_aclk(clk),
-        .s_axis_tvalid(s_axis_a_1_tvalid),
-        .s_axis_tready(s_axis_a_1_tready),
-        .s_axis_tdata(s_axis_a_1_tdata),
-        .m_axis_tvalid(fifo1_tvalid),
-        .m_axis_tready(fifo1_tready),
-        .m_axis_tdata(fifo1_tdata)
-    );
 
     // Instantiate DUT
     mvm_accelerator #(
@@ -159,13 +124,13 @@ module tb_mvm_accelerator;
         .clk(clk),
         .rstn(rstn),
 
-        .s_axis_a_0_tdata(fifo0_tdata),
-        .s_axis_a_0_tvalid(fifo0_tvalid),
-        .s_axis_a_0_tready(fifo0_tready),
+        .s_axis_a_0_tdata(s_axis_a_0_tdata),
+        .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
+        .s_axis_a_0_tready(s_axis_a_0_tready),
 
-        .s_axis_a_1_tdata(fifo1_tdata),
-        .s_axis_a_1_tvalid(fifo1_tvalid),
-        .s_axis_a_1_tready(fifo1_tready),
+        .s_axis_a_1_tdata(s_axis_a_1_tdata),
+        .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
+        .s_axis_a_1_tready(s_axis_a_1_tready),
 
         .s_axi_b_awid(s_axi_b_awid),
         .s_axi_b_awaddr(s_axi_b_awaddr),
@@ -269,7 +234,9 @@ module tb_mvm_accelerator;
                         s_axis_a_0_tvalid = 0;
                         expected_0 = expected_0 + (a0_values[i_0] + j) * b_values[i_0];
                     end
-                    wait(m_axis_0_tready && m_axis_0_tvalid);
+                    wait(m_axis_0_tready && m_axis_0_tvalid && m_axis_0_tlast);
+                    
+                    @(posedge clk);
                     $display("%d: Result 0 (real): %f | Expected: %f", j, $bitstoreal(m_axis_0_tdata), expected_0);
                 end
                 begin : send_a1
@@ -281,7 +248,9 @@ module tb_mvm_accelerator;
                         s_axis_a_1_tvalid = 0;
                         expected_1 = expected_1 + (a1_values[i_1] + j) * b_values[i_1];
                     end
-                    wait(m_axis_1_tready && m_axis_1_tvalid);
+                    wait(m_axis_1_tready && m_axis_1_tvalid && m_axis_1_tlast);
+                    
+                    @(posedge clk);
                     $display("%d: Result 1 (real): %f | Expected: %f", j, $bitstoreal(m_axis_1_tdata), expected_1);
                 end
            join

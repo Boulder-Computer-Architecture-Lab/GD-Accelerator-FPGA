@@ -9,17 +9,6 @@ DTBO_NAME = "axi_ram.dtbo"
 OVERLAY_NAME = "axi_ram"
 OVERLAY_PATH = f"/sys/kernel/config/device-tree/overlays/{OVERLAY_NAME}"
 
-DMA0_BASE = 0x40400000
-DMA2_BASE = 0x40440000
-DMA_MAP_SIZE = 0x40000
-
-def reset_dma(base_addr):
-    dma = MMIO(base_addr, DMA_MAP_SIZE)
-    dma.write(0x00, 0x4) # Reset MM2S
-    sleep(0.01)
-    dma.write(0x30, 0x4) # Reset S2MM
-    sleep(0.01)
-
 if __name__ == "__main__":
     # Remove old overlay if applied
     if os.path.exists(OVERLAY_PATH):

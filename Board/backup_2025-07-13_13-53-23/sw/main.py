@@ -5,9 +5,9 @@
 # ==============================================================================
 
 from pynq import Overlay, allocate, MMIO
-import subprocess, threading
+import subprocess, threading, queue
+import time, sys, signal
 import numpy as np
-import time
 
 # ==============================================================================
 #  MACROS
@@ -18,71 +18,68 @@ DEBUG = 0
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
 BRAM_BASE = 0x80000000 # AXI_RAM_0 base
-DMA0_BASE = 0x40400000 # DMA_0 base (send A_0, receive rslt_0)
-DMA2_BASE = 0x40440000 # DMA_2 base (send A_1, receive rslt_1)
 
 N = 17048 # Row size (fixed in hardware)
-P = 4     # Number of partitions per row
-I = 17048 # Number of rows to process
+P = 2     # Number of partitions per row
+I = 1000  # Number of rows to process
+CHUNK_WORDS = N // P
 
 assert N % P == 0
 
-CHUNK_WORDS = N // P
+NUM_WORKERS = 2 # Number of `a` channels in block design
 
 # ==============================================================================
 #  GLOBALS
 # ==============================================================================
 
 # Buffers (declared globally for cleanup)
-a0 = None; a1 = None; result0 = None; result1 = None
+dma_bufs = [allocate(shape=(N,), dtype=np.float64) for _ in range(NUM_WORKERS)]
+result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
 
-# Track subprocesses
-dma_processes = []
+# Asynchronous row processing
+work_queue = queue.Queue()
+threads = []
+
+# Gracefully exit on interrupt
+stop_requested = False
 
 # ==============================================================================
 #  TERMINATION HANDLING
 # ==============================================================================
 
 def cleanup():
-    global a0, a1, result0, result1
-
     if DEBUG: print("\nCleaning up...")
         
-    for proc in dma_processes:
-        if proc.poll() is None: # still running
-            proc.terminate()
-            proc.wait()
+    for t in threads:
+        t.join(timeout=1)
 
-    for buf in [a0, a1, result0, result1]:
+    for buf in dma_bufs + result_bufs:
         if buf is not None:
             buf.freebuffer()
+
+def handle_interrupt(sig, frame):
+    global stop_requested
+    print("Interrupt received.")
+    stop_requested = True
+    cleanup()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, handle_interrupt)
 
 # ==============================================================================
 #  HELPERS
 # ==============================================================================
 
-def init():
-    global a0, a1, result0, result1
-
-    a0 = allocate(shape=(N,), dtype=np.float64)
-    a1 = allocate(shape=(N,), dtype=np.float64)
-    result0 = allocate(shape=(1,), dtype=np.float64)
-    result1 = allocate(shape=(1,), dtype=np.float64)
-
-    overlay = Overlay(PROJ_DIR + "design_1.bit")
-    overlay.download()
-    return overlay.axi_dma_0, overlay.axi_dma_2
-
 def process_row(row_num, a, b, result, dma):
+    if stop_requested: return
 
+    # Initiate transfer and wait for result
     dma.recvchannel.transfer(result)
-
     for p in range(P):
         offset = p * CHUNK_WORDS
         chunk = a[offset : offset + CHUNK_WORDS]
         dma.sendchannel.transfer(chunk)
         dma.sendchannel.wait()
-
     dma.recvchannel.wait()
 
     if DEBUG:
@@ -90,20 +87,29 @@ def process_row(row_num, a, b, result, dma):
         expected = np.dot(a, b)
         print(f"({row_num}) Result -> Actual: {actual:.24f} | Expected: {expected:.24f}")
 
+def worker(worker_id, b, dma):
+    while not stop_requested:
+        try: row_num, a_buf, result_buf = work_queue.get(timeout=1)
+        except queue.Empty: break
+        process_row(row_num, a_buf, b, result_buf, dma)
+        work_queue.task_done()
+
 # ==============================================================================
 #  MAIN
 # ==============================================================================
 
 if __name__ == "__main__":
 
-    dma0, dma2 = init()
-
-    if DEBUG: print(f"N={N}, P={P}, I={I}, WORDS_PER_CHUNK={CHUNK_WORDS}")
+    if DEBUG: print(f"N={N}, P={P}, I={I}, WORDS_PER_CHUNK={CHUNK_WORDS}, NUM_WORKERS={NUM_WORKERS}")
 
     try:
-        b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
+        # Load bitstream and initialize DMAs
+        overlay = Overlay(PROJ_DIR + "design_1.bit")
+        overlay.download()
+        dmas = [overlay.axi_dma_0, overlay.axi_dma_2]
 
         # Write vector `b` to BRAM 
+        b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
         bram_mmio = MMIO(BRAM_BASE, N*8)
         b_bits = b.view(np.uint64)
         for i in range(N):
@@ -113,29 +119,33 @@ if __name__ == "__main__":
 
         print("Initialization complete.")
 
+        # Fill work queue
         with open(MTRX_PATH, "rb") as a_file:
-            start_time = time.perf_counter()
+            for i in range(I):
+                buf_idx = i % NUM_WORKERS
+                a_buf = dma_bufs[buf_idx]
+                result_buf = result_bufs[buf_idx]
 
-            for i in range(0, I, 2):
-                a_row0 = a_file.read(N*8)
-                a_row1 = a_file.read(N*8)
+                view = memoryview(a_buf).cast("B")
+                if a_file.readinto(view) != N * 8: break
+                work_queue.put((i, a_buf, result_buf))
 
-                a0[:] = np.frombuffer(a_row0, dtype=np.float64)
-                a1[:] = np.frombuffer(a_row1, dtype=np.float64)
+        # Initialize threads
+        threads = [
+            threading.Thread(target=worker, args=(i, b, dmas[i]))
+            for i in range(NUM_WORKERS)
+        ]
 
-                t0 = threading.Thread(target=process_row, args=(i, a0, b, result0, dma0))
-                t1 = threading.Thread(target=process_row, args=(i+1, a1, b, result1, dma2))
+        # Execute computation
+        start_time = time.perf_counter()
 
-
-                t0.start()
-                t1.start()
-
-                t0.join()
-                t1.join()
+        for t in threads: t.start() # start threads
+        work_queue.join()           # wait for rows to process
+        for t in threads: t.join()  # wait for threads to exit
 
         end_time = time.perf_counter()
-        elapsed = end_time - start_time
-        print(f"Done. Compute time: {elapsed:.6f} seconds")
+
+        print(f"Done. Compute time: {end_time - start_time:.6f} seconds")
 
     finally: cleanup()
 
