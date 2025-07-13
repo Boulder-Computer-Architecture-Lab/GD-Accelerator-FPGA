@@ -9,13 +9,14 @@ import threading
 DEBUG = 1
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
-MTRX_PATH = "../trmult_reduced.bin"
+MTRX_PATH = PROJ_DIR+"../trmult_reduced.bin"
 BRAM_BASE = 0x80000000 # AXI_RAM_0 base
 DMA0_BASE = 0x40400000 # DMA_0 base (send A_0, receive rslt_0)
-DMA2_BASE = 0x40440000 # DMA_2 base (send A_1, receive rslt_1)
+DMA1_BASE = 0x40440000 # DMA_1 base (send B from BRAM)
+DMA2_BASE = 0x40480000 # DMA_2 base (send A_1, receive rslt_1)
 
 N = 17048 # Row size (fixed in hardware)
-P = 4     # Number of partitions per row
+P = 8     # Number of partitions per row
 I = 17048 # Number of rows to process
 
 assert N % P == 0
@@ -59,36 +60,46 @@ if __name__ == "__main__":
             a_row1 = a_file.read(N*8)
             a0[:] = np.frombuffer(a_row0, dtype=np.float64).copy()
             a1[:] = np.frombuffer(a_row1, dtype=np.float64).copy()
-    
-            # Input threads
-            mm2s_threads = []
 
+            # Threads
+            threads = []
+    
             # Initiate DMA transfers
             for p in range(P):
                 offset = p * CHUNK_BYTES
-                t0 = threading.Thread(target=launch_dma_transfer, 
+
+                t0 = threading.Thread(target=launch_dma_transfer,
                     args=("mm2s", a0.physical_address + offset, CHUNK_BYTES, DMA0_BASE))
-                t1 = threading.Thread(target=launch_dma_transfer, 
-                    args=("mm2s", a1.physical_address + offset, CHUNK_BYTES, DMA2_BASE))
-
                 t0.start()
+
+                t1 = threading.Thread(target=launch_dma_transfer,
+                    args=("mm2s", a1.physical_address + offset, CHUNK_BYTES, DMA2_BASE))
                 t1.start()
-                mm2s_threads.append(t0)
-                mm2s_threads.append(t1)
 
-            rslt0_thread = threading.Thread(target=launch_dma_transfer, 
-                args=("s2mm", result0.physical_address, 8, DMA0_BASE))
-            rslt1_thread = threading.Thread(target=launch_dma_transfer, 
-                args=("s2mm", result1.physical_address, 8, DMA2_BASE))
+                threads.append(t0)
+                threads.append(t1)
 
-            rslt0_thread.start()
-            rslt1_thread.start()
+                if (p == P-1): 
+                    rslt0 = threading.Thread(target=launch_dma_transfer,
+                        args=("s2mm", result0.physical_address, 8, DMA0_BASE))
+                    rslt0.start()
 
-            for t in mm2s_threads:
-                t.join()
+                    rslt1 = threading.Thread(target=launch_dma_transfer,
+                        args=("s2mm", result1.physical_address, 8, DMA2_BASE))
+                    rslt1.start()
 
-            rslt0_thread.join()
-            rslt1_thread.join()
+                    threads.append(rslt0)
+                    threads.append(rslt1)
+
+
+                b_thread = threading.Thread(target=launch_dma_transfer,
+                    args=("mm2s", BRAM_BASE + offset, CHUNK_BYTES, DMA1_BASE))
+                b_thread.start()
+
+                threads.append(b_thread)
+
+                for t in threads:
+                    t.join()
 
             # Print results 
             if DEBUG: 
@@ -101,7 +112,7 @@ if __name__ == "__main__":
                 print(f"Row {i+1} -> Actual: {actual0:.16f} | Expected: {expected0:.16f}")
                 print(f"Row {i+2} -> Actual: {actual1:.16f} | Expected: {expected1:.16f}")
 
-            sleep(1) 
+            sleep(2)
 
     finally: 
         # Cleanup
