@@ -27,27 +27,37 @@ module fma_wrapper #(
     // ========================================
     // FMA
 
-    // s_axis_c (accumulator)
+    // Input
+    reg                   fma_a_tvalid;
+    wire                  fma_a_tready;
+    reg  [DATA_WIDTH-1:0] fma_a_tdata;
+    
+    reg                   fma_b_tvalid;
+    wire                  fma_b_tready;
+    reg  [DATA_WIDTH-1:0] fma_b_tdata;
+    // Accumulator
     reg                   s_axis_c_tvalid;
     wire                  s_axis_c_tready;
     reg  [DATA_WIDTH-1:0] s_axis_c_tdata;
-    // FMA output
+    // Output
     wire                  fma_result_valid;
     wire                  fma_result_ready;
     wire [DATA_WIDTH-1:0] fma_result_data;
+    // Synchronize consumption
+    wire fma_inputs_valid = fma_a_tvalid && fma_b_tvalid;
     
     // Instance
     fp64_fma u_fp64_fma (
         .aclk(clk),
         .aresetn(rstn),
 
-        .s_axis_a_tvalid(s_axis_a_tvalid),
-        .s_axis_a_tready(s_axis_a_tready),
-        .s_axis_a_tdata(s_axis_a_tdata),
+        .s_axis_a_tvalid(fma_inputs_valid),
+        .s_axis_a_tready(fma_a_tready),
+        .s_axis_a_tdata(fma_a_tdata),
 
-        .s_axis_b_tvalid(s_axis_b_tvalid),
-        .s_axis_b_tready(s_axis_b_tready),
-        .s_axis_b_tdata(s_axis_b_tdata),
+        .s_axis_b_tvalid(fma_inputs_valid),
+        .s_axis_b_tready(fma_b_tready),
+        .s_axis_b_tdata(fma_b_tdata),
 
         .s_axis_c_tvalid(s_axis_c_tvalid),
         .s_axis_c_tready(s_axis_c_tready),
@@ -57,6 +67,36 @@ module fma_wrapper #(
         .m_axis_result_tready(fma_result_ready),
         .m_axis_result_tdata(fma_result_data)
     );
+    
+    // ========================================
+    // Synchronization logic
+    
+    assign s_axis_a_tready = !fma_a_tvalid && fma_a_tready;
+    assign s_axis_b_tready = !fma_b_tvalid && fma_b_tready;
+
+    always@(posedge clk) begin
+        if (!rstn) begin
+            fma_a_tdata <= 64'd0;
+            fma_b_tdata <= 64'd0;
+            fma_a_tvalid <= 1'b0;
+            fma_b_tvalid <= 1'b0;
+        end else begin
+            if (s_axis_a_tvalid && !fma_a_tvalid && fma_a_tready) begin
+                fma_a_tdata <= s_axis_a_tdata;
+                fma_a_tvalid <= 1'b1;
+            end
+            
+            if (s_axis_b_tvalid && !fma_b_tvalid && fma_b_tready) begin
+                fma_b_tdata <= s_axis_b_tdata;
+                fma_b_tvalid <= 1'b1;
+            end
+            
+            if (fma_inputs_valid && fma_a_tready && fma_b_tready) begin
+                fma_a_tvalid <= 1'b0;
+                fma_b_tvalid <= 1'b0;
+            end
+        end
+    end
     
     // ========================================
     // Internal counter (not using axis_tlast)
@@ -83,7 +123,7 @@ module fma_wrapper #(
     // ========================================
     // Accumulator logic
     assign fma_result_ready = tlast ? m_axis_tready : s_axis_c_tready; // accumulator loopback
-    assign m_axis_tlast = m_axis_tvalid; // only one output value
+    assign m_axis_tlast = m_axis_tvalid && tlast;
     
     always @(posedge clk) begin
         if (!rstn) begin

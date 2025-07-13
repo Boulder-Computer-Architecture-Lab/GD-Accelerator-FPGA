@@ -3,134 +3,289 @@
 module tb_mvm_accelerator;
 
     parameter DATA_WIDTH = 64;
-    parameter VECTOR_LEN = 16;
-    parameter NUM_TRANSFERS = 8;
+    parameter ADDR_WIDTH = 32;
+    parameter VECTOR_LEN = 64;
+    parameter NUM_TRANSFERS = 32;
 
     reg clk = 0;
     reg rstn = 1;
 
     // Inputs
-    reg  [DATA_WIDTH-1:0] s_axis_a_0_tdata, s_axis_a_1_tdata;
-    reg                   s_axis_a_0_tvalid, s_axis_a_1_tvalid;
-    wire                  s_axis_a_0_tready, s_axis_a_1_tready;
+    reg  [DATA_WIDTH-1:0] s_axis_a_0_tdata;
+    reg                   s_axis_a_0_tvalid;
+    wire                  s_axis_a_0_tready;
     
-    reg  [DATA_WIDTH-1:0] s_axis_b_tdata;
-    reg                   s_axis_b_tvalid;
-    wire                  s_axis_b_tready;
+    reg  [DATA_WIDTH-1:0] s_axis_a_1_tdata;
+    reg                   s_axis_a_1_tvalid;
+    wire                  s_axis_a_1_tready;
 
     // Outputs
-    wire [DATA_WIDTH-1:0] m_axis_0_tdata, m_axis_1_tdata;
-    wire                  m_axis_0_tvalid, m_axis_1_tvalid;
-    reg                   m_axis_0_tready, m_axis_1_tready;
-    wire                  m_axis_0_tlast, m_axis_1_tlast;
+    wire [DATA_WIDTH-1:0] m_axis_0_tdata;
+    wire                  m_axis_0_tvalid;
+    reg                   m_axis_0_tready;
+    wire                  m_axis_0_tlast;
+    
+    wire [DATA_WIDTH-1:0] m_axis_1_tdata;
+    wire                  m_axis_1_tvalid;
+    reg                   m_axis_1_tready;
+    wire                  m_axis_1_tlast;
 
+    // AXI Full interface for writing vector b
+    reg  [7:0]  s_axi_b_awid;
+    reg  [ADDR_WIDTH-1:0] s_axi_b_awaddr;
+    reg  [7:0]  s_axi_b_awlen;
+    reg  [2:0]  s_axi_b_awsize;
+    reg  [1:0]  s_axi_b_awburst;
+    reg         s_axi_b_awlock;
+    reg  [3:0]  s_axi_b_awcache;
+    reg  [2:0]  s_axi_b_awprot;
+    reg         s_axi_b_awvalid;
+    wire        s_axi_b_awready;
+
+    reg  [DATA_WIDTH-1:0] s_axi_b_wdata;
+    reg  [7:0]  s_axi_b_wstrb;
+    reg         s_axi_b_wlast;
+    reg         s_axi_b_wvalid;
+    wire        s_axi_b_wready;
+
+    wire [7:0]  s_axi_b_bid;
+    wire [1:0]  s_axi_b_bresp;
+    wire        s_axi_b_bvalid;
+    reg         s_axi_b_bready;
+
+    wire [3:0]  s_axi_b_rid;
+    wire [DATA_WIDTH-1:0] s_axi_b_rdata;
+    wire [1:0]  s_axi_b_rresp;
+    wire        s_axi_b_rlast;
+    wire        s_axi_b_rvalid;
+    wire        s_axi_b_arready;
+    
+    wire [3:0]  s_axi_b_arid;
+    wire [ADDR_WIDTH-1:0] s_axi_b_araddr;
+    wire [7:0] s_axi_b_arlen;
+    wire [2:0] s_axi_b_arsize;
+    wire [1:0] s_axi_b_arburst;
+    wire       s_axi_b_arlock;
+    wire [3:0] s_axi_b_arcache;
+    wire [2:0] s_axi_b_arprot;
+    wire       s_axi_b_arvalid;
+    wire       s_axi_b_rready;
+
+    // FIFOs between tb and accelerator (s_axis_a)
+    wire [DATA_WIDTH-1:0] fifo0_tdata;
+    wire                  fifo0_tvalid;
+    wire                  fifo0_tready;
+    
+    wire [DATA_WIDTH-1:0] fifo1_tdata;
+    wire                  fifo1_tvalid;
+    wire                  fifo1_tready;
+        
+    reg [DATA_WIDTH-1:0] bram [VECTOR_LEN-1:0];
+    
+    task axi_write_burst;
+        input [31:0] addr;
+        integer k;
+        begin
+            // Write address
+            s_axi_b_awaddr  = addr;
+            s_axi_b_awlen   = VECTOR_LEN - 1;
+            s_axi_b_awsize  = 3; // 8 bytes = 64 bits
+            s_axi_b_awburst = 1; // INCR
+            s_axi_b_awvalid = 1;
+
+            @(posedge clk);
+            $display("T=%0t: Waiting for AWREADY...", $time);
+            while (!s_axi_b_awready) @(posedge clk);
+            $display("T=%0t: AWREADY asserted", $time);
+            s_axi_b_awvalid = 0;
+        
+            // Write data
+            for (k = 0; k < VECTOR_LEN; k = k + 1) begin
+                @(posedge clk);
+                s_axi_b_wdata = bram[k];
+                s_axi_b_wstrb = 8'hFF;
+                s_axi_b_wvalid = 1;
+                s_axi_b_wlast = (k == VECTOR_LEN-1);
+                @(posedge clk);
+                $display("T=%0t: Waiting for WREADY...", $time);
+                while (!s_axi_b_wready) @(posedge clk);
+                $display("T=%0t: WREADY asserted", $time);
+                s_axi_b_wvalid = 0;
+            end
+            s_axi_b_wvalid = 0;
+            s_axi_b_wlast = 0;
+        
+            // Write response
+            s_axi_b_bready = 1;
+            @(posedge clk);
+            $display("T=%0t: Waiting for BVALID...", $time);
+            while (!s_axi_b_bvalid) @(posedge clk);
+            $display("T=%0t: BVALID asserted", $time);
+            s_axi_b_bready = 0;
+
+        end
+    endtask
+    
+    // Instantiate DMAs for streaming in A data
+    // TODO
+    
+    // Instantiate AXIS Data FIFOs
+    axis_data_fifo_bram fifo0_inst (
+        .s_axis_aresetn(rstn),
+        .s_axis_aclk(clk),
+        .s_axis_tvalid(s_axis_a_0_tvalid),
+        .s_axis_tready(s_axis_a_0_tready),
+        .s_axis_tdata(s_axis_a_0_tdata),
+        .m_axis_tvalid(fifo0_tvalid),
+        .m_axis_tready(fifo0_tready),
+        .m_axis_tdata(fifo0_tdata)
+    );
+
+    axis_data_fifo_bram fifo1_inst (
+        .s_axis_aresetn(rstn),
+        .s_axis_aclk(clk),
+        .s_axis_tvalid(s_axis_a_1_tvalid),
+        .s_axis_tready(s_axis_a_1_tready),
+        .s_axis_tdata(s_axis_a_1_tdata),
+        .m_axis_tvalid(fifo1_tvalid),
+        .m_axis_tready(fifo1_tready),
+        .m_axis_tdata(fifo1_tdata)
+    );
 
     // Instantiate DUT
-    mvm_accelerator #(.WORDS_PER_TRANSFER(VECTOR_LEN)) uut (
+    mvm_accelerator #(
+        .WORDS_PER_TRANSFER(VECTOR_LEN)
+    ) uut (
         .clk(clk),
         .rstn(rstn),
-    
-        .s_axis_a_0_tdata(s_axis_a_0_tdata),
-        .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
-        .s_axis_a_0_tready(s_axis_a_0_tready),
-    
-        .s_axis_a_1_tdata(s_axis_a_1_tdata),
-        .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
-        .s_axis_a_1_tready(s_axis_a_1_tready),
-    
-        .s_axis_b_tdata(s_axis_b_tdata),
-        .s_axis_b_tvalid(s_axis_b_tvalid),
-        .s_axis_b_tready(s_axis_b_tready),
-    
+
+        .s_axis_a_0_tdata(fifo0_tdata),
+        .s_axis_a_0_tvalid(fifo0_tvalid),
+        .s_axis_a_0_tready(fifo0_tready),
+
+        .s_axis_a_1_tdata(fifo1_tdata),
+        .s_axis_a_1_tvalid(fifo1_tvalid),
+        .s_axis_a_1_tready(fifo1_tready),
+
+        .s_axi_b_awid(s_axi_b_awid),
+        .s_axi_b_awaddr(s_axi_b_awaddr),
+        .s_axi_b_awlen(s_axi_b_awlen),
+        .s_axi_b_awsize(s_axi_b_awsize),
+        .s_axi_b_awburst(s_axi_b_awburst),
+        .s_axi_b_awlock(s_axi_b_awlock),
+        .s_axi_b_awcache(s_axi_b_awcache),
+        .s_axi_b_awprot(s_axi_b_awprot),
+        .s_axi_b_awvalid(s_axi_b_awvalid),
+        .s_axi_b_awready(s_axi_b_awready),
+        .s_axi_b_wdata(s_axi_b_wdata),
+        .s_axi_b_wstrb(s_axi_b_wstrb),
+        .s_axi_b_wlast(s_axi_b_wlast),
+        .s_axi_b_wvalid(s_axi_b_wvalid),
+        .s_axi_b_wready(s_axi_b_wready),
+        .s_axi_b_bid(s_axi_b_bid),
+        .s_axi_b_bresp(s_axi_b_bresp),
+        .s_axi_b_bvalid(s_axi_b_bvalid),
+        .s_axi_b_bready(s_axi_b_bready),
+        .s_axi_b_arid(s_axi_b_arid),
+        .s_axi_b_araddr(s_axi_b_araddr),
+        .s_axi_b_arlen(s_axi_b_arlen),
+        .s_axi_b_arsize(s_axi_b_arsize),
+        .s_axi_b_arburst(s_axi_b_arburst),
+        .s_axi_b_arlock(s_axi_b_arlock),
+        .s_axi_b_arcache(s_axi_b_arcache),
+        .s_axi_b_arprot(s_axi_b_arprot),
+        .s_axi_b_arvalid(s_axi_b_arvalid),
+        .s_axi_b_arready(s_axi_b_arready),
+        .s_axi_b_rid(s_axi_b_rid),
+        .s_axi_b_rdata(s_axi_b_rdata),
+        .s_axi_b_rresp(s_axi_b_rresp),
+        .s_axi_b_rlast(s_axi_b_rlast),
+        .s_axi_b_rvalid(s_axi_b_rvalid),
+        .s_axi_b_rready(s_axi_b_rready),
+
         .m_axis_0_tdata(m_axis_0_tdata),
         .m_axis_0_tvalid(m_axis_0_tvalid),
         .m_axis_0_tready(m_axis_0_tready),
         .m_axis_0_tlast(m_axis_0_tlast),
-    
+
         .m_axis_1_tdata(m_axis_1_tdata),
         .m_axis_1_tvalid(m_axis_1_tvalid),
         .m_axis_1_tready(m_axis_1_tready),
         .m_axis_1_tlast(m_axis_1_tlast)
     );
-    
-    // Simulate backpressure
-    always @(posedge clk) begin
-        m_axis_0_tready <= ($urandom_range(0, 99) < 80); // 80% of the time ready
-        m_axis_1_tready <= ($urandom_range(0, 99) < 80); // 80% of the time ready
-    end
 
-    // Clock generation
+    // Clock and backpressure
     always #5 clk = ~clk;
 
-    integer i, j;
+    integer i, j, i_0, i_1;
     real a0_values [0:VECTOR_LEN-1];
     real a1_values [0:VECTOR_LEN-1];
-    real b_values [0:VECTOR_LEN-1];
+    real b_values  [0:VECTOR_LEN-1];
     real expected_0, expected_1;
 
     initial begin
-
         for (i = 0; i < VECTOR_LEN; i = i + 1) begin
             a0_values[i] = (i+1) / 100.0;
             a1_values[i] = (i+1) / 200.0;
-            b_values[i] = (i+1) / 1000.0;
+            b_values[i] = (i+1)  / 1000.0;
         end
-        
+
         rstn = 0;
         #45 rstn = 1;
-                            
+        repeat (3) @(posedge clk);
+        
+        s_axi_b_awvalid = 0;
+        s_axi_b_wvalid  = 0;
+        s_axi_b_bready  = 0;
+        s_axi_b_awid    = 0;
+        s_axi_b_awlock  = 0;
+        s_axi_b_awcache = 0;
+        s_axi_b_awprot  = 0;
+        s_axi_b_wlast   = 0;
+        s_axi_b_wstrb   = 8'hFF;
+        
+        m_axis_0_tready <= 1;
+        m_axis_1_tready <= 1;
+        
+        for (i = 0; i < VECTOR_LEN; i = i + 1) begin
+            bram[i] = $realtobits(b_values[i]);
+            $display("bram[%0d] = %h  (real = %f)", i, bram[i], b_values[i]);
+        end
+        axi_write_burst(32'h8000_0000);
+        $display("Axi write complete.");
+
         for (j = 0; j < NUM_TRANSFERS; j = j + 1) begin
             
-            // Init
-            s_axis_a_0_tvalid = 0;
-            s_axis_a_1_tvalid = 0;
-            s_axis_b_tvalid = 0;
-            
-            i = 0;
             expected_0 = 0;
             expected_1 = 0;
-        
-            // Stimulus
-            while (i < VECTOR_LEN) begin
-                repeat (1 + $urandom_range(0, 3)) @(posedge clk);
             
-                s_axis_a_0_tdata <= $realtobits(a0_values[i]);
-                s_axis_a_1_tdata <= $realtobits(a1_values[i]);
-                s_axis_b_tdata   <= $realtobits(b_values[i]);
-            
-            if ($urandom_range(0, 99) < 80) begin
-                s_axis_a_0_tvalid <= 1;
-                s_axis_a_1_tvalid <= 1;
-                s_axis_b_tvalid   <= 1;
-            
-                // Wait until all inputs are actually accepted
-                while (!(s_axis_a_0_tready && s_axis_a_0_tvalid &&
-                         s_axis_a_1_tready && s_axis_a_1_tvalid &&
-                         s_axis_b_tready   && s_axis_b_tvalid))
-                    @(posedge clk);
-            
-                s_axis_a_0_tvalid <= 0;
-                s_axis_a_1_tvalid <= 0;
-                s_axis_b_tvalid   <= 0;
-            
-                expected_0 = expected_0 + (a0_values[i] * b_values[i]);
-                expected_1 = expected_1 + (a1_values[i] * b_values[i]);
-                i = i + 1;
-                end else begin
-                    @(posedge clk);
+            fork
+                begin : send_a0
+                    for (i_0 = 0; i_0 < VECTOR_LEN; i_0 = i_0 + 1) begin
+                        s_axis_a_0_tdata  = $realtobits(a0_values[i_0] + j);
+                        s_axis_a_0_tvalid = 1;
+                        @(posedge clk);
+                        while (!s_axis_a_0_tready) @(posedge clk);
+                        s_axis_a_0_tvalid = 0;
+                        expected_0 = expected_0 + (a0_values[i_0] + j) * b_values[i_0];
+                    end
+                    wait(m_axis_0_tready && m_axis_0_tvalid);
+                    $display("%d: Result 0 (real): %f | Expected: %f", j, $bitstoreal(m_axis_0_tdata), expected_0);
                 end
-            end
-            
-            wait (m_axis_0_tvalid && m_axis_0_tready && m_axis_0_tlast);
-            wait (m_axis_1_tvalid && m_axis_1_tready && m_axis_1_tvalid);
-            @(posedge clk)
-            
-            $display("Result 0 (real): %f | Expected: %f", $bitstoreal(m_axis_0_tdata), expected_0);
-            $display("Result 1 (real): %f | Expected: %f", $bitstoreal(m_axis_1_tdata), expected_1);
-            #50;
+                begin : send_a1
+                    for (i_1 = 0; i_1 < VECTOR_LEN; i_1 = i_1 + 1) begin
+                        s_axis_a_1_tdata  = $realtobits(a1_values[i_1] + j);
+                        s_axis_a_1_tvalid = 1;
+                        @(posedge clk);
+                        while (!s_axis_a_1_tready) @(posedge clk);
+                        s_axis_a_1_tvalid = 0;
+                        expected_1 = expected_1 + (a1_values[i_1] + j) * b_values[i_1];
+                    end
+                    wait(m_axis_1_tready && m_axis_1_tvalid);
+                    $display("%d: Result 1 (real): %f | Expected: %f", j, $bitstoreal(m_axis_1_tdata), expected_1);
+                end
+           join
         end
-        
-        #50;
         $finish;
     end
 

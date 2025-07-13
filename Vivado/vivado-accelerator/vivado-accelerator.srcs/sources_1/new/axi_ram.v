@@ -143,7 +143,7 @@ reg [DATA_WIDTH-1:0] s_axi_rdata_pipe_reg = {DATA_WIDTH{1'b0}};
 reg s_axi_rlast_pipe_reg = 1'b0;
 reg s_axi_rvalid_pipe_reg = 1'b0;
 
-(* RAM_STYLE="BLOCK" *) reg [DATA_WIDTH-1:0] mem[17047:0]; // Manually set width to fit matrix row
+(* RAM_STYLE="BLOCK" *) reg [DATA_WIDTH-1:0] mem[(2**VALID_ADDR_WIDTH)-1:0];
 
 wire [VALID_ADDR_WIDTH-1:0] s_axi_awaddr_valid = s_axi_awaddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);
 wire [VALID_ADDR_WIDTH-1:0] s_axi_araddr_valid = s_axi_araddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);
