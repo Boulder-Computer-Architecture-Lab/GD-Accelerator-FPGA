@@ -13,7 +13,7 @@ import numpy as np
 #  MACROS
 # ==============================================================================
 
-DEBUG = 0
+DEBUG = 1
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
@@ -21,25 +21,21 @@ MTRX_PATH = "../trmult_reduced.bin"
 BRAM_BASE = 0x80000000 
 
 N = 17048 # Row size (fixed in hardware)
-P = 2     # Number of partitions per row
-I = 1000  # Number of rows to process
+P = 1     # Number of partitions per row
+I = 17048 # Number of rows to process
 CHUNK_WORDS = N // P
 
 assert N % P == 0
 
-ROWS_PER_BATCH = 300 # Rows in each ping-pong buffer
-NUM_WORKERS = 2      # Parallel DMA engines (capped by hardware)
+ROWS_PER_BATCH = 100 # Rows in each ping-pong buffer
+NUM_WORKERS = 4      # Parallel DMA engines (capped by hardware)
 
 # ==============================================================================
 #  GLOBALS
 # ==============================================================================
 
 # Buffers (declared globally for cleanup)
-a_chunks = [
-    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
-    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
-]
-result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
+a_chunks = []; result_bufs = []
 
 # Asynchronous row processing
 work_queue = queue.Queue(maxsize=8 * ROWS_PER_BATCH)
@@ -95,6 +91,8 @@ def process_row(row_num, a, b, result, dma):
         print(f"({row_num}) Actual: {actual:.24f} | Expected: {expected:.24f}")
 
 def worker(worker_id, b, dma):
+    if DEBUG: print(f"[WORKER {worker_id}] Starting up...")
+        
     while not stop_requested:
         try: chunk_idx, local_row, global_row = work_queue.get(timeout=1)
         except queue.Empty: return
@@ -138,10 +136,16 @@ if __name__ == "__main__":
         print(f"    NUM_WORKERS={NUM_WORKERS}, ROWS_PER_BATCH={ROWS_PER_BATCH}")
 
     try:
-        # Load bitstream and initialize DMAs
+        # Load bitstream
         overlay = Overlay(PROJ_DIR + "design_1.bit")
         overlay.download()
-        dmas = [overlay.axi_dma_0, overlay.axi_dma_2]
+
+        # Get all DMAs listed in overlay ip_dict
+        dmas = []
+        for i in range(NUM_WORKERS):
+            name = f"axi_dma_{i}"
+            if name in overlay.ip_dict:
+                dmas.append(getattr(overlay, name))
 
         # Write vector `b` to BRAM 
         b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
@@ -151,6 +155,13 @@ if __name__ == "__main__":
             val64 = int(b_bits[i])
             bram_mmio.write(i * 8, val64 & 0xFFFFFFFF)
             bram_mmio.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
+
+        # Allocate buffers
+        a_chunks = [
+            allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+            allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+        ]
+        result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
 
         # Create worker threads
         threads = [

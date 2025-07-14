@@ -14,15 +14,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="13,477.402 ns"></ZoomStartTime>
-      <ZoomEndTime time="14,236.805 ns"></ZoomEndTime>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="803.949 ns"></ZoomEndTime>
       <Cursor1Time time="17,111.324 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="1009"></NameColumnWidth>
-      <ValueColumnWidth column_width="182"></ValueColumnWidth>
+      <ValueColumnWidth column_width="172"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="78" />
+   <WVObjectSize size="28" />
    <wvobject fp_name="/tb_mvm_accelerator/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -55,6 +55,30 @@
       <obj_property name="ElementShortName">s_axis_a_1_tready</obj_property>
       <obj_property name="ObjectShortName">s_axis_a_1_tready</obj_property>
    </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_2_tdata" type="array">
+      <obj_property name="ElementShortName">s_axis_a_2_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_2_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_2_tvalid" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_2_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_2_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_2_tready" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_2_tready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_2_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_3_tdata" type="array">
+      <obj_property name="ElementShortName">s_axis_a_3_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_3_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_3_tvalid" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_3_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_3_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_axis_a_3_tready" type="logic">
+      <obj_property name="ElementShortName">s_axis_a_3_tready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_a_3_tready</obj_property>
+   </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/m_axis_0_tdata" type="array">
       <obj_property name="ElementShortName">m_axis_0_tdata[63:0]</obj_property>
       <obj_property name="ObjectShortName">m_axis_0_tdata[63:0]</obj_property>
@@ -79,324 +103,36 @@
       <obj_property name="ElementShortName">m_axis_1_tready</obj_property>
       <obj_property name="ObjectShortName">m_axis_1_tready</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/m_axis_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tdata[63:0]</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_2_tdata" type="array">
+      <obj_property name="ElementShortName">m_axis_2_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_2_tdata[63:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/m_axis_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tvalid</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_2_tvalid" type="logic">
+      <obj_property name="ElementShortName">m_axis_2_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_2_tvalid</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/m_axis_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tready</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tready</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_2_tready" type="logic">
+      <obj_property name="ElementShortName">m_axis_2_tready</obj_property>
+      <obj_property name="ObjectShortName">m_axis_2_tready</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/m_axis_tlast" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tlast</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_2_tlast" type="logic">
+      <obj_property name="ElementShortName">m_axis_2_tlast</obj_property>
+      <obj_property name="ObjectShortName">m_axis_2_tlast</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_a_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tvalid</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tvalid</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_3_tdata" type="array">
+      <obj_property name="ElementShortName">m_axis_3_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_3_tdata[63:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_a_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tready</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tready</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_3_tvalid" type="logic">
+      <obj_property name="ElementShortName">m_axis_3_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_3_tvalid</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_a_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tdata[63:0]</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_3_tready" type="logic">
+      <obj_property name="ElementShortName">m_axis_3_tready</obj_property>
+      <obj_property name="ObjectShortName">m_axis_3_tready</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_b_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tvalid</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_b_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tready</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_b_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/s_axis_c_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tvalid</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/s_axis_c_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tready</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/s_axis_c_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_result_valid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_valid</obj_property>
-      <obj_property name="ObjectShortName">fma_result_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_result_ready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_ready</obj_property>
-      <obj_property name="ObjectShortName">fma_result_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/fma_result_data" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_data[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_result_data[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/fma/word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[7:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/m_axis_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/m_axis_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/m_axis_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tready</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/m_axis_tlast" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_tlast</obj_property>
-      <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_a_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tvalid</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_a_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tready</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_a_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_a_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_a_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_b_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tvalid</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_b_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tready</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_b_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_b_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_b_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/s_axis_c_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tvalid</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/s_axis_c_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tready</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/s_axis_c_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_c_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_c_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_result_valid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_valid</obj_property>
-      <obj_property name="ObjectShortName">fma_result_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_result_ready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_ready</obj_property>
-      <obj_property name="ObjectShortName">fma_result_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/fma_result_data" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">fma_result_data[63:0]</obj_property>
-      <obj_property name="ObjectShortName">fma_result_data[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/fma/word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[7:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_addr" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_addr[31:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_addr[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_len" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_len[19:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_len[19:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_tag" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_tag[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_tag[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_id" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_id[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_id[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_dest" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_dest[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_dest[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_user" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_user[0:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_user[0:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_valid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_valid</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/s_axis_read_desc_ready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_ready</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axis_read_data_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axis_read_data_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axis_read_data_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tready</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axis_read_data_tlast" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tlast</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tlast</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axi_rdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axi_rvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_0/dma/m_axi_rready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rready</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_addr" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_addr[31:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_addr[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_len" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_len[19:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_len[19:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_tag" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_tag[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_tag[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_id" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_id[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_id[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_dest" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_dest[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_dest[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_user" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_user[0:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_user[0:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_valid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_valid</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/s_axis_read_desc_ready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">s_axis_read_desc_ready</obj_property>
-      <obj_property name="ObjectShortName">s_axis_read_desc_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axis_read_data_tdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axis_read_data_tvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axis_read_data_tready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tready</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axis_read_data_tlast" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axis_read_data_tlast</obj_property>
-      <obj_property name="ObjectShortName">m_axis_read_data_tlast</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axi_rdata" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rdata[63:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rdata[63:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axi_rvalid" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rvalid</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rvalid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/uut/channel_1/dma/m_axi_rready" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">m_axi_rready</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rready</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_axis_3_tlast" type="logic">
+      <obj_property name="ElementShortName">m_axis_3_tlast</obj_property>
+      <obj_property name="ObjectShortName">m_axis_3_tlast</obj_property>
    </wvobject>
 </wave_config>

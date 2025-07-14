@@ -1,49 +1,63 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"1.50791",
-   "Default View_TopLeft":"-120,-373",
+   "Default View_ScaleFactor":"1.57498",
+   "Default View_TopLeft":"-502,-780",
    "ExpandedHierarchyInLayout":"",
-   "PinnedBlocks":"/axi_dma_0|/processing_system7_0|/ps7_0_axi_periph|/rst_ps7_0_100M|/axi_dma_2|/smartconnect_2|/smartconnect_0|/smartconnect_1|/mvm_accelerator_0|",
+   "PinnedBlocks":"/axi_dma_0|/processing_system7_0|/ps7_0_axi_periph|/rst_ps7_0_100M|/axi_dma_2|/smartconnect_2|/smartconnect_0|/smartconnect_1|/axi_dma_1|/axi_dma_3|/smartconnect_3|",
    "PinnedPorts":"DDR|FIXED_IO|",
    "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0
 #  -string -flagsOSRD
-preplace port DDR -pg 1 -lvl 5 -x 1860 -y 270 -defaultsOSRD
-preplace port FIXED_IO -pg 1 -lvl 5 -x 1860 -y 50 -defaultsOSRD
-preplace inst processing_system7_0 -pg 1 -lvl 1 -x 120 -y 340 -defaultsOSRD
-preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1030 -y -20 -defaultsOSRD
-preplace inst rst_ps7_0_100M -pg 1 -lvl 2 -x 580 -y 410 -defaultsOSRD
-preplace inst ps7_0_axi_periph -pg 1 -lvl 2 -x 580 -y -30 -defaultsOSRD
-preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 1410 -y 160 -defaultsOSRD
-preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1030 -y 300 -defaultsOSRD
-preplace inst smartconnect_2 -pg 1 -lvl 2 -x 580 -y 250 -defaultsOSRD
-preplace inst smartconnect_0 -pg 1 -lvl 1 -x 120 -y -70 -defaultsOSRD -orient R180
-preplace inst smartconnect_1 -pg 1 -lvl 1 -x 120 -y 120 -defaultsOSRD -orient R180
-preplace netloc processing_system7_0_FCLK_CLK0 1 0 4 -90 210 350 160 840 420 1260
-preplace netloc processing_system7_0_FCLK_RESET0_N 1 1 1 N 390
-preplace netloc rst_ps7_0_100M_peripheral_aresetn 1 1 3 380 -170 830 -140 1250
-preplace netloc axi_dma_0_M_AXI_MM2S 1 1 3 N 150 NJ 150 1200
-preplace netloc axi_dma_0_M_AXI_S2MM 1 1 3 360J 110 NJ 110 1190
-preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 330J 120 NJ 120 1190
-preplace netloc axi_dma_2_M_AXI_S2MM 1 1 3 370J 130 NJ 130 1210
-preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 870 100 1230J 60 1540
-preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 870 180 1220J 260 1540
-preplace netloc processing_system7_0_DDR 1 1 4 400J 170 NJ 170 1230J 270 N
-preplace netloc processing_system7_0_FIXED_IO 1 1 4 390J 140 NJ 140 1220J 50 N
-preplace netloc processing_system7_0_M_AXI_GP0 1 1 1 340 -110n
-preplace netloc processing_system7_0_M_AXI_GP1 1 1 1 410J 230n
-preplace netloc ps7_0_axi_periph_M00_AXI 1 2 1 750 -70n
-preplace netloc ps7_0_axi_periph_M01_AXI 1 2 1 860 -20n
-preplace netloc smartconnect_0_M00_AXI 1 0 1 -110 -70n
-preplace netloc smartconnect_1_M00_AXI 1 0 1 -100 120n
-preplace netloc smartconnect_2_M00_AXI 1 2 2 850 160 N
-preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1240J -40n
-preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1240 140n
-levelinfo -pg 1 -130 120 580 1030 1410 1860
-pagesize -pg 1 -db -bbox -sgen -610 -690 2700 1540
+preplace port DDR -pg 1 -lvl 5 -x 1830 -y -390 -defaultsOSRD
+preplace port FIXED_IO -pg 1 -lvl 5 -x 1830 -y -420 -defaultsOSRD
+preplace inst processing_system7_0 -pg 1 -lvl 1 -x 310 -y -570 -defaultsOSRD
+preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1220 -y -220 -defaultsOSRD
+preplace inst rst_ps7_0_100M -pg 1 -lvl 1 -x 310 -y -330 -defaultsOSRD
+preplace inst ps7_0_axi_periph -pg 1 -lvl 2 -x 790 -y -200 -defaultsOSRD
+preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1220 -y 220 -defaultsOSRD
+preplace inst smartconnect_2 -pg 1 -lvl 2 -x 790 -y 40 -defaultsOSRD
+preplace inst smartconnect_0 -pg 1 -lvl 3 -x 1220 -y -510 -defaultsOSRD -orient R180
+preplace inst smartconnect_1 -pg 1 -lvl 2 -x 790 -y -450 -defaultsOSRD -orient R180
+preplace inst axi_dma_1 -pg 1 -lvl 3 -x 1220 -y 0 -defaultsOSRD
+preplace inst axi_dma_3 -pg 1 -lvl 3 -x 1220 -y 440 -defaultsOSRD
+preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 1650 -y -230 -defaultsOSRD
+preplace inst smartconnect_3 -pg 1 -lvl 2 -x 790 -y -610 -defaultsOSRD -orient R180
+preplace netloc processing_system7_0_FCLK_CLK0 1 0 4 70 -760 620 -710 1000 -670 1500
+preplace netloc processing_system7_0_FCLK_RESET0_N 1 0 2 80 -750 520
+preplace netloc rst_ps7_0_100M_peripheral_aresetn 1 1 3 590 120 1010 -660 1470
+preplace netloc axi_dma_0_M_AXI_MM2S 1 2 2 1030J -640 1430
+preplace netloc axi_dma_0_M_AXI_S2MM 1 3 1 1380 -460n
+preplace netloc processing_system7_0_DDR 1 1 4 530J -720 NJ -720 NJ -720 1810
+preplace netloc processing_system7_0_FIXED_IO 1 1 4 630J -700 NJ -700 NJ -700 1780
+preplace netloc processing_system7_0_M_AXI_GP0 1 1 1 610 -580n
+preplace netloc ps7_0_axi_periph_M00_AXI 1 2 1 940 -270n
+preplace netloc smartconnect_0_M00_AXI 1 0 3 60 -770 N -770 1060
+preplace netloc smartconnect_1_M00_AXI 1 0 2 90 -740 650
+preplace netloc ps7_0_axi_periph_M01_AXI 1 2 1 930 -210n
+preplace netloc ps7_0_axi_periph_M02_AXI 1 2 1 950 -190n
+preplace netloc ps7_0_axi_periph_M03_AXI 1 2 1 940 -170n
+preplace netloc axi_dma_1_M_AXI_S2MM 1 3 1 1400 -480n
+preplace netloc axi_dma_2_M_AXI_S2MM 1 3 1 1420 -500n
+preplace netloc axi_dma_3_M_AXI_S2MM 1 3 1 1440 -520n
+preplace netloc axi_dma_1_M_AXI_MM2S 1 2 2 1040J -630 1410
+preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1460 -290n
+preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1480 -270n
+preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1510 -250n
+preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 1520 -230n
+preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1030 -380 NJ -380 1780
+preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1040 -370 NJ -370 1790
+preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1050 -360 NJ -360 1800
+preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1060 -350 NJ -350 1810
+preplace netloc smartconnect_2_M00_AXI 1 2 2 1020J -340 1490
+preplace netloc processing_system7_0_M_AXI_GP1 1 1 1 600 -560n
+preplace netloc smartconnect_3_M00_AXI 1 0 2 100 -730 640J
+preplace netloc axi_dma_3_M_AXI_MM2S 1 2 2 940J -650 1450
+preplace netloc axi_dma_2_M_AXI_MM2S 1 2 2 1050J -620 1390
+levelinfo -pg 1 0 310 790 1220 1650 1830
+pagesize -pg 1 -db -bbox -sgen -610 -1050 2700 1540
 "
 }
 {
    "da_axi4_cnt":"13",
-   "da_clkrst_cnt":"31",
+   "da_clkrst_cnt":"39",
    "da_ps7_cnt":"1"
 }

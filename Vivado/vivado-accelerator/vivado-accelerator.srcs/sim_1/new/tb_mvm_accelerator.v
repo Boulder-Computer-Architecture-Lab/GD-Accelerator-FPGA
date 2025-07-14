@@ -5,7 +5,7 @@ module tb_mvm_accelerator;
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
     parameter VECTOR_LEN = 64;
-    parameter NUM_TRANSFERS = 8;
+    parameter NUM_TRANSFERS = 4;
 
     reg clk = 0;
     reg rstn = 1;
@@ -18,7 +18,15 @@ module tb_mvm_accelerator;
     reg  [DATA_WIDTH-1:0] s_axis_a_1_tdata;
     reg                   s_axis_a_1_tvalid;
     wire                  s_axis_a_1_tready;
-
+    
+    reg  [DATA_WIDTH-1:0] s_axis_a_2_tdata;
+    reg                   s_axis_a_2_tvalid;
+    wire                  s_axis_a_2_tready;
+    
+    reg  [DATA_WIDTH-1:0] s_axis_a_3_tdata;
+    reg                   s_axis_a_3_tvalid;
+    wire                  s_axis_a_3_tready;
+    
     // Outputs
     wire [DATA_WIDTH-1:0] m_axis_0_tdata;
     wire                  m_axis_0_tvalid;
@@ -28,7 +36,17 @@ module tb_mvm_accelerator;
     wire [DATA_WIDTH-1:0] m_axis_1_tdata;
     wire                  m_axis_1_tvalid;
     reg                   m_axis_1_tready;
-    wire                  m_axis_1_tlast;
+    wire                  m_axis_1_tlast;    
+    
+    wire [DATA_WIDTH-1:0] m_axis_2_tdata;
+    wire                  m_axis_2_tvalid;
+    reg                   m_axis_2_tready;
+    wire                  m_axis_2_tlast;
+    
+    wire [DATA_WIDTH-1:0] m_axis_3_tdata;
+    wire                  m_axis_3_tvalid;
+    reg                   m_axis_3_tready;
+    wire                  m_axis_3_tlast;
 
     // AXI Full interface for writing vector b
     reg  [7:0]  s_axi_b_awid;
@@ -131,7 +149,15 @@ module tb_mvm_accelerator;
         .s_axis_a_1_tdata(s_axis_a_1_tdata),
         .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
         .s_axis_a_1_tready(s_axis_a_1_tready),
+        
+        .s_axis_a_2_tdata(s_axis_a_2_tdata),
+        .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
+        .s_axis_a_2_tready(s_axis_a_2_tready),
 
+        .s_axis_a_3_tdata(s_axis_a_3_tdata),
+        .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
+        .s_axis_a_3_tready(s_axis_a_3_tready),
+        
         .s_axi_b_awid(s_axi_b_awid),
         .s_axi_b_awaddr(s_axi_b_awaddr),
         .s_axi_b_awlen(s_axi_b_awlen),
@@ -176,22 +202,37 @@ module tb_mvm_accelerator;
         .m_axis_1_tdata(m_axis_1_tdata),
         .m_axis_1_tvalid(m_axis_1_tvalid),
         .m_axis_1_tready(m_axis_1_tready),
-        .m_axis_1_tlast(m_axis_1_tlast)
+        .m_axis_1_tlast(m_axis_1_tlast),
+        
+        .m_axis_2_tdata(m_axis_2_tdata),
+        .m_axis_2_tvalid(m_axis_2_tvalid),
+        .m_axis_2_tready(m_axis_2_tready),
+        .m_axis_2_tlast(m_axis_2_tlast),
+
+        .m_axis_3_tdata(m_axis_3_tdata),
+        .m_axis_3_tvalid(m_axis_3_tvalid),
+        .m_axis_3_tready(m_axis_3_tready),
+        .m_axis_3_tlast(m_axis_3_tlast)
     );
 
     // Clock and backpressure
     always #5 clk = ~clk;
 
-    integer i, j, i_0, i_1;
+    integer i, j, i_0, i_1, i_2, i_3;
     real a0_values [0:VECTOR_LEN-1];
     real a1_values [0:VECTOR_LEN-1];
+    real a2_values [0:VECTOR_LEN-1];
+    real a3_values [0:VECTOR_LEN-1];
     real b_values  [0:VECTOR_LEN-1];
-    real expected_0, expected_1;
+    
+    real expected_0, expected_1, expected_2, expected_3;
 
     initial begin
         for (i = 0; i < VECTOR_LEN; i = i + 1) begin
             a0_values[i] = (i+1) / 100.0;
             a1_values[i] = (i+1) / 200.0;
+            a2_values[i] = (i+1) / 300.0;
+            a3_values[i] = (i+1) / 400.0;
             b_values[i] = (i+1)  / 1000.0;
         end
 
@@ -210,7 +251,9 @@ module tb_mvm_accelerator;
         s_axi_b_wstrb   = 8'hFF;
         
         m_axis_0_tready <= 1;
-        m_axis_1_tready <= 1;
+        m_axis_1_tready <= 1;        
+        m_axis_2_tready <= 1;
+        m_axis_3_tready <= 1;
         
         for (i = 0; i < VECTOR_LEN; i = i + 1) begin
             bram[i] = $realtobits(b_values[i]);
@@ -223,6 +266,8 @@ module tb_mvm_accelerator;
             
             expected_0 = 0;
             expected_1 = 0;
+            expected_2 = 0;
+            expected_3 = 0;
             
             fork
                 begin : send_a0
@@ -252,6 +297,34 @@ module tb_mvm_accelerator;
                     
                     @(posedge clk);
                     $display("%d: Result 1 (real): %f | Expected: %f", j, $bitstoreal(m_axis_1_tdata), expected_1);
+                end
+                begin : send_a2
+                    for (i_2 = 0; i_2 < VECTOR_LEN; i_2 = i_2 + 1) begin
+                        s_axis_a_2_tdata  = $realtobits(a2_values[i_2] + j);
+                        s_axis_a_2_tvalid = 1;
+                        @(posedge clk);
+                        while (!s_axis_a_2_tready) @(posedge clk);
+                        s_axis_a_2_tvalid = 0;
+                        expected_2 = expected_2 + (a2_values[i_2] + j) * b_values[i_2];
+                    end
+                    wait(m_axis_2_tready && m_axis_2_tvalid && m_axis_2_tlast);
+                    
+                    @(posedge clk);
+                    $display("%d: Result 2 (real): %f | Expected: %f", j, $bitstoreal(m_axis_2_tdata), expected_2);
+                end
+                begin : send_a3
+                    for (i_3 = 0; i_3 < VECTOR_LEN; i_3 = i_3 + 1) begin
+                        s_axis_a_3_tdata  = $realtobits(a3_values[i_2] + j);
+                        s_axis_a_3_tvalid = 1;
+                        @(posedge clk);
+                        while (!s_axis_a_3_tready) @(posedge clk);
+                        s_axis_a_3_tvalid = 0;
+                        expected_3 = expected_3 + (a3_values[i_3] + j) * b_values[i_3];
+                    end
+                    wait(m_axis_3_tready && m_axis_3_tvalid && m_axis_3_tlast);
+                    
+                    @(posedge clk);
+                    $display("%d: Result 2 (real): %f | Expected: %f", j, $bitstoreal(m_axis_3_tdata), expected_3);
                 end
            join
         end
