@@ -14,15 +14,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="803.949 ns"></ZoomEndTime>
-      <Cursor1Time time="17,111.324 ns"></Cursor1Time>
+      <ZoomStartTime time="920.974 ns"></ZoomStartTime>
+      <ZoomEndTime time="1,678.116 ns"></ZoomEndTime>
+      <Cursor1Time time="35,605.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="1009"></NameColumnWidth>
-      <ValueColumnWidth column_width="172"></ValueColumnWidth>
+      <NameColumnWidth column_width="1282"></NameColumnWidth>
+      <ValueColumnWidth column_width="163"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="28" />
+   <WVObjectSize size="37" />
    <wvobject fp_name="/tb_mvm_accelerator/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -134,5 +134,50 @@
    <wvobject fp_name="/tb_mvm_accelerator/m_axis_3_tlast" type="logic">
       <obj_property name="ElementShortName">m_axis_3_tlast</obj_property>
       <obj_property name="ObjectShortName">m_axis_3_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/s_axis_read_desc_valid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">s_axis_read_desc_valid</obj_property>
+      <obj_property name="ObjectShortName">s_axis_read_desc_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/s_axis_read_desc_ready" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">s_axis_read_desc_ready</obj_property>
+      <obj_property name="ObjectShortName">s_axis_read_desc_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axi_rdata" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axi_rdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axi_rdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axi_rvalid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axi_rvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axi_rvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axi_rready" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axi_rready</obj_property>
+      <obj_property name="ObjectShortName">m_axi_rready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axis_read_data_tdata" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_read_data_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axis_read_data_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axis_read_data_tvalid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_read_data_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_read_data_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axis_read_data_tready" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_read_data_tready</obj_property>
+      <obj_property name="ObjectShortName">m_axis_read_data_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/uut/dma/m_axis_read_desc_status_valid" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">m_axis_read_desc_status_valid</obj_property>
+      <obj_property name="ObjectShortName">m_axis_read_desc_status_valid</obj_property>
    </wvobject>
 </wave_config>

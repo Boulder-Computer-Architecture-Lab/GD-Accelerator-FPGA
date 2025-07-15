@@ -314,7 +314,7 @@ module tb_mvm_accelerator;
                 end
                 begin : send_a3
                     for (i_3 = 0; i_3 < VECTOR_LEN; i_3 = i_3 + 1) begin
-                        s_axis_a_3_tdata  = $realtobits(a3_values[i_2] + j);
+                        s_axis_a_3_tdata  = $realtobits(a3_values[i_3] + j);
                         s_axis_a_3_tvalid = 1;
                         @(posedge clk);
                         while (!s_axis_a_3_tready) @(posedge clk);
@@ -324,7 +324,7 @@ module tb_mvm_accelerator;
                     wait(m_axis_3_tready && m_axis_3_tvalid && m_axis_3_tlast);
                     
                     @(posedge clk);
-                    $display("%d: Result 2 (real): %f | Expected: %f", j, $bitstoreal(m_axis_3_tdata), expected_3);
+                    $display("%d: Result 3 (real): %f | Expected: %f", j, $bitstoreal(m_axis_3_tdata), expected_3);
                 end
            join
         end
