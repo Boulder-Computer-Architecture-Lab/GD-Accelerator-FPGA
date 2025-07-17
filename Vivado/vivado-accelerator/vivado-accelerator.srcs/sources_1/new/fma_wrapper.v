@@ -45,7 +45,7 @@ module fma_wrapper #(
     wire [DATA_WIDTH-1:0] fma_result_data;
     // Synchronize consumption
     wire fma_inputs_valid = fma_a_tvalid && fma_b_tvalid;
-    
+
     // Instance
     fp64_fma u_fp64_fma (
         .aclk(clk),
@@ -67,13 +67,13 @@ module fma_wrapper #(
         .m_axis_result_tready(fma_result_ready),
         .m_axis_result_tdata(fma_result_data)
     );
-    
+
     // ========================================
     // Synchronization logic
     
     assign s_axis_a_tready = !fma_a_tvalid && fma_a_tready;
     assign s_axis_b_tready = !fma_b_tvalid && fma_b_tready;
-
+    
     always@(posedge clk) begin
         if (!rstn) begin
             fma_a_tdata <= 64'd0;

@@ -4,9 +4,10 @@ module mvm_accelerator #(
     parameter DATA_WIDTH = 64,
     parameter ADDR_WIDTH = 32,
     parameter STRB_WIDTH = (DATA_WIDTH/8),
-    parameter ID_WIDTH = 4,
+    parameter ID_WIDTH = 8,
+    parameter S_INT_ID_WIDTH = ID_WIDTH - 4,
     parameter WORDS_PER_TRANSFER = 17048,
-    parameter NUM_CHANNELS = 8
+    parameter NUM_CHANNELS = 2
 )(
     input wire clk,
     input wire rstn,
@@ -19,30 +20,6 @@ module mvm_accelerator #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
     input  wire                  s_axis_a_1_tvalid,
     output wire                  s_axis_a_1_tready,
-        
-    input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
-    input  wire                  s_axis_a_2_tvalid,
-    output wire                  s_axis_a_2_tready,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
-    input  wire                  s_axis_a_3_tvalid,
-    output wire                  s_axis_a_3_tready,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_4_tdata,
-    input  wire                  s_axis_a_4_tvalid,
-    output wire                  s_axis_a_4_tready,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_5_tdata,
-    input  wire                  s_axis_a_5_tvalid,
-    output wire                  s_axis_a_5_tready,
-        
-    input  wire [DATA_WIDTH-1:0] s_axis_a_6_tdata,
-    input  wire                  s_axis_a_6_tvalid,
-    output wire                  s_axis_a_6_tready,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_7_tdata,
-    input  wire                  s_axis_a_7_tvalid,
-    output wire                  s_axis_a_7_tready,
     
     // Output streams
     output wire [DATA_WIDTH-1:0] m_axis_0_tdata,
@@ -54,39 +31,9 @@ module mvm_accelerator #(
     output wire                  m_axis_1_tvalid,
     input  wire                  m_axis_1_tready,
     output wire                  m_axis_1_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_2_tdata,
-    output wire                  m_axis_2_tvalid,
-    input  wire                  m_axis_2_tready,
-    output wire                  m_axis_2_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_3_tdata,
-    output wire                  m_axis_3_tvalid,
-    input  wire                  m_axis_3_tready,
-    output wire                  m_axis_3_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_4_tdata,
-    output wire                  m_axis_4_tvalid,
-    input  wire                  m_axis_4_tready,
-    output wire                  m_axis_4_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_5_tdata,
-    output wire                  m_axis_5_tvalid,
-    input  wire                  m_axis_5_tready,
-    output wire                  m_axis_5_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_6_tdata,
-    output wire                  m_axis_6_tvalid,
-    input  wire                  m_axis_6_tready,
-    output wire                  m_axis_6_tlast,
-    
-    output wire [DATA_WIDTH-1:0] m_axis_7_tdata,
-    output wire                  m_axis_7_tvalid,
-    input  wire                  m_axis_7_tready,
-    output wire                  m_axis_7_tlast,
 
     // S-AXI interface (for writing vector b)
-    input  wire [7:0]             s_axi_b_awid,
+    input  wire [ID_WIDTH-1:0]    s_axi_b_awid,
     input  wire [ADDR_WIDTH-1:0]  s_axi_b_awaddr,
     input  wire [7:0]             s_axi_b_awlen,
     input  wire [2:0]             s_axi_b_awsize,
@@ -96,31 +43,17 @@ module mvm_accelerator #(
     input  wire [2:0]             s_axi_b_awprot,
     input  wire                   s_axi_b_awvalid,
     output wire                   s_axi_b_awready,
+    
     input  wire [DATA_WIDTH-1:0]  s_axi_b_wdata,
     input  wire [STRB_WIDTH-1:0]  s_axi_b_wstrb,
     input  wire                   s_axi_b_wlast,
     input  wire                   s_axi_b_wvalid,
     output wire                   s_axi_b_wready,
-    output wire [7:0]             s_axi_b_bid,
+    
+    output wire [ID_WIDTH-1:0]    s_axi_b_bid,
     output wire [1:0]             s_axi_b_bresp,
     output wire                   s_axi_b_bvalid,
-    input  wire                   s_axi_b_bready,
-    input  wire [ID_WIDTH-1:0]    s_axi_b_arid,
-    input  wire [ADDR_WIDTH-1:0]  s_axi_b_araddr,
-    input  wire [7:0]             s_axi_b_arlen,
-    input  wire [2:0]             s_axi_b_arsize,
-    input  wire [1:0]             s_axi_b_arburst,
-    input  wire                   s_axi_b_arlock,
-    input  wire [3:0]             s_axi_b_arcache,
-    input  wire [2:0]             s_axi_b_arprot,
-    input  wire                   s_axi_b_arvalid,
-    output wire                   s_axi_b_arready,
-    output wire [ID_WIDTH-1:0]    s_axi_b_rid,
-    output wire [DATA_WIDTH-1:0]  s_axi_b_rdata,
-    output wire [1:0]             s_axi_b_rresp,
-    output wire                   s_axi_b_rlast,
-    output wire                   s_axi_b_rvalid,
-    input  wire                   s_axi_b_rready
+    input  wire                   s_axi_b_bready
 );
 
     // =============================================================
@@ -142,6 +75,24 @@ module mvm_accelerator #(
     wire                  m_axis_tready [NUM_CHANNELS-1:0];
     wire                  m_axis_tlast  [NUM_CHANNELS-1:0];
     
+    // AXI master interface arrays
+    wire [S_INT_ID_WIDTH-1:0] m_axi_arid    [NUM_CHANNELS-1:0];
+    wire [ADDR_WIDTH-1:0]     m_axi_araddr  [NUM_CHANNELS-1:0];
+    wire [7:0]                m_axi_arlen   [NUM_CHANNELS-1:0];
+    wire [2:0]                m_axi_arsize  [NUM_CHANNELS-1:0];
+    wire [1:0]                m_axi_arburst [NUM_CHANNELS-1:0];
+    wire                      m_axi_arlock  [NUM_CHANNELS-1:0];
+    wire [3:0]                m_axi_arcache [NUM_CHANNELS-1:0];
+    wire [2:0]                m_axi_arprot  [NUM_CHANNELS-1:0];
+    wire                      m_axi_arvalid [NUM_CHANNELS-1:0];
+    wire                      m_axi_arready [NUM_CHANNELS-1:0];
+    wire [S_INT_ID_WIDTH-1:0] m_axi_rid     [NUM_CHANNELS-1:0];
+    wire [DATA_WIDTH-1:0]     m_axi_rdata   [NUM_CHANNELS-1:0];
+    wire [1:0]                m_axi_rresp   [NUM_CHANNELS-1:0];
+    wire                      m_axi_rlast   [NUM_CHANNELS-1:0];
+    wire                      m_axi_rvalid  [NUM_CHANNELS-1:0];
+    wire                      m_axi_rready  [NUM_CHANNELS-1:0];
+    
     assign s_axis_a_tdata[0]  = s_axis_a_0_tdata;
     assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
     assign s_axis_a_0_tready = s_axis_a_tready[0];
@@ -149,30 +100,6 @@ module mvm_accelerator #(
     assign s_axis_a_tdata[1]  = s_axis_a_1_tdata;
     assign s_axis_a_tvalid[1] = s_axis_a_1_tvalid;
     assign s_axis_a_1_tready = s_axis_a_tready[1];
-    
-    assign s_axis_a_tdata[2]  = s_axis_a_2_tdata;
-    assign s_axis_a_tvalid[2] = s_axis_a_2_tvalid;
-    assign s_axis_a_2_tready = s_axis_a_tready[2];
-    
-    assign s_axis_a_tdata[3]  = s_axis_a_3_tdata;
-    assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
-    assign s_axis_a_3_tready = s_axis_a_tready[3];
-    
-    assign s_axis_a_tdata[4]  = s_axis_a_4_tdata;
-    assign s_axis_a_tvalid[4] = s_axis_a_4_tvalid;
-    assign s_axis_a_4_tready = s_axis_a_tready[4];
-    
-    assign s_axis_a_tdata[5]  = s_axis_a_5_tdata;
-    assign s_axis_a_tvalid[5] = s_axis_a_5_tvalid;
-    assign s_axis_a_5_tready = s_axis_a_tready[5];
-    
-    assign s_axis_a_tdata[6]  = s_axis_a_6_tdata;
-    assign s_axis_a_tvalid[6] = s_axis_a_6_tvalid;
-    assign s_axis_a_6_tready = s_axis_a_tready[6];
-    
-    assign s_axis_a_tdata[7]  = s_axis_a_7_tdata;
-    assign s_axis_a_tvalid[7] = s_axis_a_7_tvalid;
-    assign s_axis_a_7_tready = s_axis_a_tready[7];
 
     assign m_axis_0_tdata = m_axis_tdata[0];
     assign m_axis_0_tvalid = m_axis_tvalid[0];
@@ -184,36 +111,6 @@ module mvm_accelerator #(
     assign m_axis_tready[1] = m_axis_1_tready;
     assign m_axis_1_tlast = m_axis_tlast[1];
 
-    assign m_axis_2_tdata = m_axis_tdata[2];
-    assign m_axis_2_tvalid = m_axis_tvalid[2];
-    assign m_axis_tready[2] = m_axis_2_tready;
-    assign m_axis_2_tlast = m_axis_tlast[2];
-
-    assign m_axis_3_tdata = m_axis_tdata[3];
-    assign m_axis_3_tvalid = m_axis_tvalid[3];
-    assign m_axis_tready[3] = m_axis_3_tready;
-    assign m_axis_3_tlast = m_axis_tlast[3];
-    
-    assign m_axis_4_tdata = m_axis_tdata[4];
-    assign m_axis_4_tvalid = m_axis_tvalid[4];
-    assign m_axis_tready[4] = m_axis_4_tready;
-    assign m_axis_4_tlast = m_axis_tlast[4];
-    
-    assign m_axis_5_tdata = m_axis_tdata[5];
-    assign m_axis_5_tvalid = m_axis_tvalid[5];
-    assign m_axis_tready[5] = m_axis_5_tready;
-    assign m_axis_5_tlast = m_axis_tlast[5];
-
-    assign m_axis_6_tdata = m_axis_tdata[6];
-    assign m_axis_6_tvalid = m_axis_tvalid[6];
-    assign m_axis_tready[6] = m_axis_6_tready;
-    assign m_axis_6_tlast = m_axis_tlast[6];
-
-    assign m_axis_7_tdata = m_axis_tdata[7];
-    assign m_axis_7_tvalid = m_axis_tvalid[7];
-    assign m_axis_tready[7] = m_axis_7_tready;
-    assign m_axis_7_tlast = m_axis_tlast[7];
-    
     genvar i;
     generate
       for (i = 0; i < NUM_CHANNELS; i = i + 1) begin : mvm_channel_gen
@@ -221,7 +118,6 @@ module mvm_accelerator #(
           .DATA_WIDTH(DATA_WIDTH),
           .ADDR_WIDTH(ADDR_WIDTH),
           .STRB_WIDTH(STRB_WIDTH),
-          .ID_WIDTH(ID_WIDTH),
           .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
           .TAG(i[7:0])
         ) channel_inst (
@@ -232,20 +128,33 @@ module mvm_accelerator #(
           .s_axis_a_tvalid(s_axis_a_tvalid[i]),
           .s_axis_a_tready(s_axis_a_tready[i]),
           
-          .s_axis_b_tdata (s_axis_b_tdata[i]),
-          .s_axis_b_tvalid(s_axis_b_tvalid[i]),
-          .s_axis_b_tready(s_axis_b_tready[i]),
-          
           .m_axis_tdata (m_axis_tdata[i]),
           .m_axis_tvalid(m_axis_tvalid[i]),
           .m_axis_tready(m_axis_tready[i]),
-          .m_axis_tlast (m_axis_tlast[i])
+          .m_axis_tlast (m_axis_tlast[i]),
+          
+          .m_axi_arid    (m_axi_arid[i]),
+          .m_axi_araddr  (m_axi_araddr[i]),
+          .m_axi_arlen   (m_axi_arlen[i]),
+          .m_axi_arsize  (m_axi_arsize[i]),
+          .m_axi_arburst (m_axi_arburst[i]),
+          .m_axi_arlock  (m_axi_arlock[i]),
+          .m_axi_arcache (m_axi_arcache[i]),
+          .m_axi_arprot  (m_axi_arprot[i]),
+          .m_axi_arvalid (m_axi_arvalid[i]),
+          .m_axi_arready (m_axi_arready[i]),
+          .m_axi_rid     (m_axi_rid[i]),
+          .m_axi_rdata   (m_axi_rdata[i]),
+          .m_axi_rresp   (m_axi_rresp[i]),
+          .m_axi_rlast   (m_axi_rlast[i]),
+          .m_axi_rvalid  (m_axi_rvalid[i]),
+          .m_axi_rready  (m_axi_rready[i])
         );
       end
     endgenerate
-    
+
     // =============================================================
-    //        BRAM CONTROLLER + INTERNAL MEMORY GENERATOR
+    //                          AXI RAM
     // =============================================================
     
     wire [ID_WIDTH-1:0]    ram_m_axi_arid;
@@ -264,177 +173,155 @@ module mvm_accelerator #(
     wire                   ram_m_axi_rlast;
     wire                   ram_m_axi_rvalid;
     wire                   ram_m_axi_rready;
-
-    axi_bram_ctrl_0 axi_bram_ctrl_inst (
-        .s_axi_aclk    (clk),
-        .s_axi_aresetn (rstn),
     
-        // Write address channel
-        .s_axi_awid    (s_axi_b_awid),
-        .s_axi_awaddr  (s_axi_b_awaddr[17:0]),
-        .s_axi_awlen   (s_axi_b_awlen),
-        .s_axi_awsize  (s_axi_b_awsize),
-        .s_axi_awburst (s_axi_b_awburst),
-        .s_axi_awlock  (s_axi_b_awlock),
-        .s_axi_awcache (s_axi_b_awcache),
-        .s_axi_awprot  (s_axi_b_awprot),
-        .s_axi_awvalid (s_axi_b_awvalid),
-        .s_axi_awready (s_axi_b_awready),
-    
-        // Write data channel
-        .s_axi_wdata   (s_axi_b_wdata),
-        .s_axi_wstrb   (s_axi_b_wstrb),
-        .s_axi_wlast   (s_axi_b_wlast),
-        .s_axi_wvalid  (s_axi_b_wvalid),
-        .s_axi_wready  (s_axi_b_wready),
-    
-        // Write response channel
-        .s_axi_bid     (s_axi_b_bid),
-        .s_axi_bresp   (s_axi_b_bresp),
-        .s_axi_bvalid  (s_axi_b_bvalid),
-        .s_axi_bready  (s_axi_b_bready),
-    
-        // Read address channel
-        .s_axi_arid    (ram_m_axi_arid),
-        .s_axi_araddr  (ram_m_axi_araddr[17:0]),
-        .s_axi_arlen   (ram_m_axi_arlen),
-        .s_axi_arsize  (ram_m_axi_arsize),
-        .s_axi_arburst (ram_m_axi_arburst),
-        .s_axi_arlock  (ram_m_axi_arlock),
-        .s_axi_arcache (ram_m_axi_arcache),
-        .s_axi_arprot  (ram_m_axi_arprot),
-        .s_axi_arvalid (ram_m_axi_arvalid),
-        .s_axi_arready (ram_m_axi_arready),
-    
-        // Read data channel
-        .s_axi_rid     (ram_m_axi_rid),
-        .s_axi_rdata   (ram_m_axi_rdata),
-        .s_axi_rresp   (ram_m_axi_rresp),
-        .s_axi_rlast   (ram_m_axi_rlast),
-        .s_axi_rvalid  (ram_m_axi_rvalid),
-        .s_axi_rready  (ram_m_axi_rready)
-    );
-    
-    // =============================================================
-    //                   AXIS BROADCASTER
-    // =============================================================
-    
-    wire [DATA_WIDTH-1:0] s_axis_bcast_tdata;
-    wire                  s_axis_bcast_tready;
-    wire                  s_axis_bcast_tvalid;
-        
-    axis_broadcaster_0 axis_broadcast_inst (
-        .aclk      (clk),
-        .aresetn   (rstn),
-    
-        // Input AXI Stream (from DMA MM2S)
-        .s_axis_tdata  (s_axis_bcast_tdata),
-        .s_axis_tvalid (s_axis_bcast_tvalid),
-        .s_axis_tready (s_axis_bcast_tready),
-
-        // Output AXI Stream to 8 channels
-        .m_axis_tdata  ({s_axis_b_tdata[7],  s_axis_b_tdata[6],  s_axis_b_tdata[5],  s_axis_b_tdata[4], s_axis_b_tdata[3],  s_axis_b_tdata[2],  s_axis_b_tdata[1],  s_axis_b_tdata[0]}),
-        .m_axis_tvalid ({s_axis_b_tvalid[7], s_axis_b_tvalid[6], s_axis_b_tvalid[5], s_axis_b_tvalid[4], s_axis_b_tvalid[3], s_axis_b_tvalid[2], s_axis_b_tvalid[1], s_axis_b_tvalid[0]}),
-        .m_axis_tready ({s_axis_b_tready[7], s_axis_b_tready[6], s_axis_b_tready[5], s_axis_b_tready[4], s_axis_b_tready[3], s_axis_b_tready[2], s_axis_b_tready[1], s_axis_b_tready[0]})
-    );
-    
-    // =============================================================
-    //             MM2S DMA FROM BRAM -> BROADCASTER
-    // =============================================================
-    
-    localparam [31:0] dma_desc_addr = 32'h80000000;
-    localparam [19:0] dma_desc_len  = WORDS_PER_TRANSFER * STRB_WIDTH;
-
-    reg  dma_desc_valid;
-    wire dma_desc_ready;
-    
-    wire [7:0] dma_desc_tag  = 8'd0;
-    wire [7:0] dma_desc_id   = 8'd0;
-    wire [7:0] dma_desc_dest = 8'd0;
-    wire       dma_desc_user = 1'b0;
-        
-    wire [7:0] dma_status_tag;
-    wire [3:0] dma_status_error;
-    wire       dma_status_valid;
-    
-    reg desc_sent;
-    
-    always @(posedge clk or negedge rstn) begin
-        if (!rstn) begin
-            desc_sent <= 0;
-            dma_desc_valid <= 0;
-        end else if (!desc_sent) begin
-            if (dma_desc_ready) begin
-                dma_desc_valid <= 1;
-                desc_sent <= 1;
-            end else begin
-                dma_desc_valid <= 1;
-            end
-        end else if (dma_status_valid) begin
-            desc_sent <= 0; // Reset after row is consumed
-        end else begin
-            dma_desc_valid <= 0;
-        end
-    end
-        
-    axi_dma_rd #(
-        .AXI_DATA_WIDTH(DATA_WIDTH),
-        .AXI_ADDR_WIDTH(ADDR_WIDTH),
-        .AXI_STRB_WIDTH(STRB_WIDTH),
-        .AXI_ID_WIDTH(ID_WIDTH),
-        .AXI_MAX_BURST_LEN(256),
-        .AXIS_DATA_WIDTH(DATA_WIDTH),
-        .AXIS_KEEP_ENABLE(1),
-        .AXIS_LAST_ENABLE(0),
-        .AXIS_USER_ENABLE(0),
-        .LEN_WIDTH(20),
-        .TAG_WIDTH(8),
-        .ENABLE_SG(0),
-        .ENABLE_UNALIGNED(1)
-    ) dma (
+    axi_ram #(
+        .NUM_WORDS(WORDS_PER_TRANSFER)
+    ) axi_ram_inst (
         .clk(clk),
         .rstn(rstn),
+
+        // AXI Full Slave (write vector b)
+        .s_axi_awid(s_axi_b_awid),
+        .s_axi_awaddr(s_axi_b_awaddr[17:0]), // truncate 32 bit address
+        .s_axi_awlen(s_axi_b_awlen),
+        .s_axi_awsize(s_axi_b_awsize),
+        .s_axi_awburst(s_axi_b_awburst),
+        .s_axi_awlock(s_axi_b_awlock),
+        .s_axi_awcache(s_axi_b_awcache),
+        .s_axi_awprot(s_axi_b_awprot),
+        .s_axi_awvalid(s_axi_b_awvalid),
+        .s_axi_awready(s_axi_b_awready),
+        
+        .s_axi_wdata(s_axi_b_wdata),
+        .s_axi_wstrb(s_axi_b_wstrb),
+        .s_axi_wlast(s_axi_b_wlast),
+        .s_axi_wvalid(s_axi_b_wvalid),
+        .s_axi_wready(s_axi_b_wready),
+        
+        .s_axi_bid(s_axi_b_bid),
+        .s_axi_bresp(s_axi_b_bresp),
+        .s_axi_bvalid(s_axi_b_bvalid),
+        .s_axi_bready(s_axi_b_bready),
+
+        // AXI Master read for DMA (from interconnect)
+        .s_axi_arid(ram_m_axi_arid),
+        .s_axi_araddr(ram_m_axi_araddr[17:0]), // truncate 32 bit address
+        .s_axi_arlen(ram_m_axi_arlen),
+        .s_axi_arsize(ram_m_axi_arsize),
+        .s_axi_arburst(ram_m_axi_arburst),
+        .s_axi_arlock(ram_m_axi_arlock),
+        .s_axi_arcache(ram_m_axi_arcache),
+        .s_axi_arprot(ram_m_axi_arprot),
+        .s_axi_arvalid(ram_m_axi_arvalid),
+        .s_axi_arready(ram_m_axi_arready),
     
-        .s_axis_read_desc_addr(dma_desc_addr),
-        .s_axis_read_desc_len(dma_desc_len),
-        .s_axis_read_desc_tag(dma_desc_tag),
-        .s_axis_read_desc_id(dma_desc_id),
-        .s_axis_read_desc_dest(dma_desc_dest),
-        .s_axis_read_desc_user(dma_desc_user),
-        .s_axis_read_desc_valid(dma_desc_valid),
-        .s_axis_read_desc_ready(dma_desc_ready),
+        .s_axi_rid(ram_m_axi_rid),
+        .s_axi_rdata(ram_m_axi_rdata),
+        .s_axi_rresp(ram_m_axi_rresp),
+        .s_axi_rlast(ram_m_axi_rlast),
+        .s_axi_rvalid(ram_m_axi_rvalid),
+        .s_axi_rready(ram_m_axi_rready)
+    );
     
-        .m_axis_read_desc_status_tag(dma_status_tag),
-        .m_axis_read_desc_status_error(dma_status_error),
-        .m_axis_read_desc_status_valid(dma_status_valid),
+    // =============================================================
+    //                      AXI INTERCONNECT
+    // =============================================================
+
+    localparam ARQOS = 4'b0000;
     
-        .m_axis_read_data_tdata(s_axis_bcast_tdata),
-        .m_axis_read_data_tkeep(),
-        .m_axis_read_data_tvalid(s_axis_bcast_tvalid),
-        .m_axis_read_data_tready(s_axis_bcast_tready),
-        .m_axis_read_data_tlast(),
-        .m_axis_read_data_tid(),
-        .m_axis_read_data_tdest(),
-        .m_axis_read_data_tuser(),
+    axi_interconnect_0 axi_interconnect_inst (
+        .INTERCONNECT_ACLK(clk),
+        .INTERCONNECT_ARESETN(rstn),
     
-        .m_axi_arid(ram_m_axi_arid),
-        .m_axi_araddr(ram_m_axi_araddr),
-        .m_axi_arlen(ram_m_axi_arlen),
-        .m_axi_arsize(ram_m_axi_arsize),
-        .m_axi_arburst(ram_m_axi_arburst),
-        .m_axi_arlock(ram_m_axi_arlock),
-        .m_axi_arcache(ram_m_axi_arcache),
-        .m_axi_arprot(ram_m_axi_arprot),
-        .m_axi_arvalid(ram_m_axi_arvalid),
-        .m_axi_arready(ram_m_axi_arready),
-        .m_axi_rid(ram_m_axi_rid),
-        .m_axi_rdata(ram_m_axi_rdata),
-        .m_axi_rresp(ram_m_axi_rresp),
-        .m_axi_rlast(ram_m_axi_rlast),
-        .m_axi_rvalid(ram_m_axi_rvalid),
-        .m_axi_rready(ram_m_axi_rready),
+        .S00_AXI_ACLK(clk), .S00_AXI_ARESET_OUT_N(),
+        .S01_AXI_ACLK(clk), .S01_AXI_ARESET_OUT_N(),        
     
-        .enable(1'b1)
+        // Slave Interface (DMA0 -> Interconnect)
+        .S00_AXI_ARID     (m_axi_arid[0]),
+        .S00_AXI_ARADDR   (m_axi_araddr[0]),
+        .S00_AXI_ARLEN    (m_axi_arlen[0]),
+        .S00_AXI_ARSIZE   (m_axi_arsize[0]),
+        .S00_AXI_ARBURST  (m_axi_arburst[0]),
+        .S00_AXI_ARLOCK   (m_axi_arlock[0]),
+        .S00_AXI_ARCACHE  (m_axi_arcache[0]),
+        .S00_AXI_ARPROT   (m_axi_arprot[0]),
+        .S00_AXI_ARQOS    (ARQOS),
+        .S00_AXI_ARVALID  (m_axi_arvalid[0]),
+        .S00_AXI_ARREADY  (m_axi_arready[0]),
+        .S00_AXI_RID      (m_axi_rid[0]),
+        .S00_AXI_RDATA    (m_axi_rdata[0]),
+        .S00_AXI_RRESP    (m_axi_rresp[0]),
+        .S00_AXI_RLAST    (m_axi_rlast[0]),
+        .S00_AXI_RVALID   (m_axi_rvalid[0]),
+        .S00_AXI_RREADY   (m_axi_rready[0]),
+        
+        // Slave Interface (DMA1 -> Interconnect)
+        .S01_AXI_ARID     (m_axi_arid[1]),
+        .S01_AXI_ARADDR   (m_axi_araddr[1]),
+        .S01_AXI_ARLEN    (m_axi_arlen[1]),
+        .S01_AXI_ARSIZE   (m_axi_arsize[1]),
+        .S01_AXI_ARBURST  (m_axi_arburst[1]),
+        .S01_AXI_ARLOCK   (m_axi_arlock[1]),
+        .S01_AXI_ARCACHE  (m_axi_arcache[1]),
+        .S01_AXI_ARPROT   (m_axi_arprot[1]),
+        .S01_AXI_ARQOS    (ARQOS),
+        .S01_AXI_ARVALID  (m_axi_arvalid[1]),
+        .S01_AXI_ARREADY  (m_axi_arready[1]),
+        .S01_AXI_RID      (m_axi_rid[1]),
+        .S01_AXI_RDATA    (m_axi_rdata[1]),
+        .S01_AXI_RRESP    (m_axi_rresp[1]),
+        .S01_AXI_RLAST    (m_axi_rlast[1]),
+        .S01_AXI_RVALID   (m_axi_rvalid[1]),
+        .S01_AXI_RREADY   (m_axi_rready[1]),
+    
+        // Master Interface (to BRAM)
+        .M00_AXI_ACLK(clk),
+        .M00_AXI_ARESET_OUT_N(),
+        .M00_AXI_ARID     (ram_m_axi_arid),
+        .M00_AXI_ARADDR   (ram_m_axi_araddr),
+        .M00_AXI_ARLEN    (ram_m_axi_arlen),
+        .M00_AXI_ARSIZE   (ram_m_axi_arsize),
+        .M00_AXI_ARBURST  (ram_m_axi_arburst),
+        .M00_AXI_ARLOCK   (ram_m_axi_arlock),
+        .M00_AXI_ARCACHE  (ram_m_axi_arcache),
+        .M00_AXI_ARPROT   (ram_m_axi_arprot),
+        .M00_AXI_ARQOS    (),
+        .M00_AXI_ARVALID  (ram_m_axi_arvalid),
+        .M00_AXI_ARREADY  (ram_m_axi_arready),
+        .M00_AXI_RID      (ram_m_axi_rid),
+        .M00_AXI_RDATA    (ram_m_axi_rdata),
+        .M00_AXI_RRESP    (ram_m_axi_rresp),
+        .M00_AXI_RLAST    (ram_m_axi_rlast),
+        .M00_AXI_RVALID   (ram_m_axi_rvalid),
+        .M00_AXI_RREADY   (ram_m_axi_rready),
+        
+        // Unused write channels
+        .S00_AXI_AWID(4'b0),    .S00_AXI_AWADDR(32'b0),   .S00_AXI_AWLEN(8'b0),
+        .S00_AXI_AWSIZE(3'b0),  .S00_AXI_AWBURST(2'b0),   .S00_AXI_AWLOCK(1'b0),
+        .S00_AXI_AWCACHE(4'b0), .S00_AXI_AWPROT(3'b0),    .S00_AXI_AWQOS(4'b0),
+        .S00_AXI_AWVALID(1'b0), .S00_AXI_AWREADY(),
+        .S00_AXI_WDATA(64'b0),  .S00_AXI_WSTRB(8'b0),     .S00_AXI_WLAST(1'b0),
+        .S00_AXI_WVALID(1'b0),  .S00_AXI_WREADY(),
+        .S00_AXI_BID(),         .S00_AXI_BRESP(),         .S00_AXI_BVALID(),
+        .S00_AXI_BREADY(1'b0),
+    
+        .S01_AXI_AWID(4'b0),    .S01_AXI_AWADDR(32'b0),   .S01_AXI_AWLEN(8'b0),
+        .S01_AXI_AWSIZE(3'b0),  .S01_AXI_AWBURST(2'b0),   .S01_AXI_AWLOCK(1'b0),
+        .S01_AXI_AWCACHE(4'b0), .S01_AXI_AWPROT(3'b0),    .S01_AXI_AWQOS(4'b0),
+        .S01_AXI_AWVALID(1'b0), .S01_AXI_AWREADY(),
+        .S01_AXI_WDATA(64'b0),  .S01_AXI_WSTRB(8'b0),     .S01_AXI_WLAST(1'b0),
+        .S01_AXI_WVALID(1'b0),  .S01_AXI_WREADY(),
+        .S01_AXI_BID(),         .S01_AXI_BRESP(),         .S01_AXI_BVALID(),
+        .S01_AXI_BREADY(1'b0),
+    
+        .M00_AXI_AWID(),        .M00_AXI_AWADDR(),        .M00_AXI_AWLEN(),
+        .M00_AXI_AWSIZE(),      .M00_AXI_AWBURST(),       .M00_AXI_AWLOCK(),
+        .M00_AXI_AWCACHE(),     .M00_AXI_AWPROT(),        .M00_AXI_AWQOS(),
+        .M00_AXI_AWVALID(),     .M00_AXI_AWREADY(),
+        .M00_AXI_WDATA(),       .M00_AXI_WSTRB(),         .M00_AXI_WLAST(),
+        .M00_AXI_WVALID(),      .M00_AXI_WREADY(),
+        .M00_AXI_BID(),         .M00_AXI_BRESP(),         .M00_AXI_BVALID(),
+        .M00_AXI_BREADY()
     );
 
 endmodule

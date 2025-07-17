@@ -1,11 +1,11 @@
 {
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
-    "xci_name": "design_1_mvm_accelerator_0_11",
-    "cell_name": "mvm_accelerator_0",
+    "xci_name": "design_1_mvm_accelerator_1_0",
+    "cell_name": "mvm_accelerator_1",
     "component_reference": "xilinx.com:module_ref:mvm_accelerator:1.0",
     "ip_revision": "1",
-    "gen_directory": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_mvm_accelerator_0_11",
+    "gen_directory": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_mvm_accelerator_1_0",
     "parameters": {
       "component_parameters": {
         "DATA_WIDTH": [ { "value": "64", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -15,7 +15,7 @@
         "S_INT_ID_WIDTH": [ { "value": "4", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "WORDS_PER_TRANSFER": [ { "value": "17048", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "NUM_CHANNELS": [ { "value": "2", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "Component_Name": [ { "value": "design_1_mvm_accelerator_0_11", "resolve_type": "user", "usage": "all" } ]
+        "Component_Name": [ { "value": "design_1_mvm_accelerator_1_0", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
         "DATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -43,7 +43,7 @@
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
         "IPREVISION": [ { "value": "1" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_mvm_accelerator_0_11" } ],
+        "OUTPUTDIR": [ { "value": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_mvm_accelerator_1_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "../../ipshared" } ],
         "SWVERSION": [ { "value": "2023.2" } ],
