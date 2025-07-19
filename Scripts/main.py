@@ -13,21 +13,18 @@ import numpy as np
 #  MACROS
 # ==============================================================================
 
-DEBUG = 0
+DEBUG = 2
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
 
-BRAM_BASE = 0x80000000 
+BRAM0_BASE = 0x80000000 
+BRAM1_BASE = 0x90000000 
 
-N = 17048 # Row size (fixed in hardware)
-P = 2     # Number of partitions per row
-I = 1000  # Number of rows to process
-CHUNK_WORDS = N // P
+N = 8000 # Row size (fixed in hardware)
+I = 1000 # Number of rows to process
 
-assert N % P == 0
-
-ROWS_PER_BATCH = 300 # Rows in each ping-pong buffer
+ROWS_PER_BATCH = 100 # Rows in each ping-pong buffer
 NUM_WORKERS = 4      # Parallel DMA engines (capped by hardware)
 
 # ==============================================================================
@@ -35,11 +32,13 @@ NUM_WORKERS = 4      # Parallel DMA engines (capped by hardware)
 # ==============================================================================
 
 # Buffers (declared globally for cleanup)
-a_chunks = [
-    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
-    allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
-]
-result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
+a_chunks = []; result_bufs = []
+
+# Track loader status
+buffer_in_use = [False, False]
+buffer_lock = threading.Lock()
+buffer_ready = threading.Condition(buffer_lock)
+rows_done = [0, 0]
 
 # Asynchronous row processing
 work_queue = queue.Queue(maxsize=8 * ROWS_PER_BATCH)
@@ -77,29 +76,35 @@ signal.signal(signal.SIGINT, handle_interrupt)
 #  WORKER + LOADER 
 # ==============================================================================
 
-def process_row(row_num, a, b, result, dma):
+def process_row(row_num, chunk_idx, local_row, a, b, result, dma):
     if stop_requested: return
 
-    # Initiate transfer and wait for result
     dma.recvchannel.transfer(result)
-    for p in range(P):
-        offset = p * CHUNK_WORDS
-        chunk = a[offset : offset + CHUNK_WORDS]
-        dma.sendchannel.transfer(chunk)
-        dma.sendchannel.wait()
+    chunk = a_chunks[chunk_idx][local_row]
+    dma.sendchannel.transfer(chunk)
+    dma.sendchannel.wait()
     dma.recvchannel.wait()
 
     if DEBUG > 1:
-        actual = float(result[0])
+        actual = float(result[0].item())
         expected = np.dot(a, b)
         print(f"({row_num}) Actual: {actual:.24f} | Expected: {expected:.24f}")
 
+    with buffer_ready:
+        rows_done[chunk_idx] += 1
+        if rows_done[chunk_idx] == ROWS_PER_BATCH:
+            buffer_in_use[chunk_idx] = False
+            rows_done[chunk_idx] = 0
+            buffer_ready.notify()
+
 def worker(worker_id, b, dma):
+    if DEBUG: print(f"[WORKER {worker_id}] Starting up...")
+        
     while not stop_requested:
         try: chunk_idx, local_row, global_row = work_queue.get(timeout=1)
         except queue.Empty: return
 
-        process_row(global_row, a_chunks[chunk_idx][local_row], b, result_bufs[worker_id], dma)
+        process_row(global_row, chunk_idx, local_row, a_chunks[chunk_idx], b, result_bufs[worker_id], dma)
         work_queue.task_done()
 
         if DEBUG > 1: print(f"[WORKER {worker_id}] Completed row {global_row}")
@@ -109,12 +114,18 @@ def loader_thread(f):
     row_idx = 0
 
     while row_idx < I and not stop_requested:
+        with buffer_ready:
+            while buffer_in_use[chunk_index]: 
+                buffer_ready.wait()
+
+            buffer_in_use[chunk_index] = True
+
         buf = a_chunks[chunk_index]
         rows_to_load = min(ROWS_PER_BATCH, I - row_idx)
 
         for i in range(rows_to_load):
             view = memoryview(buf[i]).cast("B")
-            if f.readinto(view) != N * 8: return # End of file
+            if f.readinto(view) != N * 8: return # EOF
 
         for i in range(rows_to_load):
             global_row = row_idx + i
@@ -124,38 +135,51 @@ def loader_thread(f):
             print(f"[LOADER] Loaded chunk {chunk_index}, rows {row_idx} to {row_idx + rows_to_load - 1}")
             print(f"[DEBUG] Queue size: {work_queue.qsize()}")
 
-        chunk_index ^= 1  # switch to the other buffer
         row_idx += rows_to_load
+        chunk_index ^= 1 # switch to the other buffer
 
 # ==============================================================================
 #  MAIN
 # ==============================================================================
 
 if __name__ == "__main__":
-    if DEBUG: 
-        print(f"Parameters:")
-        print(f"    N={N}, P={P}, I={I}, CHUNK_WORDS={CHUNK_WORDS},")
-        print(f"    NUM_WORKERS={NUM_WORKERS}, ROWS_PER_BATCH={ROWS_PER_BATCH}")
+    if DEBUG: print(f"Parameters: N={N}, I={I}, NUM_WORKERS={NUM_WORKERS}, ROWS_PER_BATCH={ROWS_PER_BATCH}")
 
     try:
-        # Load bitstream and initialize DMAs
+        # Load bitstream
         overlay = Overlay(PROJ_DIR + "design_1.bit")
         overlay.download()
-        dmas = [
-            overlay.axi_dma_0, 
-            overlay.axi_dma_1, 
-            overlay.axi_dma_2,
-            overlay.axi_dma_3
-        ]
 
-        # Write vector `b` to BRAM 
+        # Get all DMAs listed in overlay ip_dict
+        dmas = []
+        for i in range(NUM_WORKERS):
+            name = f"axi_dma_{i}"
+            if name in overlay.ip_dict:
+                dmas.append(getattr(overlay, name))
+        if DEBUG > 1: print(dmas)
+
+        # Write vector `b` to BRAM(s)
         b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
-        bram_mmio = MMIO(BRAM_BASE, N*8)
         b_bits = b.view(np.uint64)
+
+        bram0_mmio = MMIO(BRAM0_BASE, N*8)
+        bram1_mmio = MMIO(BRAM1_BASE, N*8)
+
         for i in range(N):
             val64 = int(b_bits[i])
-            bram_mmio.write(i * 8, val64 & 0xFFFFFFFF)
-            bram_mmio.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
+
+            bram0_mmio.write(i * 8, val64 & 0xFFFFFFFF)
+            bram1_mmio.write(i * 8, val64 & 0xFFFFFFFF)
+
+            bram0_mmio.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
+            bram1_mmio.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
+
+        # Allocate buffers
+        a_chunks = [
+            allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+            allocate(shape=(ROWS_PER_BATCH, N), dtype=np.float64),
+        ]
+        result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
 
         # Create worker threads
         threads = [

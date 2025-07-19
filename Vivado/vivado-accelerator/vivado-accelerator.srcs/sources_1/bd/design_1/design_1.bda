@@ -335,7 +335,7 @@
             "V11": {
                 "VT": "AC",
                 "BA": "0x40000000",
-                "HA": "0x4003FFFF",
+                "HA": "0x4001FFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",
@@ -353,7 +353,7 @@
             "V12": {
                 "VT": "AC",
                 "BA": "0x40040000",
-                "HA": "0x4007FFFF",
+                "HA": "0x4005FFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",
@@ -371,7 +371,7 @@
             "V13": {
                 "VT": "AC",
                 "BA": "0x40080000",
-                "HA": "0x400BFFFF",
+                "HA": "0x4009FFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",
@@ -389,7 +389,7 @@
             "V14": {
                 "VT": "AC",
                 "BA": "0x400C0000",
-                "HA": "0x400FFFFF",
+                "HA": "0x400DFFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",
@@ -407,7 +407,7 @@
             "V15": {
                 "VT": "AC",
                 "BA": "0x80000000",
-                "HA": "0x8003FFFF",
+                "HA": "0x8000FFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",
@@ -425,7 +425,7 @@
             "V16": {
                 "VT": "AC",
                 "BA": "0x90000000",
-                "HA": "0x9003FFFF",
+                "HA": "0x9000FFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
                 "MA": "Data",

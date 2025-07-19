@@ -4,8 +4,7 @@ module tb_mvm_accelerator;
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
-    parameter ID_WIDTH = 8;
-    parameter S_INT_ID_WIDTH = ID_WIDTH - 4;
+    parameter ID_WIDTH = 4;
     parameter VECTOR_LEN = 64;
     parameter NUM_TRANSFERS = 4;
 
@@ -51,31 +50,31 @@ module tb_mvm_accelerator;
     wire                  m_axis_3_tlast;
 
     // AXI Full write interface for vector b
-    reg  [ID_WIDTH-1:0]   s_axi_b_awid;
-    reg  [ADDR_WIDTH-1:0] s_axi_b_awaddr;
-    reg  [7:0]            s_axi_b_awlen;
-    reg  [2:0]            s_axi_b_awsize;
-    reg  [1:0]            s_axi_b_awburst;
-    reg                   s_axi_b_awlock;
-    reg  [3:0]            s_axi_b_awcache;
-    reg  [2:0]            s_axi_b_awprot;
-    reg                   s_axi_b_awvalid;
-    wire                  s_axi_b_awready;
+    reg  [7:0]                s_axi_b_awid;
+    reg  [ADDR_WIDTH-1:0]     s_axi_b_awaddr;
+    reg  [7:0]                s_axi_b_awlen;
+    reg  [2:0]                s_axi_b_awsize;
+    reg  [1:0]                s_axi_b_awburst;
+    reg                       s_axi_b_awlock;
+    reg  [3:0]                s_axi_b_awcache;
+    reg  [2:0]                s_axi_b_awprot;
+    reg                       s_axi_b_awvalid;
+    wire                      s_axi_b_awready;
 
-    reg  [DATA_WIDTH-1:0] s_axi_b_wdata;
-    reg  [7:0]            s_axi_b_wstrb;
-    reg                   s_axi_b_wlast;
-    reg                   s_axi_b_wvalid;
-    wire                  s_axi_b_wready;
+    reg  [DATA_WIDTH-1:0]     s_axi_b_wdata;
+    reg  [(DATA_WIDTH/8)-1:0] s_axi_b_wstrb;
+    reg                       s_axi_b_wlast;
+    reg                       s_axi_b_wvalid;
+    wire                      s_axi_b_wready;
 
-    wire [ID_WIDTH-1:0]   s_axi_b_bid;
-    wire [1:0]            s_axi_b_bresp;
-    wire                  s_axi_b_bvalid;
-    reg                   s_axi_b_bready;
+    wire [7:0]                s_axi_b_bid;
+    wire [1:0]                s_axi_b_bresp;
+    wire                      s_axi_b_bvalid;
+    reg                       s_axi_b_bready;
     
     reg s_axi_b_sel;
     
-    wire [ID_WIDTH-1:0]       s0_axi_awid;
+    wire [7:0]                s0_axi_awid;
     wire [ADDR_WIDTH-1:0]     s0_axi_awaddr;
     wire [7:0]                s0_axi_awlen;
     wire [2:0]                s0_axi_awsize;
@@ -90,12 +89,12 @@ module tb_mvm_accelerator;
     wire                      s0_axi_wlast;
     wire                      s0_axi_wvalid;
     wire                      s0_axi_wready;
-    wire [ID_WIDTH-1:0]       s0_axi_bid;
+    wire [7:0]                s0_axi_bid;
     wire [1:0]                s0_axi_bresp;
     wire                      s0_axi_bvalid;
     wire                      s0_axi_bready;
     
-    wire [ID_WIDTH-1:0]       s1_axi_awid;
+    wire [7:0]                s1_axi_awid;
     wire [ADDR_WIDTH-1:0]     s1_axi_awaddr;
     wire [7:0]                s1_axi_awlen;
     wire [2:0]                s1_axi_awsize;
@@ -110,13 +109,13 @@ module tb_mvm_accelerator;
     wire                      s1_axi_wlast;
     wire                      s1_axi_wvalid;
     wire                      s1_axi_wready;
-    wire [ID_WIDTH-1:0]       s1_axi_bid;
+    wire [7:0]                s1_axi_bid;
     wire [1:0]                s1_axi_bresp;
     wire                      s1_axi_bvalid;
     wire                      s1_axi_bready;
     
     // Write address channel
-    assign s0_axi_awid    = (s_axi_b_sel == 0) ? s_axi_b_awid    : {ID_WIDTH{1'b0}};
+    assign s0_axi_awid    = (s_axi_b_sel == 0) ? s_axi_b_awid    : {2*ID_WIDTH{1'b0}};
     assign s0_axi_awaddr  = (s_axi_b_sel == 0) ? s_axi_b_awaddr  : {ADDR_WIDTH{1'b0}};
     assign s0_axi_awlen   = (s_axi_b_sel == 0) ? s_axi_b_awlen   : 8'd0;
     assign s0_axi_awsize  = (s_axi_b_sel == 0) ? s_axi_b_awsize  : 3'd0;
@@ -126,7 +125,7 @@ module tb_mvm_accelerator;
     assign s0_axi_awprot  = (s_axi_b_sel == 0) ? s_axi_b_awprot  : 3'd0;
     assign s0_axi_awvalid = (s_axi_b_sel == 0) ? s_axi_b_awvalid : 1'b0;
     
-    assign s1_axi_awid    = (s_axi_b_sel == 1) ? s_axi_b_awid    : {ID_WIDTH{1'b0}};
+    assign s1_axi_awid    = (s_axi_b_sel == 1) ? s_axi_b_awid    : {2*ID_WIDTH{1'b0}};
     assign s1_axi_awaddr  = (s_axi_b_sel == 1) ? s_axi_b_awaddr  : {ADDR_WIDTH{1'b0}};
     assign s1_axi_awlen   = (s_axi_b_sel == 1) ? s_axi_b_awlen   : 8'd0;
     assign s1_axi_awsize  = (s_axi_b_sel == 1) ? s_axi_b_awsize  : 3'd0;
@@ -208,74 +207,11 @@ module tb_mvm_accelerator;
             s_axi_b_wstrb   = 8'hFF;
         end
     endtask
-   
-    /*
-    axi_splitter axi_split_inst (
-        .ACLK(clk),
-        .ARESETN(rstn),
-        
-        .S_AXI_AWID(s_axi_b_awid),
-        .S_AXI_AWADDR(s_axi_b_awaddr),
-        .S_AXI_AWLEN(s_axi_b_awlen),
-        .S_AXI_AWSIZE(s_axi_b_awsize),
-        .S_AXI_AWBURST(s_axi_b_awburst),
-        .S_AXI_AWVALID(s_axi_b_awvalid),
-        .S_AXI_AWREADY(s_axi_b_awready),
-        
-        .S_AXI_WDATA(s_axi_b_wdata),
-        .S_AXI_WSTRB(s_axi_b_wstrb),
-        .S_AXI_WLAST(s_axi_b_wlast),
-        .S_AXI_WVALID(s_axi_b_wvalid),
-        .S_AXI_WREADY(s_axi_b_wready),
-        
-        .S_AXI_BID(s_axi_b_bid),
-        .S_AXI_BRESP(s_axi_b_bresp),
-        .S_AXI_BVALID(s_axi_b_bvalid),
-        .S_AXI_BREADY(s_axi_b_bready),
-        
-        .M0_AXI_AWID(s0_axi_awid),
-        .M0_AXI_AWADDR(s0_axi_awaddr),
-        .M0_AXI_AWLEN(s0_axi_awlen),
-        .M0_AXI_AWSIZE(s0_axi_awsize),
-        .M0_AXI_AWBURST(s0_axi_awburst),
-        .M0_AXI_AWVALID(s0_axi_awvalid),
-        .M0_AXI_AWREADY(s0_axi_awready),
-        
-        .M0_AXI_WDATA(s0_axi_wdata),
-        .M0_AXI_WSTRB(s0_axi_wstrb),
-        .M0_AXI_WLAST(s0_axi_wlast),
-        .M0_AXI_WVALID(s0_axi_wvalid),
-        .M0_AXI_WREADY(s0_axi_wready),
-        
-        .M0_AXI_BID(s0_axi_bid),
-        .M0_AXI_BRESP(s_axi_bresp),
-        .M0_AXI_BVALID(s0_axi_bvalid),
-        .M0_AXI_BREADY(s0_axi_bready),
-        
-        .M1_AXI_AWID(s1_axi_awid),
-        .M1_AXI_AWADDR(s1_axi_awaddr),
-        .M1_AXI_AWLEN(s1_axi_awlen),
-        .M1_AXI_AWSIZE(s1_axi_awsize),
-        .M1_AXI_AWBURST(s1_axi_awburst),
-        .M1_AXI_AWVALID(s1_axi_awvalid),
-        .M1_AXI_AWREADY(s1_axi_awready),
-        
-        .M1_AXI_WDATA(s1_axi_wdata),
-        .M1_AXI_WSTRB(s1_axi_wstrb),
-        .M1_AXI_WLAST(s1_axi_wlast),
-        .M1_AXI_WVALID(s1_axi_wvalid),
-        .M1_AXI_WREADY(s1_axi_wready),
-        
-        .M1_AXI_BID(s0_axi_bid),
-        .M1_AXI_BRESP(s_axi_bresp),
-        .M1_AXI_BVALID(s0_axi_bvalid),
-        .M1_AXI_BREADY(s0_axi_bready)
-    );
-    */
 
     // Instantiate DUTs
     mvm_accelerator #(
-        .WORDS_PER_TRANSFER(VECTOR_LEN)
+        .WORDS_PER_TRANSFER(VECTOR_LEN),
+        .AXI_RAM_BASE_ADDR(32'h8000_0000)
     ) dut0 (
         .clk(clk),
         .rstn(rstn),
@@ -320,7 +256,8 @@ module tb_mvm_accelerator;
     );
     
     mvm_accelerator #(
-        .WORDS_PER_TRANSFER(VECTOR_LEN)
+        .WORDS_PER_TRANSFER(VECTOR_LEN),
+        .AXI_RAM_BASE_ADDR(32'h9000_0000)
     ) dut1 (
         .clk(clk),
         .rstn(rstn),
@@ -411,12 +348,12 @@ module tb_mvm_accelerator;
         
         s_axi_b_sel = 0;
         repeat (10) @(posedge clk);
-        axi_write_burst(32'h8000_0000);
+        axi_write_burst(32'h0000_0000);
         $display("Axi write 0 complete.");
                 
         s_axi_b_sel = 1;
         repeat (10) @(posedge clk);
-        axi_write_burst(32'h9000_0000);
+        axi_write_burst(32'h0000_0000);
         $display("Axi write 1 complete.");
         
         repeat (10) @(posedge clk);

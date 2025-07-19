@@ -4,8 +4,8 @@ module mvm_accelerator #(
     parameter DATA_WIDTH = 64,
     parameter ADDR_WIDTH = 32,
     parameter STRB_WIDTH = (DATA_WIDTH/8),
-    parameter ID_WIDTH = 8,
-    parameter S_INT_ID_WIDTH = ID_WIDTH - 4,
+    parameter ID_WIDTH = 4,
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter WORDS_PER_TRANSFER = 17048,
     parameter NUM_CHANNELS = 2
 )(
@@ -33,7 +33,7 @@ module mvm_accelerator #(
     output wire                  m_axis_1_tlast,
 
     // S-AXI interface (for writing vector b)
-    input  wire [ID_WIDTH-1:0]    s_axi_b_awid,
+    input  wire [7:0]             s_axi_b_awid,
     input  wire [ADDR_WIDTH-1:0]  s_axi_b_awaddr,
     input  wire [7:0]             s_axi_b_awlen,
     input  wire [2:0]             s_axi_b_awsize,
@@ -50,7 +50,7 @@ module mvm_accelerator #(
     input  wire                   s_axi_b_wvalid,
     output wire                   s_axi_b_wready,
     
-    output wire [ID_WIDTH-1:0]    s_axi_b_bid,
+    output wire [7:0]             s_axi_b_bid,
     output wire [1:0]             s_axi_b_bresp,
     output wire                   s_axi_b_bvalid,
     input  wire                   s_axi_b_bready
@@ -76,22 +76,22 @@ module mvm_accelerator #(
     wire                  m_axis_tlast  [NUM_CHANNELS-1:0];
     
     // AXI master interface arrays
-    wire [S_INT_ID_WIDTH-1:0] m_axi_arid    [NUM_CHANNELS-1:0];
-    wire [ADDR_WIDTH-1:0]     m_axi_araddr  [NUM_CHANNELS-1:0];
-    wire [7:0]                m_axi_arlen   [NUM_CHANNELS-1:0];
-    wire [2:0]                m_axi_arsize  [NUM_CHANNELS-1:0];
-    wire [1:0]                m_axi_arburst [NUM_CHANNELS-1:0];
-    wire                      m_axi_arlock  [NUM_CHANNELS-1:0];
-    wire [3:0]                m_axi_arcache [NUM_CHANNELS-1:0];
-    wire [2:0]                m_axi_arprot  [NUM_CHANNELS-1:0];
-    wire                      m_axi_arvalid [NUM_CHANNELS-1:0];
-    wire                      m_axi_arready [NUM_CHANNELS-1:0];
-    wire [S_INT_ID_WIDTH-1:0] m_axi_rid     [NUM_CHANNELS-1:0];
-    wire [DATA_WIDTH-1:0]     m_axi_rdata   [NUM_CHANNELS-1:0];
-    wire [1:0]                m_axi_rresp   [NUM_CHANNELS-1:0];
-    wire                      m_axi_rlast   [NUM_CHANNELS-1:0];
-    wire                      m_axi_rvalid  [NUM_CHANNELS-1:0];
-    wire                      m_axi_rready  [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]              m_axi_arid    [NUM_CHANNELS-1:0];
+    wire [ADDR_WIDTH-1:0]            m_axi_araddr  [NUM_CHANNELS-1:0];
+    wire [7:0]                       m_axi_arlen   [NUM_CHANNELS-1:0];
+    wire [2:0]                       m_axi_arsize  [NUM_CHANNELS-1:0];
+    wire [1:0]                       m_axi_arburst [NUM_CHANNELS-1:0];
+    wire                             m_axi_arlock  [NUM_CHANNELS-1:0];
+    wire [3:0]                       m_axi_arcache [NUM_CHANNELS-1:0];
+    wire [2:0]                       m_axi_arprot  [NUM_CHANNELS-1:0];
+    wire                             m_axi_arvalid [NUM_CHANNELS-1:0];
+    wire                             m_axi_arready [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]              m_axi_rid     [NUM_CHANNELS-1:0];
+    wire [DATA_WIDTH-1:0]            m_axi_rdata   [NUM_CHANNELS-1:0];
+    wire [1:0]                       m_axi_rresp   [NUM_CHANNELS-1:0];
+    wire                             m_axi_rlast   [NUM_CHANNELS-1:0];
+    wire                             m_axi_rvalid  [NUM_CHANNELS-1:0];
+    wire                             m_axi_rready  [NUM_CHANNELS-1:0];
     
     assign s_axis_a_tdata[0]  = s_axis_a_0_tdata;
     assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
@@ -118,7 +118,9 @@ module mvm_accelerator #(
           .DATA_WIDTH(DATA_WIDTH),
           .ADDR_WIDTH(ADDR_WIDTH),
           .STRB_WIDTH(STRB_WIDTH),
+          .ID_WIDTH(ID_WIDTH),
           .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
+          .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
           .TAG(i[7:0])
         ) channel_inst (
           .clk(clk),
@@ -157,7 +159,11 @@ module mvm_accelerator #(
     //                          AXI RAM
     // =============================================================
     
-    wire [ID_WIDTH-1:0]    ram_m_axi_arid;
+    localparam AXI_RAM_ADDR_WIDTH = 18;
+    localparam M_ID_WIDTH = ID_WIDTH + 4;
+    localparam ARQOS = 4'b0000;
+
+    wire [M_ID_WIDTH-1:0]  ram_m_axi_arid;
     wire [ADDR_WIDTH-1:0]  ram_m_axi_araddr;
     wire [7:0]             ram_m_axi_arlen;
     wire [2:0]             ram_m_axi_arsize;
@@ -167,7 +173,7 @@ module mvm_accelerator #(
     wire [2:0]             ram_m_axi_arprot;
     wire                   ram_m_axi_arvalid;
     wire                   ram_m_axi_arready;
-    wire [ID_WIDTH-1:0]    ram_m_axi_rid;
+    wire [M_ID_WIDTH-1:0]  ram_m_axi_rid;
     wire [DATA_WIDTH-1:0]  ram_m_axi_rdata;
     wire [1:0]             ram_m_axi_rresp;
     wire                   ram_m_axi_rlast;
@@ -182,7 +188,7 @@ module mvm_accelerator #(
 
         // AXI Full Slave (write vector b)
         .s_axi_awid(s_axi_b_awid),
-        .s_axi_awaddr(s_axi_b_awaddr[17:0]), // truncate 32 bit address
+        .s_axi_awaddr(s_axi_b_awaddr[AXI_RAM_ADDR_WIDTH-1:0]), // truncate 32 bit address
         .s_axi_awlen(s_axi_b_awlen),
         .s_axi_awsize(s_axi_b_awsize),
         .s_axi_awburst(s_axi_b_awburst),
@@ -205,7 +211,7 @@ module mvm_accelerator #(
 
         // AXI Master read for DMA (from interconnect)
         .s_axi_arid(ram_m_axi_arid),
-        .s_axi_araddr(ram_m_axi_araddr[17:0]), // truncate 32 bit address
+        .s_axi_araddr(ram_m_axi_araddr[AXI_RAM_ADDR_WIDTH-1:0]), // truncate 32 bit address
         .s_axi_arlen(ram_m_axi_arlen),
         .s_axi_arsize(ram_m_axi_arsize),
         .s_axi_arburst(ram_m_axi_arburst),
@@ -226,9 +232,8 @@ module mvm_accelerator #(
     // =============================================================
     //                      AXI INTERCONNECT
     // =============================================================
-
-    localparam ARQOS = 4'b0000;
     
+    // Reads from AXI_RAM and sends to DMA -> FIFO_b -> FMA
     axi_interconnect_0 axi_interconnect_inst (
         .INTERCONNECT_ACLK(clk),
         .INTERCONNECT_ARESETN(rstn),
@@ -293,35 +298,7 @@ module mvm_accelerator #(
         .M00_AXI_RRESP    (ram_m_axi_rresp),
         .M00_AXI_RLAST    (ram_m_axi_rlast),
         .M00_AXI_RVALID   (ram_m_axi_rvalid),
-        .M00_AXI_RREADY   (ram_m_axi_rready),
-        
-        // Unused write channels
-        .S00_AXI_AWID(4'b0),    .S00_AXI_AWADDR(32'b0),   .S00_AXI_AWLEN(8'b0),
-        .S00_AXI_AWSIZE(3'b0),  .S00_AXI_AWBURST(2'b0),   .S00_AXI_AWLOCK(1'b0),
-        .S00_AXI_AWCACHE(4'b0), .S00_AXI_AWPROT(3'b0),    .S00_AXI_AWQOS(4'b0),
-        .S00_AXI_AWVALID(1'b0), .S00_AXI_AWREADY(),
-        .S00_AXI_WDATA(64'b0),  .S00_AXI_WSTRB(8'b0),     .S00_AXI_WLAST(1'b0),
-        .S00_AXI_WVALID(1'b0),  .S00_AXI_WREADY(),
-        .S00_AXI_BID(),         .S00_AXI_BRESP(),         .S00_AXI_BVALID(),
-        .S00_AXI_BREADY(1'b0),
-    
-        .S01_AXI_AWID(4'b0),    .S01_AXI_AWADDR(32'b0),   .S01_AXI_AWLEN(8'b0),
-        .S01_AXI_AWSIZE(3'b0),  .S01_AXI_AWBURST(2'b0),   .S01_AXI_AWLOCK(1'b0),
-        .S01_AXI_AWCACHE(4'b0), .S01_AXI_AWPROT(3'b0),    .S01_AXI_AWQOS(4'b0),
-        .S01_AXI_AWVALID(1'b0), .S01_AXI_AWREADY(),
-        .S01_AXI_WDATA(64'b0),  .S01_AXI_WSTRB(8'b0),     .S01_AXI_WLAST(1'b0),
-        .S01_AXI_WVALID(1'b0),  .S01_AXI_WREADY(),
-        .S01_AXI_BID(),         .S01_AXI_BRESP(),         .S01_AXI_BVALID(),
-        .S01_AXI_BREADY(1'b0),
-    
-        .M00_AXI_AWID(),        .M00_AXI_AWADDR(),        .M00_AXI_AWLEN(),
-        .M00_AXI_AWSIZE(),      .M00_AXI_AWBURST(),       .M00_AXI_AWLOCK(),
-        .M00_AXI_AWCACHE(),     .M00_AXI_AWPROT(),        .M00_AXI_AWQOS(),
-        .M00_AXI_AWVALID(),     .M00_AXI_AWREADY(),
-        .M00_AXI_WDATA(),       .M00_AXI_WSTRB(),         .M00_AXI_WLAST(),
-        .M00_AXI_WVALID(),      .M00_AXI_WREADY(),
-        .M00_AXI_BID(),         .M00_AXI_BRESP(),         .M00_AXI_BVALID(),
-        .M00_AXI_BREADY()
+        .M00_AXI_RREADY   (ram_m_axi_rready)
     );
 
 endmodule

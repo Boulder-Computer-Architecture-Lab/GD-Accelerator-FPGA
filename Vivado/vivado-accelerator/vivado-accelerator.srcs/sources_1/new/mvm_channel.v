@@ -6,6 +6,7 @@ module mvm_channel #(
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
     parameter ID_WIDTH           = 4,
     parameter WORDS_PER_TRANSFER = 17048,
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter TAG                = 0
 )(
     input  wire clk,
@@ -90,9 +91,9 @@ module mvm_channel #(
     //  MM2S DMA FROM INTERCONNECT -> S_AXIS_B
     // ========================================
 
-    localparam        DMA_BURST_LEN = 256;
-    localparam [31:0] dma_desc_addr = 32'h00000000;
-    localparam [19:0] dma_desc_len  = WORDS_PER_TRANSFER * STRB_WIDTH;
+    localparam                  DMA_BURST_LEN = 256;
+    localparam [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR;
+    localparam [19:0]           dma_desc_len  = WORDS_PER_TRANSFER * STRB_WIDTH;
 
     reg  dma_desc_valid;
     wire dma_desc_ready;
@@ -108,7 +109,7 @@ module mvm_channel #(
     
     reg desc_sent;
     
-    always @(posedge clk or negedge rstn) begin
+    always @(posedge clk) begin
         if (!rstn) begin
             desc_sent <= 1'b0;
             dma_desc_valid <= 1'b0;
@@ -187,12 +188,12 @@ module mvm_channel #(
     );
     
     // ========================================
-    //      FMA (dot product logic)
+    //          Dot product logic
     // ========================================
 
-    fma_wrapper #(
+    dot_product #(
         .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
-    ) fma (
+    ) dp (
         .clk(clk),
         .rstn(rstn),
 

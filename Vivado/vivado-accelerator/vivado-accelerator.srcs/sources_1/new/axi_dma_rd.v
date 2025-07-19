@@ -40,7 +40,7 @@ module axi_dma_rd #
     // Width of AXI wstrb (width of data bus in words)
     parameter AXI_STRB_WIDTH = (AXI_DATA_WIDTH/8),
     // Width of AXI ID signal
-    parameter AXI_ID_WIDTH = 8,
+    parameter AXI_ID_WIDTH = 4,
     // Maximum AXI burst length to generate
     parameter AXI_MAX_BURST_LEN = 256,
     // Width of AXI stream interfaces in bits
