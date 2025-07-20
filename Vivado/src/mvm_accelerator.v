@@ -197,7 +197,7 @@ module mvm_accelerator #(
     //                          AXI RAM
     // =============================================================
     
-    localparam AXI_RAM_ADDR_WIDTH = $clog2(STRB_WIDTH*WORDS_PER_TRANSFER);
+    localparam AXI_RAM_ADDR_WIDTH = $clog2(WORDS_PER_TRANSFER);
     localparam M_ID_WIDTH = ID_WIDTH + 4;
     localparam ARQOS = 4'b0000;
 
@@ -277,7 +277,46 @@ module mvm_accelerator #(
         .INTERCONNECT_ACLK(clk),
         .INTERCONNECT_ARESETN(rstn),
     
-        `include "interconnect_channels.vh"
+        .S00_AXI_ACLK(clk), .S00_AXI_ARESET_OUT_N(),
+        .S01_AXI_ACLK(clk), .S01_AXI_ARESET_OUT_N(),        
+    
+        // Slave Interface (DMA0 -> Interconnect)
+        .S00_AXI_ARID     (m_axi_arid[0]),
+        .S00_AXI_ARADDR   (m_axi_araddr[0]),
+        .S00_AXI_ARLEN    (m_axi_arlen[0]),
+        .S00_AXI_ARSIZE   (m_axi_arsize[0]),
+        .S00_AXI_ARBURST  (m_axi_arburst[0]),
+        .S00_AXI_ARLOCK   (m_axi_arlock[0]),
+        .S00_AXI_ARCACHE  (m_axi_arcache[0]),
+        .S00_AXI_ARPROT   (m_axi_arprot[0]),
+        .S00_AXI_ARQOS    (ARQOS),
+        .S00_AXI_ARVALID  (m_axi_arvalid[0]),
+        .S00_AXI_ARREADY  (m_axi_arready[0]),
+        .S00_AXI_RID      (m_axi_rid[0]),
+        .S00_AXI_RDATA    (m_axi_rdata[0]),
+        .S00_AXI_RRESP    (m_axi_rresp[0]),
+        .S00_AXI_RLAST    (m_axi_rlast[0]),
+        .S00_AXI_RVALID   (m_axi_rvalid[0]),
+        .S00_AXI_RREADY   (m_axi_rready[0]),
+        
+        // Slave Interface (DMA1 -> Interconnect)
+        .S01_AXI_ARID     (m_axi_arid[1]),
+        .S01_AXI_ARADDR   (m_axi_araddr[1]),
+        .S01_AXI_ARLEN    (m_axi_arlen[1]),
+        .S01_AXI_ARSIZE   (m_axi_arsize[1]),
+        .S01_AXI_ARBURST  (m_axi_arburst[1]),
+        .S01_AXI_ARLOCK   (m_axi_arlock[1]),
+        .S01_AXI_ARCACHE  (m_axi_arcache[1]),
+        .S01_AXI_ARPROT   (m_axi_arprot[1]),
+        .S01_AXI_ARQOS    (ARQOS),
+        .S01_AXI_ARVALID  (m_axi_arvalid[1]),
+        .S01_AXI_ARREADY  (m_axi_arready[1]),
+        .S01_AXI_RID      (m_axi_rid[1]),
+        .S01_AXI_RDATA    (m_axi_rdata[1]),
+        .S01_AXI_RRESP    (m_axi_rresp[1]),
+        .S01_AXI_RLAST    (m_axi_rlast[1]),
+        .S01_AXI_RVALID   (m_axi_rvalid[1]),
+        .S01_AXI_RREADY   (m_axi_rready[1]),
     
         // Master Interface (to BRAM)
         .M00_AXI_ACLK(clk),

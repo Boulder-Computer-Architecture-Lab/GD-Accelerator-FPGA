@@ -7,7 +7,7 @@ module tb_mvm_accelerator;
     parameter ID_WIDTH = 4;
     
     parameter int NUM_ACCEL_INST     = 2;
-    parameter int CHANNELS_PER_INST  = 3;
+    parameter int CHANNELS_PER_INST  = 2;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN = 64;
@@ -51,73 +51,63 @@ module tb_mvm_accelerator;
     reg [DATA_WIDTH-1:0] bram [VECTOR_LEN-1:0]; // Virtual BRAM
     
     // AXI write task for writing B vector
-    task axi_write_burst(input [31:0] addr, input integer inst);
+    task axi_write_burst;
+        input [31:0] addr;
+        input integer i;
         integer k;
         begin
             // Write address
-            s_axi_b_awaddr[inst]  = addr;
-            s_axi_b_awlen[inst]   = VECTOR_LEN - 1;
-            s_axi_b_awsize[inst]  = 3;
-            s_axi_b_awburst[inst] = 1;
-            s_axi_b_awvalid[inst] = 1;
-            
-            $display("\n[AXI WRITE] Channel %0d: Starting burst write", inst);
-            $display("[AXI WRITE]   Address    = 0x%08h", addr);
-            $display("[AXI WRITE]   Burst Len  = %0d (beats)", VECTOR_LEN);
-            $display("[AXI WRITE]   Beat Size  = %0d bytes", (1 << s_axi_b_awsize[inst]));
-            $display("[AXI WRITE]   Total Size = %0d bytes", VECTOR_LEN * (1 << s_axi_b_awsize[inst]));
+            s_axi_b_awaddr[i]  = addr;
+            s_axi_b_awlen[i]   = VECTOR_LEN - 1;
+            s_axi_b_awsize[i]  = 3;
+            s_axi_b_awburst[i] = 1;
+            s_axi_b_awvalid[i] = 1;
 
-            wait (s_axi_b_awready[inst] && s_axi_b_awvalid[inst]);
+            wait (s_axi_b_awready[i] && s_axi_b_awvalid[i]);
             @(posedge clk);
-            s_axi_b_awvalid[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: AW handshake done", inst);
+            s_axi_b_awvalid[i] = 0;
                 
             // Write data
             for (k = 0; k < VECTOR_LEN; k = k + 1) begin
-                $display("[AXI WRITE] Channel %0d: Writing beat %0d: data = %h", inst, k, bram[k]);
-                s_axi_b_wdata[inst] = bram[k];
-                s_axi_b_wstrb[inst] = 8'hFF;
-                s_axi_b_wvalid[inst] = 1;
-                s_axi_b_wlast[inst] = (k == VECTOR_LEN-1);
+                s_axi_b_wdata[i] = bram[k];
+                s_axi_b_wstrb[i] = 8'hFF;
+                s_axi_b_wvalid[i] = 1;
+                s_axi_b_wlast[i] = (k == VECTOR_LEN-1);
                 
-                wait (s_axi_b_wready[inst] && s_axi_b_wvalid[inst]);
+                wait (s_axi_b_wready[i] && s_axi_b_wvalid[i]);
                 @(posedge clk);
-                s_axi_b_wvalid[inst] = 0;
+                s_axi_b_wvalid[i] = 0;
             end
-            s_axi_b_wvalid[inst] = 0;
-            s_axi_b_wlast[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: Data phase complete", inst);
+            s_axi_b_wvalid[i] = 0;
+            s_axi_b_wlast[i] = 0;
                     
             // Write response
-            s_axi_b_bready[inst] = 1;
-            wait (s_axi_b_bvalid[inst] && s_axi_b_bready[inst]);
+            s_axi_b_bready[i] = 1;
+            wait (s_axi_b_bvalid[i] && s_axi_b_bready[i]);
             @(posedge clk);
-            s_axi_b_bready[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: Received B response", inst);
+            s_axi_b_bready[i] = 0;
             
             // Reset
-            s_axi_b_awvalid[inst] = 0;
-            s_axi_b_wvalid[inst]  = 0;
-            s_axi_b_bready[inst]  = 0;
-            s_axi_b_awid[inst]    = 0;
-            s_axi_b_awlock[inst]  = 0;
-            s_axi_b_awcache[inst] = 0;
-            s_axi_b_awprot[inst]  = 0;
-            s_axi_b_wlast[inst]   = 0;
-            s_axi_b_wstrb[inst]   = 8'hFF;
-            $display("[AXI WRITE] Channel %0d: Burst write complete\n", inst);
+            s_axi_b_awvalid[i] = 0;
+            s_axi_b_wvalid[i]  = 0;
+            s_axi_b_bready[i]  = 0;
+            s_axi_b_awid[i]    = 0;
+            s_axi_b_awlock[i]  = 0;
+            s_axi_b_awcache[i] = 0;
+            s_axi_b_awprot[i]  = 0;
+            s_axi_b_wlast[i]   = 0;
+            s_axi_b_wstrb[i]   = 8'hFF;
         end
     endtask
 
     // Instantiate DUTs
     generate
-        for (genvar inst = 0; inst < NUM_ACCEL_INST; inst = inst + 1) begin : gen_accel
+        for (genvar inst = 0; inst < NUM_ACCEL_INST; inst++) begin : gen_accel
             case (CHANNELS_PER_INST)
                 1: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -127,9 +117,8 @@ module tb_mvm_accelerator;
                 end
                 2: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -140,9 +129,8 @@ module tb_mvm_accelerator;
                 end
                 3: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -154,9 +142,8 @@ module tb_mvm_accelerator;
                 end
                 4: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -169,9 +156,8 @@ module tb_mvm_accelerator;
                 end
                 5: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -185,9 +171,8 @@ module tb_mvm_accelerator;
                 end
                 6: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -202,9 +187,8 @@ module tb_mvm_accelerator;
                 end
                 7: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -220,9 +204,8 @@ module tb_mvm_accelerator;
                 end
                 8: begin
                     mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
                         .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+                        .AXI_RAM_BASE_ADDR(32'h1000_0000 << inst)
                     ) dut (
                         .clk(clk),
                         .rstn(rstn),
@@ -236,8 +219,7 @@ module tb_mvm_accelerator;
                         `include "channels_7.svh"
                         `include "axi_full_write_bindings.svh"
                     );
-                end                
-                default: begin
+                end                default: begin
                     initial $fatal("Unsupported CHANNELS_PER_INST = %0d", CHANNELS_PER_INST);
                 end
             endcase
@@ -275,7 +257,7 @@ module tb_mvm_accelerator;
         
         for (i = 0; i < NUM_ACCEL_INST; i = i + 1) begin
             repeat (10) @(posedge clk);
-            axi_write_burst(32'h1000_0000*i, i);
+            axi_write_burst(32'h1000_0000 << i, i);
             $display("Axi write %0d complete.", i);
         end
         
