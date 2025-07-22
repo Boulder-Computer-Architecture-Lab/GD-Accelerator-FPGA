@@ -2,17 +2,22 @@
 
 module tb_mvm_accelerator;
 
+    `include "axi_a_channel_bindings.svh"
+    `define GET_CHANNELS `CHANNELS_8 // `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
+
+    parameter USE_ASYNC = 0; // select accelerator type (sync or async)
+
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
     parameter ID_WIDTH = 4;
     
-    parameter int NUM_ACCEL_INST     = 2;
-    parameter int CHANNELS_PER_INST  = 3;
+    parameter int NUM_ACCEL_INST     = 3;
+    parameter int CHANNELS_PER_INST  = 8;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN = 64;
     parameter int NUM_TRANSFERS = 4;
-
+    
     reg clk = 0;
     reg rstn = 1;
     
@@ -112,210 +117,125 @@ module tb_mvm_accelerator;
     // Instantiate DUTs
     generate
         for (genvar inst = 0; inst < NUM_ACCEL_INST; inst = inst + 1) begin : gen_accel
-            case (CHANNELS_PER_INST)
-                1: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                2: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                3: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                4: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "channels_3.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                5: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "channels_3.svh"
-                        `include "channels_4.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                6: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "channels_3.svh"
-                        `include "channels_4.svh"
-                        `include "channels_5.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                7: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "channels_3.svh"
-                        `include "channels_4.svh"
-                        `include "channels_5.svh"
-                        `include "channels_6.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end
-                8: begin
-                    mvm_accelerator #(
-                        .NUM_CHANNELS(CHANNELS_PER_INST),
-                        .WORDS_PER_TRANSFER(VECTOR_LEN),
-                        .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
-                    ) dut (
-                        .clk(clk),
-                        .rstn(rstn),
-                        `include "channels_0.svh"
-                        `include "channels_1.svh"
-                        `include "channels_2.svh"
-                        `include "channels_3.svh"
-                        `include "channels_4.svh"
-                        `include "channels_5.svh"
-                        `include "channels_6.svh"
-                        `include "channels_7.svh"
-                        `include "axi_full_write_bindings.svh"
-                    );
-                end                
-                default: begin
-                    initial $fatal("Unsupported CHANNELS_PER_INST = %0d", CHANNELS_PER_INST);
-                end
-            endcase
+            localparam int base_idx = inst * CHANNELS_PER_INST;
+        
+            mvm_accelerator #(
+                .USE_ASYNC(USE_ASYNC),
+                .NUM_CHANNELS(CHANNELS_PER_INST),
+                .WORDS_PER_TRANSFER(VECTOR_LEN),
+                .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
+            ) dut (
+                .clk(clk),
+                .rstn(rstn),
+                `GET_CHANNELS
+                `include "axi_full_write_bindings.svh"
+            );
         end
     endgenerate
-
+        
     // Clock
     always #5 clk = ~clk;
     
     real a_values [NUM_CHANNELS][VECTOR_LEN];
     real b_values [VECTOR_LEN];
     
-    integer i, j;
-
+    reg start = 0;
+    reg done [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];
+    
+    // Initialization
     initial begin
-        for (i = 0; i < NUM_CHANNELS; i = i + 1) begin
-            for (j = 0; j < VECTOR_LEN; j = j + 1) begin
+    
+        rstn = 0;
+        #45 rstn = 1;
+        
+        repeat (3) @(posedge clk);
+    
+        for (int i = 0; i < NUM_CHANNELS; i = i + 1) begin
+            m_axis_tready[i] = 1;
+        
+            for (int j = 0; j < VECTOR_LEN; j = j + 1) begin
                 a_values[i][j] = (j+1) / ((i+1) * 100.0);
                 b_values[j] = (j+1) / 1000.0;
             end
-        end
-
-        rstn = 0;
-        #45 rstn = 1;
-        repeat (3) @(posedge clk);
-        
-        for (i = 0; i< NUM_CHANNELS; i = i + 1) begin
-            m_axis_tready[i] <= 1;
+                        
+            for (int j = 0; j < NUM_TRANSFERS; j = j + 1) begin
+                done[i][j] = 0;
+            end
         end
         
-        for (i = 0; i < VECTOR_LEN; i = i + 1) begin
+        for (int i = 0; i < VECTOR_LEN; i = i + 1) begin
             bram[i] = $realtobits(b_values[i]);
             $display("bram[%0d] = %h  (real = %f)", i, bram[i], b_values[i]);
         end
         
-        for (i = 0; i < NUM_ACCEL_INST; i = i + 1) begin
+        for (int i = 0; i < NUM_ACCEL_INST; i = i + 1) begin
             repeat (10) @(posedge clk);
             axi_write_burst(32'h1000_0000*i, i);
-            $display("Axi write %0d complete.", i);
         end
         
-        repeat (10) @(posedge clk);
-
-        for (int j = 0; j < NUM_TRANSFERS; j++) begin
-            fork
-                for (int ch = 0; ch < NUM_CHANNELS; ch++) begin
-                    automatic int channel = ch;
-                    automatic int transfer_id = j;
-                    automatic real expected = 0;
+        start = 1;
+    end
         
-                    fork
-                        begin
-                            // Send vector data
-                            for (int i = 0; i < VECTOR_LEN; i++) begin
-                                s_axis_a_tdata[channel]  = $realtobits(a_values[channel][i] + transfer_id);
-                                s_axis_a_tvalid[channel] = 1;
+    real expected [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];
         
-                                wait (s_axis_a_tready[channel] && s_axis_a_tvalid[channel]);
-                                @(posedge clk);
-                                s_axis_a_tvalid[channel] = 0;
-        
-                                expected += (a_values[channel][i] + transfer_id) * b_values[i];
-                            end
-        
-                            // Wait for output
-                            wait (m_axis_tvalid[channel] && m_axis_tready[channel] && m_axis_tlast[channel]);
-                            @(posedge clk);
-        
-                            $display("%0d: Channel %0d: Result = %f | Expected = %f",
-                                     transfer_id, channel, $bitstoreal(m_axis_tdata[channel]), expected);
-                        end
-                    join
+    // Driver for each channel
+    genvar ch;
+    generate
+        for (ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
+            initial begin
+                wait(start);
+                
+                for (int j = 0; j < NUM_TRANSFERS; j++) begin  
+                    expected[ch][j] = 0;
+                       
+                    // Send vector data
+                    for (int i = 0; i < VECTOR_LEN; i++) begin
+                        s_axis_a_tdata[ch]  = $realtobits(a_values[ch][i] + j);
+                        s_axis_a_tvalid[ch] = 1;
+    
+                        wait (s_axis_a_tready[ch]);
+                        @(posedge clk);
+                        s_axis_a_tvalid[ch] = 0;
+    
+                        expected[ch][j] += (a_values[ch][i] + j) * b_values[i];
+                    end
+    
+                    // Wait for output
+                    wait (m_axis_tvalid[ch] && m_axis_tready[ch] && m_axis_tlast[ch]);
+                    @(posedge clk);
+    
+                    done[ch][j] = 1;
+    
+                    $display("%0d: Channel %0d: Result = %f | Expected = %f",
+                             j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
                 end
-            join
+            end
         end
+    endgenerate
+    
+    integer all_done = 0;
 
-        #100;
-
+    // Wait for all transfers to complete
+    initial begin
+        wait(start);
+    
+        forever begin
+            all_done = 1;
+            for (int ch = 0; ch < NUM_CHANNELS; ch++) begin
+                for (int j = 0; j < NUM_TRANSFERS; j++) begin
+                    if (!done[ch][j])
+                        all_done = 0;
+                end
+            end
+            if (all_done) begin
+                $display("All transfers complete.");
+                break;
+            end
+            @(posedge clk);
+        end
+    
+        repeat (10) @(posedge clk);
+        
         $finish;
     end
 

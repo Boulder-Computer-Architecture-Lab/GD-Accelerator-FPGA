@@ -25,3 +25,12 @@ assign m_axis_2_tvalid  = m_axis_tvalid[2];
 assign m_axis_tready[2] = m_axis_2_tready;
 assign m_axis_2_tlast   = m_axis_tlast[2];
 
+assign s_axis_a_tdata[3]  = s_axis_a_3_tdata;
+assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
+assign s_axis_a_3_tready  = s_axis_a_tready[3];
+
+assign m_axis_3_tdata   = m_axis_tdata[3];
+assign m_axis_3_tvalid  = m_axis_tvalid[3];
+assign m_axis_tready[3] = m_axis_3_tready;
+assign m_axis_3_tlast   = m_axis_tlast[3];
+

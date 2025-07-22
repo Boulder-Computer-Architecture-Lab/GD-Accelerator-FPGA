@@ -3,8 +3,10 @@
 import os
 
 CWD = os.getcwd()
-BIND_CHANNELS_PATH = os.path.join(CWD, "../vivado-accelerator/vivado-accelerator.srcs/sources_1/new/bind_channels.vh")
-INTERCONNECT_CHANNELS_PATH = os.path.join(CWD, "../vivado-accelerator/vivado-accelerator.srcs/sources_1/new/interconnect_channels.vh")
+SOURCES_PATH = os.path.join(CWD, "../vivado-accelerator/vivado-accelerator.srcs/sources_1/new")
+BIND_CHANNELS_PATH = os.path.join(SOURCES_PATH, "bind_channels.vh")
+INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "interconnect_channels.vh")
+BROADCAST_CHANNELS_PATH = os.path.join(SOURCES_PATH, "broadcast_channels.vh")
 
 def generate_bind_channels(num_channels):
     lines = []
@@ -48,6 +50,26 @@ def generate_ic_channels(num_channels):
 """)
     return ''.join(lines)
 
+def generate_bcast_channels(num_channels):
+    lines = []
+
+    lines.append("    .m_axis_tdata  ({")
+    lines.append(", ".join([f"s_axis_b_tdata[{i}]" for i in reversed(range(8))]))
+    lines.append("}),\n")
+
+    lines.append("    .m_axis_tvalid ({")
+    lines.append(", ".join([f"s_axis_b_tvalid[{i}]" for i in reversed(range(8))]))
+    lines.append("}),\n")
+
+    lines.append("    .m_axis_tready ({")
+    lines.append(", ".join([
+        f"s_axis_b_tready[{i}]" if i < num_channels else "1'b1"
+        for i in reversed(range(8))
+    ]))
+    lines.append("})\n")
+
+    return ''.join(lines)
+
 if __name__ == "__main__":
     try:
         num_channels = int(input("Enter the number of channels 1-8 to generate bindings for: "))
@@ -61,6 +83,11 @@ if __name__ == "__main__":
         with open(INTERCONNECT_CHANNELS_PATH, "w") as f:
             f.write(content)
         print(f"Generated bindings for {num_channels} channels at:\n{INTERCONNECT_CHANNELS_PATH}")
+
+        content = generate_bcast_channels(num_channels)
+        with open(BROADCAST_CHANNELS_PATH, "w") as f:
+            f.write(content)
+        print(f"Generated bindings for {num_channels} channels at:\n{BROADCAST_CHANNELS_PATH}")
 
     except ValueError:
         print("Error: please enter a valid integer for NUM_CHANNELS.")
