@@ -3,16 +3,16 @@
 module tb_mvm_accelerator;
 
     `include "axi_a_channel_bindings.svh"
-    `define GET_CHANNELS `CHANNELS_8 // `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
+    `define GET_CHANNELS `CHANNELS_4 // `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
 
-    parameter USE_ASYNC = 0; // select accelerator type (sync or async)
+    parameter USE_ASYNC = 1; // select accelerator type (sync or async)
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
     parameter ID_WIDTH = 4;
     
-    parameter int NUM_ACCEL_INST     = 3;
-    parameter int CHANNELS_PER_INST  = 8;
+    parameter int NUM_ACCEL_INST     = 1;
+    parameter int CHANNELS_PER_INST  = 4;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN = 64;
