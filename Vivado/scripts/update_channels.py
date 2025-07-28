@@ -6,6 +6,7 @@ CWD = os.getcwd()
 SOURCES_PATH = os.path.join(CWD, "../vivado-accelerator/vivado-accelerator.srcs/sources_1/new")
 BIND_CHANNELS_PATH = os.path.join(SOURCES_PATH, "bind_channels.vh")
 INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "interconnect_channels.vh")
+SPLIT_INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "split_interconnect_channels.vh")
 BROADCAST_CHANNELS_PATH = os.path.join(SOURCES_PATH, "broadcast_channels.vh")
 
 def generate_bind_channels(num_channels):
@@ -50,6 +51,27 @@ def generate_ic_channels(num_channels):
 """)
     return ''.join(lines)
 
+def generate_split_ic_channels(num_channels):
+    s_axi_signals = [
+        "arid", "araddr", "arlen", "arsize", "arburst", "arlock",
+        "arcache", "arprot", "arvalid", "arready",
+        "rid", "rdata", "rresp", "rlast", "rvalid", "rready"
+    ]
+    m_axi_signals = [
+        "arid", "araddr", "arlen", "arsize", "arburst", "arlock",
+        "arcache", "arprot", "arvalid", "arready",
+        "rid", "rdata", "rresp", "rlast", "rvalid", "rready"
+    ]
+    lines = []
+    for sig in s_axi_signals:
+        ports = ", ".join([f"m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
+        lines.append(f".s_axi_{sig:<8} ({{{ports}}}),")
+    lines.append("")  # spacer
+    for sig in m_axi_signals:
+        ports = ", ".join([f"ram_m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
+        lines.append(f".m_axi_{sig:<8} ({{{ports}}}),")
+    return "\n".join(lines)
+
 def generate_bcast_channels(num_channels):
     lines = []
 
@@ -67,7 +89,6 @@ def generate_bcast_channels(num_channels):
         for i in reversed(range(8))
     ]))
     lines.append("})\n")
-
     return ''.join(lines)
 
 if __name__ == "__main__":
@@ -83,6 +104,11 @@ if __name__ == "__main__":
         with open(INTERCONNECT_CHANNELS_PATH, "w") as f:
             f.write(content)
         print(f"Generated bindings for {num_channels} channels at:\n{INTERCONNECT_CHANNELS_PATH}")
+
+        content = generate_split_ic_channels(num_channels)
+        with open(SPLIT_INTERCONNECT_CHANNELS_PATH, "w") as f:
+            f.write(content)
+        print(f"Generated bindings for {num_channels} channels at:\n{SPLIT_INTERCONNECT_CHANNELS_PATH}")
 
         content = generate_bcast_channels(num_channels)
         with open(BROADCAST_CHANNELS_PATH, "w") as f:

@@ -5,18 +5,23 @@ module tb_mvm_accelerator;
     `include "axi_a_channel_bindings.svh"
     `define GET_CHANNELS `CHANNELS_4 // `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
 
-    parameter USE_ASYNC = 1; // select accelerator type (sync or async)
+    //parameter USE_ASYNC = 1; // select accelerator type (sync or async)
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
     parameter ID_WIDTH = 4;
+    parameter STRB_WIDTH = DATA_WIDTH/8;
     
     parameter int NUM_ACCEL_INST     = 1;
     parameter int CHANNELS_PER_INST  = 4;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
+    parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
-    parameter int VECTOR_LEN = 64;
-    parameter int NUM_TRANSFERS = 4;
+    parameter int VECTOR_LEN = 2048;
+    parameter int NUM_TRANSFERS = 1;
+    
+    localparam AXI_WRITE_LEN = VECTOR_LEN/NUM_RAM_PARTITIONS;
+    localparam MAX_BURST_LEN = 256;
     
     reg clk = 0;
     reg rstn = 1;
@@ -56,34 +61,35 @@ module tb_mvm_accelerator;
     reg [DATA_WIDTH-1:0] bram [VECTOR_LEN-1:0]; // Virtual BRAM
     
     // AXI write task for writing B vector
-    task axi_write_burst(input [31:0] addr, input integer inst);
-        integer k;
+    task axi_write_burst(input [31:0] addr, input integer len, input integer bram_offset, input integer inst);
+        integer k, idx;
         begin
             // Write address
             s_axi_b_awaddr[inst]  = addr;
-            s_axi_b_awlen[inst]   = VECTOR_LEN - 1;
+            s_axi_b_awlen[inst]   = len - 1;
             s_axi_b_awsize[inst]  = 3;
             s_axi_b_awburst[inst] = 1;
             s_axi_b_awvalid[inst] = 1;
-            
-            $display("\n[AXI WRITE] Channel %0d: Starting burst write", inst);
+                        
+            $display("\n[AXI WRITE] Instance %0d: Starting burst write", inst);
             $display("[AXI WRITE]   Address    = 0x%08h", addr);
-            $display("[AXI WRITE]   Burst Len  = %0d (beats)", VECTOR_LEN);
+            $display("[AXI WRITE]   Burst Len  = %0d (beats)", len);
             $display("[AXI WRITE]   Beat Size  = %0d bytes", (1 << s_axi_b_awsize[inst]));
-            $display("[AXI WRITE]   Total Size = %0d bytes", VECTOR_LEN * (1 << s_axi_b_awsize[inst]));
+            $display("[AXI WRITE]   Total Size = %0d bytes", len * (1 << s_axi_b_awsize[inst]));
 
             wait (s_axi_b_awready[inst] && s_axi_b_awvalid[inst]);
             @(posedge clk);
             s_axi_b_awvalid[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: AW handshake done", inst);
+            $display("[AXI WRITE] Instance %0d: AW handshake done", inst);
                 
             // Write data
-            for (k = 0; k < VECTOR_LEN; k = k + 1) begin
-                $display("[AXI WRITE] Channel %0d: Writing beat %0d: data = %h", inst, k, bram[k]);
-                s_axi_b_wdata[inst] = bram[k];
+            for (k = 0; k < len; k = k + 1) begin
+                idx = k + bram_offset;
+                $display("[AXI WRITE] Instance %0d: Writing beat %0d: data = %h (bram[%0d])", inst, k, bram[idx], idx);
+                s_axi_b_wdata[inst] = bram[idx];
                 s_axi_b_wstrb[inst] = 8'hFF;
                 s_axi_b_wvalid[inst] = 1;
-                s_axi_b_wlast[inst] = (k == VECTOR_LEN-1);
+                s_axi_b_wlast[inst] = (k == len-1);
                 
                 wait (s_axi_b_wready[inst] && s_axi_b_wvalid[inst]);
                 @(posedge clk);
@@ -91,14 +97,14 @@ module tb_mvm_accelerator;
             end
             s_axi_b_wvalid[inst] = 0;
             s_axi_b_wlast[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: Data phase complete", inst);
+            $display("[AXI WRITE] Instance %0d: Data phase complete", inst);
                     
             // Write response
             s_axi_b_bready[inst] = 1;
             wait (s_axi_b_bvalid[inst] && s_axi_b_bready[inst]);
             @(posedge clk);
             s_axi_b_bready[inst] = 0;
-            $display("[AXI WRITE] Channel %0d: Received B response", inst);
+            $display("[AXI WRITE] Instance %0d: Received B response", inst);
             
             // Reset
             s_axi_b_awvalid[inst] = 0;
@@ -110,7 +116,7 @@ module tb_mvm_accelerator;
             s_axi_b_awprot[inst]  = 0;
             s_axi_b_wlast[inst]   = 0;
             s_axi_b_wstrb[inst]   = 8'hFF;
-            $display("[AXI WRITE] Channel %0d: Burst write complete\n", inst);
+            $display("[AXI WRITE] Instance %0d: Burst write complete\n", inst);
         end
     endtask
 
@@ -119,8 +125,10 @@ module tb_mvm_accelerator;
         for (genvar inst = 0; inst < NUM_ACCEL_INST; inst = inst + 1) begin : gen_accel
             localparam int base_idx = inst * CHANNELS_PER_INST;
         
-            mvm_accelerator #(
-                .USE_ASYNC(USE_ASYNC),
+            mvm_accelerator_split #(
+                //.USE_ASYNC(USE_ASYNC),
+                .ADDR_WIDTH(ADDR_WIDTH),
+                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
                 .WORDS_PER_TRANSFER(VECTOR_LEN),
                 .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
@@ -142,6 +150,8 @@ module tb_mvm_accelerator;
     reg start = 0;
     reg done [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];
     
+    integer num_full_bursts, final_burst_len;
+    
     // Initialization
     initial begin
     
@@ -154,8 +164,8 @@ module tb_mvm_accelerator;
             m_axis_tready[i] = 1;
         
             for (int j = 0; j < VECTOR_LEN; j = j + 1) begin
-                a_values[i][j] = (j+1) / ((i+1) * 100.0);
-                b_values[j] = (j+1) / 1000.0;
+                a_values[i][j] = (j+1) / ((i+1) * 1000.0);
+                b_values[j] = (j+1) / 10000.0;
             end
                         
             for (int j = 0; j < NUM_TRANSFERS; j = j + 1) begin
@@ -169,8 +179,30 @@ module tb_mvm_accelerator;
         end
         
         for (int i = 0; i < NUM_ACCEL_INST; i = i + 1) begin
-            repeat (10) @(posedge clk);
-            axi_write_burst(32'h1000_0000*i, i);
+            for (int j = 0; j < NUM_RAM_PARTITIONS; j = j + 1) begin
+                repeat (10) @(posedge clk);
+                
+                num_full_bursts = AXI_WRITE_LEN / MAX_BURST_LEN;
+                final_burst_len = AXI_WRITE_LEN % MAX_BURST_LEN;
+                
+                for (int k = 0; k < num_full_bursts; k = k + 1) begin
+                    axi_write_burst(
+                        32'h1000_0000 * i + (j * AXI_WRITE_LEN + k * MAX_BURST_LEN) * STRB_WIDTH,
+                        MAX_BURST_LEN,
+                        j * AXI_WRITE_LEN + k * MAX_BURST_LEN,
+                        i
+                    );
+                end
+                
+                if (final_burst_len > 0) begin
+                    axi_write_burst(
+                        32'h1000_0000*i + (j * AXI_WRITE_LEN + num_full_bursts * MAX_BURST_LEN) * STRB_WIDTH,
+                        final_burst_len,
+                        j * AXI_WRITE_LEN + num_full_bursts * MAX_BURST_LEN,
+                        i
+                    );
+                end
+            end
         end
         
         start = 1;
