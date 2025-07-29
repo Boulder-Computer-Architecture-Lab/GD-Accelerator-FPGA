@@ -18,7 +18,7 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN = 2048;
-    parameter int NUM_TRANSFERS = 1;
+    parameter int NUM_TRANSFERS = 2;
     
     localparam AXI_WRITE_LEN = VECTOR_LEN/NUM_RAM_PARTITIONS;
     localparam MAX_BURST_LEN = 256;

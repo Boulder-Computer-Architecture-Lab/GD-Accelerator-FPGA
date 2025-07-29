@@ -106,8 +106,9 @@ module mvm_channel_split #(
     // ========================================
 
     localparam DMA_BURST_LEN = 256;
-    localparam integer BYTES_PER_RAM_INST = (WORDS_PER_TRANSFER * STRB_WIDTH) / NUM_RAM_PARTITIONS;
-    localparam [19:0] dma_desc_len = (WORDS_PER_TRANSFER * STRB_WIDTH) / NUM_RAM_PARTITIONS;
+    localparam DMA_LEN_WIDTH = 20;
+    localparam BYTES_PER_RAM_INST = (WORDS_PER_TRANSFER * STRB_WIDTH) / NUM_RAM_PARTITIONS;
+    localparam [DMA_LEN_WIDTH-1:0] dma_desc_len = (WORDS_PER_TRANSFER * STRB_WIDTH) / NUM_RAM_PARTITIONS;
         
     wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_RAM_INST);
 
@@ -133,7 +134,7 @@ module mvm_channel_split #(
             desc_sent <= 1'b0;
             dma_desc_valid <= 1'b0;
         end else if (start) begin 
-            if (!desc_sent && grant_next_partition && s_axis_a_tvalid) begin
+            if (!desc_sent && grant_next_partition) begin
                 dma_desc_valid <= 1'b1;
                 if (dma_desc_ready) begin
                     desc_sent <= 1'b1;
@@ -156,7 +157,7 @@ module mvm_channel_split #(
         .AXIS_KEEP_ENABLE(1),
         .AXIS_LAST_ENABLE(0),
         .AXIS_USER_ENABLE(0),
-        .LEN_WIDTH(20),
+        .LEN_WIDTH(DMA_LEN_WIDTH),
         .TAG_WIDTH(8),
         .ENABLE_SG(0),
         .ENABLE_UNALIGNED(1)

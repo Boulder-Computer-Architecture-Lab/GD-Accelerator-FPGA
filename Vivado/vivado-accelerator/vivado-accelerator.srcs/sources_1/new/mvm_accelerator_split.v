@@ -123,7 +123,7 @@ module mvm_accelerator_split #(
     reg  [NUM_PARTITIONS_WIDTH-1:0] partition_idx  [NUM_CHANNELS-1:0];
     reg  partition_grant [NUM_CHANNELS-1:0];
     reg  partition_wait  [NUM_CHANNELS-1:0];
-    wire partition_done  [NUM_CHANNELS-1:0];        
+    wire partition_done  [NUM_CHANNELS-1:0];
     reg conflict;
 
     integer p, q;
@@ -311,24 +311,26 @@ module mvm_accelerator_split #(
     assign s_axi_b_awready = ram_awready[ram_sel];
     assign s_axi_b_wready  = ram_wready[ram_sel];
     
-    wire [ADDR_WIDTH-1:0] ar_rel_addr = ram_m_axi_araddr[0] - AXI_RAM_BASE_ADDR;
-    wire [RAM_SEL_WIDTH-1:0] ar_ram_sel = ar_rel_addr / BYTES_PER_RAM_INST;
-    
     genvar k;
     generate
         for (k = 0; k < NUM_RAM_PARTITIONS; k = k + 1) begin : ram_gen
-                    
-            wire awvalid_sel = s_axi_b_awvalid && (ram_sel == k);
-            wire wvalid_sel  = s_axi_b_wvalid  && (ram_sel == k);
-            wire bready_sel  = s_axi_b_bready  && (ram_sel == k);
             
             wire [ADDR_WIDTH-1:0] partition_base_addr = AXI_RAM_BASE_ADDR + k * BYTES_PER_RAM_INST;
             wire [AXI_RAM_ADDR_WIDTH-1:0] local_awaddr = s_axi_b_awaddr - partition_base_addr;
+            
+            wire [ADDR_WIDTH-1:0] ar_rel_addr_k = ram_m_axi_araddr[k] - AXI_RAM_BASE_ADDR;
+            wire [RAM_SEL_WIDTH-1:0] ar_ram_sel_k = ar_rel_addr_k / BYTES_PER_RAM_INST;
+            
+            wire awvalid_sel = s_axi_b_awvalid && (ram_sel == k);
+            wire wvalid_sel  = s_axi_b_wvalid  && (ram_sel == k);
+            wire bready_sel  = s_axi_b_bready  && (ram_sel == k);
+            wire arvalid_sel = ram_m_axi_arvalid[k] && (ar_ram_sel_k == k);
         
             axi_ram #(
                 .NUM_WORDS(WORDS_PER_RAM_INST),
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
                 .ID_WIDTH(ID_WIDTH+4)
+                //.ID_WIDTH((ID_WIDTH+4) + $clog2(NUM_CHANNELS))
             ) axi_ram_inst (
                 .clk(clk),
                 .rstn(rstn),
@@ -365,7 +367,7 @@ module mvm_accelerator_split #(
                 .s_axi_arlock(ram_m_axi_arlock[k]),
                 .s_axi_arcache(ram_m_axi_arcache[k]),
                 .s_axi_arprot(ram_m_axi_arprot[k]),
-                .s_axi_arvalid(ram_m_axi_arvalid[k]),
+                .s_axi_arvalid(arvalid_sel),
                 .s_axi_arready(ram_m_axi_arready[k]),
             
                 .s_axi_rid(ram_m_axi_rid[k]),
@@ -379,7 +381,7 @@ module mvm_accelerator_split #(
     endgenerate
     
     // =============================================================
-    //                      AXI INTERCONNECT
+    //                      AXI CROSSBAR
     // =============================================================
     
     function [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
@@ -392,21 +394,10 @@ module mvm_accelerator_split #(
             end
         end
     endfunction
-    
-    function [NUM_RAM_PARTITIONS*32-1:0] gen_m_addr_width;
-        input [31:0] width;
-        integer i;
-        begin
-            for (i = 0; i < NUM_RAM_PARTITIONS; i = i + 1) begin
-                gen_m_addr_width[(i+1)*32-1 -: 32] = width;
-            end
-        end
-    endfunction
-    
-    localparam AXI_ID_FULL_WIDTH   = ID_WIDTH + 4;
+   
     localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
     localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
-    localparam AXI_AWID_WIDTH      = AXI_ID_FULL_WIDTH * NUM_CHANNELS;
+    localparam AXI_AWID_WIDTH      = (ID_WIDTH + 4) * NUM_CHANNELS;
     localparam AXI_AWADDR_WIDTH    = ADDR_WIDTH * NUM_CHANNELS;
     localparam AXI_AWLEN_WIDTH     = 8 * NUM_CHANNELS;
     localparam AXI_AWSIZE_WIDTH    = 3 * NUM_CHANNELS;
@@ -417,90 +408,152 @@ module mvm_accelerator_split #(
     localparam AXI_AWQOS_WIDTH     = 4 * NUM_CHANNELS;
     localparam AXI_AWUSER_WIDTH    = 1 * NUM_CHANNELS;
     
-    localparam REGION_WIDTH = 32;
+    localparam S_ID_WIDTH = ID_WIDTH + 4;
     localparam [31:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = gen_m_addr_width(REGION_ADDR_WIDTH);
+    localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
     
-    // Reads from AXI_RAM and sends to computational logic
-    axi_interconnect #(
+    // Connects DMAs to RAM
+    /*
+    axi_crossbar #(
         .S_COUNT(NUM_CHANNELS),
         .M_COUNT(NUM_RAM_PARTITIONS),
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(ADDR_WIDTH),
         .STRB_WIDTH(STRB_WIDTH),
-        .ID_WIDTH(ID_WIDTH+4),
-        .M_BASE_ADDR(M_BASE_ADDR),
-        .M_ADDR_WIDTH(M_ADDR_WIDTH),
-        .M_CONNECT_READ({NUM_RAM_PARTITIONS{1'b1}}),
-        .M_CONNECT_WRITE(0),
+        .S_ID_WIDTH(S_ID_WIDTH),
+        .M_ID_WIDTH(S_ID_WIDTH + $clog2(NUM_CHANNELS)),
+    
         .AWUSER_ENABLE(0),
         .WUSER_ENABLE(0),
         .BUSER_ENABLE(0),
         .ARUSER_ENABLE(0),
-        .RUSER_ENABLE(0)
-    ) axi_interconnect_inst (
+        .RUSER_ENABLE(0),
+    
+        .S_THREADS({NUM_CHANNELS{32'd2}}),
+        .S_ACCEPT({NUM_CHANNELS{32'd16}}),
+        .M_REGIONS(1),
+    
+        .M_BASE_ADDR(M_BASE_ADDR),
+        .M_ADDR_WIDTH(M_ADDR_WIDTH),
+        .M_CONNECT_READ({NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}}),
+        .M_CONNECT_WRITE({NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}}),
+        .M_ISSUE({NUM_RAM_PARTITIONS{32'd4}}),
+        .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
+    
+        .S_AW_REG_TYPE({NUM_CHANNELS{2'd0}}),
+        .S_W_REG_TYPE({NUM_CHANNELS{2'd0}}),
+        .S_B_REG_TYPE({NUM_CHANNELS{2'd1}}),
+        .S_AR_REG_TYPE({NUM_CHANNELS{2'd0}}),
+        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
+        .M_AW_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
+        .M_W_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
+        .M_B_REG_TYPE({NUM_RAM_PARTITIONS{2'd0}}),
+        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
+        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd0}})
+    ) axi_crossbar_inst (
         .clk(clk),
         .rstn(rstn),
-    
+
         `include "split_interconnect_channels.vh"
-        
-        .s_axi_arqos({AXI_AWQOS_WIDTH{1'b0}}),
-        .s_axi_ruser(),
-        .s_axi_aruser(),
-        .m_axi_arqos(),
-        .m_axi_arregion(),
-        .m_axi_aruser(),
-        .m_axi_ruser(),
-    
-        .s_axi_awid   ({AXI_AWID_WIDTH{1'b0}}),
-        .s_axi_awaddr ({AXI_AWADDR_WIDTH{1'b0}}),
-        .s_axi_awlen  ({AXI_AWLEN_WIDTH{1'b0}}),
-        .s_axi_awsize ({AXI_AWSIZE_WIDTH{1'b0}}),
-        .s_axi_awburst({AXI_AWBURST_WIDTH{1'b0}}),
-        .s_axi_awlock ({AXI_AWLOCK_WIDTH{1'b0}}),
-        .s_axi_awcache({AXI_AWCACHE_WIDTH{1'b0}}),
-        .s_axi_awprot ({AXI_AWPROT_WIDTH{1'b0}}),
-        .s_axi_awqos  ({AXI_AWQOS_WIDTH{1'b0}}),
-        .s_axi_awuser ({AXI_AWUSER_WIDTH{1'b0}}),
-        .s_axi_awvalid({NUM_CHANNELS{1'b0}}),
-        .s_axi_awready(),
-        .s_axi_wdata  ({AXI_WDATA_WIDTH{1'b0}}),
-        .s_axi_wstrb  ({AXI_WSTRB_WIDTH{1'b0}}),
-        .s_axi_wlast  ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wuser  ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wvalid ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wready (),
-        .s_axi_bid    (),
-        .s_axi_bresp  (),
-        .s_axi_buser  (),
-        .s_axi_bvalid (),
-        .s_axi_bready ({NUM_CHANNELS{1'b0}}),
-        
-        .m_axi_awid(),
-        .m_axi_awaddr(),
-        .m_axi_awlen(),
-        .m_axi_awsize(),
-        .m_axi_awburst(),
-        .m_axi_awlock(),
-        .m_axi_awcache(),
-        .m_axi_awprot(),
-        .m_axi_awqos(),
-        .m_axi_awregion(),
-        .m_axi_awuser(),
-        .m_axi_awvalid(),
-        .m_axi_awready(),
-        .m_axi_wdata(),
-        .m_axi_wstrb(),
-        .m_axi_wlast(),
-        .m_axi_wuser(),
-        .m_axi_wvalid(),
-        .m_axi_wready(),
-        .m_axi_bid(),
-        .m_axi_bresp(),
-        .m_axi_buser(),
-        .m_axi_bvalid(),
-        .m_axi_bready()
+
+        // Tie off unused write channels
+        .s_axi_awid    ({AXI_AWID_WIDTH{1'b0}}),
+        .s_axi_awaddr  ({AXI_AWADDR_WIDTH{1'b0}}),
+        .s_axi_awlen   ({AXI_AWLEN_WIDTH{1'b0}}),
+        .s_axi_awsize  ({AXI_AWSIZE_WIDTH{1'b0}}),
+        .s_axi_awburst ({AXI_AWBURST_WIDTH{1'b0}}),
+        .s_axi_awlock  ({AXI_AWLOCK_WIDTH{1'b0}}),
+        .s_axi_awcache ({AXI_AWCACHE_WIDTH{1'b0}}),
+        .s_axi_awprot  ({AXI_AWPROT_WIDTH{1'b0}}),
+        .s_axi_awqos   ({AXI_AWQOS_WIDTH{1'b0}}),
+        .s_axi_awvalid ({NUM_CHANNELS{1'b0}}),
+        .s_axi_wdata   ({AXI_WDATA_WIDTH{1'b0}}),
+        .s_axi_wstrb   ({AXI_WSTRB_WIDTH{1'b0}}),
+        .s_axi_wlast   ({NUM_CHANNELS{1'b0}}),
+        .s_axi_wvalid  ({NUM_CHANNELS{1'b0}}),
+        .s_axi_bready  ({NUM_CHANNELS{1'b0}}),
+
+        .m_axi_awready (),
+        .m_axi_wready  (),
+        .m_axi_bid     (),
+        .m_axi_bresp   (),
+        .m_axi_bvalid  (),
+        .m_axi_bready  (),
+
+        .s_axi_awready (),
+        .s_axi_wready  (),
+        .s_axi_bid     (),
+        .s_axi_bresp   (),
+        .s_axi_bvalid  (),
+
+        .m_axi_awid    (),
+        .m_axi_awaddr  (),
+        .m_axi_awlen   (),
+        .m_axi_awsize  (),
+        .m_axi_awburst (),
+        .m_axi_awlock  (),
+        .m_axi_awcache (),
+        .m_axi_awprot  (),
+        .m_axi_awqos   (),
+        .m_axi_awvalid (),
+        .m_axi_wdata   (),
+        .m_axi_wstrb   (),
+        .m_axi_wlast   (),
+        .m_axi_wvalid  ()
+    );
+    */
+
+    axi_crossbar_0 axi_crossbar_inst (
+        .aclk(clk),
+        .aresetn(rstn),
+
+        `include "split_interconnect_channels.vh"
+
+        // Tie off unused write channels
+        .s_axi_awid    ({AXI_AWID_WIDTH{1'b0}}),
+        .s_axi_awaddr  ({AXI_AWADDR_WIDTH{1'b0}}),
+        .s_axi_awlen   ({AXI_AWLEN_WIDTH{1'b0}}),
+        .s_axi_awsize  ({AXI_AWSIZE_WIDTH{1'b0}}),
+        .s_axi_awburst ({AXI_AWBURST_WIDTH{1'b0}}),
+        .s_axi_awlock  ({AXI_AWLOCK_WIDTH{1'b0}}),
+        .s_axi_awcache ({AXI_AWCACHE_WIDTH{1'b0}}),
+        .s_axi_awprot  ({AXI_AWPROT_WIDTH{1'b0}}),
+        .s_axi_awqos   ({AXI_AWQOS_WIDTH{1'b0}}),
+        .s_axi_awvalid ({NUM_CHANNELS{1'b0}}),
+        .s_axi_wdata   ({AXI_WDATA_WIDTH{1'b0}}),
+        .s_axi_wstrb   ({AXI_WSTRB_WIDTH{1'b0}}),
+        .s_axi_wlast   ({NUM_CHANNELS{1'b0}}),
+        .s_axi_wvalid  ({NUM_CHANNELS{1'b0}}),
+        .s_axi_bready  ({NUM_CHANNELS{1'b0}}),
+
+        .m_axi_awready (),
+        .m_axi_wready  (),
+        .m_axi_bid     (),
+        .m_axi_bresp   (),
+        .m_axi_bvalid  (),
+        .m_axi_bready  (),
+
+        .s_axi_awready (),
+        .s_axi_wready  (),
+        .s_axi_bid     (),
+        .s_axi_bresp   (),
+        .s_axi_bvalid  (),
+
+        .m_axi_awid    (),
+        .m_axi_awaddr  (),
+        .m_axi_awlen   (),
+        .m_axi_awsize  (),
+        .m_axi_awburst (),
+        .m_axi_awlock  (),
+        .m_axi_awcache (),
+        .m_axi_awprot  (),
+        .m_axi_awqos   (),
+        .m_axi_awvalid (),
+        .m_axi_wdata   (),
+        .m_axi_wstrb   (),
+        .m_axi_wlast   (),
+        .m_axi_wvalid  ()
     );
 
 endmodule

@@ -38,7 +38,7 @@ module axi_interconnect #
     // Number of AXI outputs (master interfaces)
     parameter M_COUNT = 4,
     // Width of data bus in bits
-    parameter DATA_WIDTH = 32,
+    parameter DATA_WIDTH = 64,
     // Width of address bus in bits
     parameter ADDR_WIDTH = 32,
     // Width of wstrb (width of data bus in words)
@@ -66,7 +66,7 @@ module axi_interconnect #
     // Width of ruser signal
     parameter RUSER_WIDTH = 1,
     // Propagate ID field
-    parameter FORWARD_ID = 0,
+    parameter FORWARD_ID = 1,
     // Number of regions per master interface
     parameter M_REGIONS = 1,
     // Master interface base addresses
