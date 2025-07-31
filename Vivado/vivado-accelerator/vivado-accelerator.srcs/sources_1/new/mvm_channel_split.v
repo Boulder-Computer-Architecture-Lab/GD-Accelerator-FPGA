@@ -15,8 +15,6 @@ module mvm_channel_split #(
     input  wire clk,
     input  wire rstn,
     
-    input wire start,
-
     // Input stream A
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
@@ -47,17 +45,14 @@ module mvm_channel_split #(
     output wire                  m_axi_rready,
     
     // Partition arbitration
+    input  wire start,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
-    input  wire grant_next_partition,
     output wire partition_done
 );
 
     // ========================================
     //                FIFO A
     // ========================================
-    
-    wire fifo_a_s_axis_tready;
-    assign s_axis_a_tready = fifo_a_s_axis_tready && start;
 
     wire [DATA_WIDTH-1:0] fifo_a_m_axis_tdata;
     wire                  fifo_a_m_axis_tvalid;
@@ -69,7 +64,7 @@ module mvm_channel_split #(
         
         .s_axis_tdata (s_axis_a_tdata),    
         .s_axis_tvalid(s_axis_a_tvalid),
-        .s_axis_tready(fifo_a_s_axis_tready),
+        .s_axis_tready(s_axis_a_tready),
 
         .m_axis_tdata (fifo_a_m_axis_tdata),    
         .m_axis_tvalid(fifo_a_m_axis_tvalid),
@@ -116,35 +111,23 @@ module mvm_channel_split #(
     wire dma_desc_ready;
     
     wire [7:0] dma_desc_tag  = TAG;
-    wire [7:0] dma_desc_id   = 8'd0;
+    wire [7:0] dma_desc_id   = TAG;
     wire [7:0] dma_desc_dest = 8'd0;
     wire       dma_desc_user = 1'b0;
         
     wire [7:0] dma_status_tag;
     wire [3:0] dma_status_error;
     wire       dma_status_valid;
-    
-    reg desc_sent;
-    
+        
     assign partition_done = dma_status_valid && (dma_status_tag == TAG);
         
-    integer p;
     always @(posedge clk) begin
-        if (!rstn) begin
-            desc_sent <= 1'b0;
+        if (!rstn)
             dma_desc_valid <= 1'b0;
-        end else if (start) begin 
-            if (!desc_sent && grant_next_partition) begin
-                dma_desc_valid <= 1'b1;
-                if (dma_desc_ready) begin
-                    desc_sent <= 1'b1;
-                end
-            end else if (dma_status_valid) begin
-                desc_sent <= 1'b0;
-            end else begin
-                dma_desc_valid <= 1'b0;
-            end
-        end
+        else if (!dma_desc_valid)
+            dma_desc_valid <= start;
+        else if (dma_desc_ready)
+            dma_desc_valid <= 1'b0;
     end
         
     axi_dma_rd #(

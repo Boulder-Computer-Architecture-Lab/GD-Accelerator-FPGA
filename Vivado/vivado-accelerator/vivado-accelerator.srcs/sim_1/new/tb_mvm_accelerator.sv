@@ -5,7 +5,7 @@ module tb_mvm_accelerator;
     `include "axi_a_channel_bindings.svh"
     `define GET_CHANNELS `CHANNELS_4 // `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
 
-    //parameter USE_ASYNC = 1; // select accelerator type (sync or async)
+    parameter ARCH_TYPE = 0; // select accelerator type (0=split, 1=async, 2=sync)
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
@@ -18,13 +18,15 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN = 2048;
-    parameter int NUM_TRANSFERS = 2;
+    parameter int NUM_TRANSFERS = 1;
     
     localparam AXI_WRITE_LEN = VECTOR_LEN/NUM_RAM_PARTITIONS;
     localparam MAX_BURST_LEN = 256;
     
     reg clk = 0;
     reg rstn = 1;
+
+    reg start = 0;
     
     // Inputs
     logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS];
@@ -57,7 +59,7 @@ module tb_mvm_accelerator;
     wire [1:0]                s_axi_b_bresp     [NUM_ACCEL_INST];
     wire                      s_axi_b_bvalid    [NUM_ACCEL_INST];
     reg                       s_axi_b_bready    [NUM_ACCEL_INST];
-         
+             
     reg [DATA_WIDTH-1:0] bram [VECTOR_LEN-1:0]; // Virtual BRAM
     
     // AXI write task for writing B vector
@@ -126,7 +128,7 @@ module tb_mvm_accelerator;
             localparam int base_idx = inst * CHANNELS_PER_INST;
         
             mvm_accelerator_split #(
-                //.USE_ASYNC(USE_ASYNC),
+                //.ARCH_TYPE(ARCH_TYPE),
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
@@ -134,7 +136,7 @@ module tb_mvm_accelerator;
                 .AXI_RAM_BASE_ADDR(32'h1000_0000*inst)
             ) dut (
                 .clk(clk),
-                .rstn(rstn),
+                .rstn(rstn),                
                 `GET_CHANNELS
                 `include "axi_full_write_bindings.svh"
             );
@@ -147,7 +149,6 @@ module tb_mvm_accelerator;
     real a_values [NUM_CHANNELS][VECTOR_LEN];
     real b_values [VECTOR_LEN];
     
-    reg start = 0;
     reg done [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];
     
     integer num_full_bursts, final_burst_len;

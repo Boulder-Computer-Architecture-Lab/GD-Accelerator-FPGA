@@ -8,25 +8,25 @@
     "gen_directory": "../../../../../../vivado-accelerator.gen/sources_1/bd/design_1/ip/design_1_mvm_accelerator_0_11",
     "parameters": {
       "component_parameters": {
-        "USE_ASYNC": [ { "value": "0", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "ARCH_TYPE": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "DATA_WIDTH": [ { "value": "64", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "ADDR_WIDTH": [ { "value": "32", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "STRB_WIDTH": [ { "value": "8", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "ID_WIDTH": [ { "value": "4", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "AXI_RAM_BASE_ADDR": [ { "value": "0x80000000", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
-        "WORDS_PER_TRANSFER": [ { "value": "8000", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "NUM_CHANNELS": [ { "value": "3", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "WORDS_PER_TRANSFER": [ { "value": "8192", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "NUM_CHANNELS": [ { "value": "4", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Component_Name": [ { "value": "design_1_mvm_accelerator_0_11", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
-        "USE_ASYNC": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "ARCH_TYPE": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "DATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "STRB_WIDTH": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "ID_WIDTH": [ { "value": "4", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "AXI_RAM_BASE_ADDR": [ { "value": "0x80000000", "resolve_type": "generated", "format": "bitString", "usage": "all" } ],
-        "WORDS_PER_TRANSFER": [ { "value": "8000", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "NUM_CHANNELS": [ { "value": "3", "resolve_type": "generated", "format": "long", "usage": "all" } ]
+        "WORDS_PER_TRANSFER": [ { "value": "8192", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "NUM_CHANNELS": [ { "value": "4", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "zynq" } ],

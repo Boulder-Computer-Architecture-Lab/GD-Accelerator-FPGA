@@ -12,7 +12,7 @@ module mvm_accelerator_split #(
 )(
     input wire clk,
     input wire rstn,
-
+    
     // Input streams
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
     input  wire                  s_axis_a_0_tvalid,
@@ -110,76 +110,9 @@ module mvm_accelerator_split #(
     output wire                    s_axi_b_bvalid,
     input  wire                    s_axi_b_bready
 );  
-    
-    // =============================================================
-    //                  PARTITION ACCESS LOGIC
-    // =============================================================
-    
-    localparam NUM_CHANNELS_WIDTH = $clog2(NUM_CHANNELS);
-    localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
-    
-    reg start [NUM_CHANNELS-1:0];
-    
-    reg  [NUM_PARTITIONS_WIDTH-1:0] partition_idx  [NUM_CHANNELS-1:0];
-    reg  partition_grant [NUM_CHANNELS-1:0];
-    reg  partition_wait  [NUM_CHANNELS-1:0];
-    wire partition_done  [NUM_CHANNELS-1:0];
-    reg conflict;
-
-    integer p, q;
-    always @(posedge clk) begin
-        if (!rstn) begin
-            for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                partition_idx[p] <= 0;
-                partition_wait[p]  <= (p != 0);
-                partition_grant[p] <= (p == 0);
-            end
-        end else begin
-            for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                if (start[p]) begin
-                    // If done, request next
-                    if (partition_done[p]) begin
-                        partition_idx[p]   <= (partition_idx[p] + 1) % NUM_RAM_PARTITIONS;
-                        partition_wait[p]  <= 1'b1;
-                        partition_grant[p] <= 1'b0;
-                    end
-                    // If waiting, try to claim next partition
-                    if (partition_wait[p]) begin
-                        // Check for conflict with active grants
-                        conflict = 0;
-                        for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
-                            if (q != p &&
-                                partition_grant[q] &&
-                                partition_idx[q] == partition_idx[p]) begin
-                                conflict = 1;
-                            end
-                        end
-                        if (!conflict) begin
-                            partition_grant[p] <= 1'b1;
-                            partition_wait[p]  <= 1'b0;
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    integer s;
-    always @(posedge clk) begin
-        if (!rstn) begin
-            start[0] <= 1'b1; // channel 0 starts immediately
-            for (s = 1; s < NUM_CHANNELS; s = s + 1)
-                start[s] <= 1'b0;
-        end else begin
-            for (s = 1; s < NUM_CHANNELS; s = s + 1) begin
-                if (partition_done[s-1])
-                    start[s] <= 1'b1;
-            end
-        end
-    end
 
     // =============================================================
-    //                  PACK & GENERATE CHANNELS
+    //                      PACK CHANNELS
     // =============================================================
     
     // Input stream arrays
@@ -216,6 +149,73 @@ module mvm_accelerator_split #(
     wire                     m_axi_rready   [NUM_CHANNELS-1:0];
     
     `include "bind_channels.vh"
+    
+    // =============================================================
+    //                  PARTITION ACCESS LOGIC
+    // =============================================================
+    
+    localparam NUM_CHANNELS_WIDTH = $clog2(NUM_CHANNELS);
+    localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
+        
+    reg  [NUM_PARTITIONS_WIDTH-1:0] partition_idx  [NUM_CHANNELS-1:0];
+    reg  partition_in_use [NUM_RAM_PARTITIONS-1:0];
+    reg  channel_active   [NUM_CHANNELS-1:0];
+    reg  partition_grant  [NUM_CHANNELS-1:0];
+    wire partition_done   [NUM_CHANNELS-1:0];
+    reg  row_ready        [NUM_CHANNELS-1:0];
+    reg  start            [NUM_CHANNELS-1:0];
+    
+    integer p;
+    always @(posedge clk) begin
+        if (!rstn) begin
+            for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
+                start[p] <= 1'b0;
+                partition_idx[p] <= p % NUM_RAM_PARTITIONS;
+                partition_grant[p] <= 1'b0;
+                channel_active[p] <= 1'b0;
+                row_ready[p] <= 1'b0;
+            end
+        end else begin
+            for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
+                if (start[p])
+                    row_ready[p] <= 1'b0;
+                else
+                    row_ready[p] <= s_axis_a_tvalid[p] && !channel_active[p];
+    
+                if (!start[p])
+                    start[p] <= partition_grant[p] && row_ready[p];
+                else
+                    start[p] <= 1'b0;
+                                
+                if (row_ready[p] && !partition_in_use[partition_idx[p]]) begin
+                    partition_grant[p] <= 1'b1;
+                    channel_active[p]  <= 1'b1;
+                end
+            
+                if (partition_done[p]) begin
+                    partition_grant[p] <= 1'b0;
+                    channel_active[p] <= 1'b0;
+                    partition_idx[p] <= (partition_idx[p] + 1) % NUM_RAM_PARTITIONS;
+                end
+            end
+        end
+    end
+    
+    integer q;
+    always @* begin
+        for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+            partition_in_use[q] = 1'b0;
+        end
+        for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
+            if (partition_grant[q]) begin
+                partition_in_use[partition_idx[q]] = 1'b1;
+            end
+        end
+    end
+
+    // =============================================================
+    //                  GENERATE CHANNELS
+    // =============================================================
 
     genvar ch;
     generate
@@ -232,9 +232,7 @@ module mvm_accelerator_split #(
             ) channel_inst (
               .clk(clk),
               .rstn(rstn),
-              
-              .start(start[ch]),
-        
+                      
               .s_axis_a_tdata (s_axis_a_tdata[ch]),
               .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
               .s_axis_a_tready(s_axis_a_tready[ch]),
@@ -261,8 +259,8 @@ module mvm_accelerator_split #(
               .m_axi_rvalid  (m_axi_rvalid[ch]),
               .m_axi_rready  (m_axi_rready[ch]),
               
+              .start(start[ch]),
               .partition_index(partition_idx[ch]),
-              .grant_next_partition(partition_grant[ch]),
               .partition_done(partition_done[ch])
             );
         end
