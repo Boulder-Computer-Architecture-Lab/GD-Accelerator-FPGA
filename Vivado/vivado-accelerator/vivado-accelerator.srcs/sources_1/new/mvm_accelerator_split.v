@@ -1,12 +1,14 @@
 `timescale 1ns / 1ps
 
 module mvm_accelerator_split #(
-    parameter DATA_WIDTH = 64,
+    parameter DATA_WIDTH = 1024,
     parameter ADDR_WIDTH = 32,
     parameter STRB_WIDTH = (DATA_WIDTH/8),
     parameter ID_WIDTH = 4,
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter WORDS_PER_TRANSFER = 17048,
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / 64, // MUST BE A POWER OF 2!
+    parameter ELEMENT_WIDTH = DATA_WIDTH/ELEMENTS_PER_WORD,
     parameter NUM_CHANNELS = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
 )(
@@ -47,42 +49,42 @@ module mvm_accelerator_split #(
     output wire                  s_axis_a_7_tready,
     
     // Output streams
-    output wire [DATA_WIDTH-1:0] m_axis_0_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
     output wire                  m_axis_0_tvalid,
     input  wire                  m_axis_0_tready,
     output wire                  m_axis_0_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_1_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
     output wire                  m_axis_1_tvalid,
     input  wire                  m_axis_1_tready,
     output wire                  m_axis_1_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_2_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
     output wire                  m_axis_2_tvalid,
     input  wire                  m_axis_2_tready,
     output wire                  m_axis_2_tlast,
 
-    output wire [DATA_WIDTH-1:0] m_axis_3_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
     output wire                  m_axis_3_tvalid,
     input  wire                  m_axis_3_tready,
     output wire                  m_axis_3_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_4_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_4_tdata,
     output wire                  m_axis_4_tvalid,
     input  wire                  m_axis_4_tready,
     output wire                  m_axis_4_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_5_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_5_tdata,
     output wire                  m_axis_5_tvalid,
     input  wire                  m_axis_5_tready,
     output wire                  m_axis_5_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_6_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_6_tdata,
     output wire                  m_axis_6_tvalid,
     input  wire                  m_axis_6_tready,
     output wire                  m_axis_6_tlast,
 
-    output wire [DATA_WIDTH-1:0] m_axis_7_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_7_tdata,
     output wire                  m_axis_7_tvalid,
     input  wire                  m_axis_7_tready,
     output wire                  m_axis_7_tlast,
@@ -110,6 +112,8 @@ module mvm_accelerator_split #(
     output wire                    s_axi_b_bvalid,
     input  wire                    s_axi_b_bready
 );  
+
+    localparam ELEMENTS_PER_TRANSFER = WORDS_PER_TRANSFER/ELEMENT_WIDTH;
 
     // =============================================================
     //                      PACK CHANNELS
@@ -271,6 +275,7 @@ module mvm_accelerator_split #(
     // =============================================================
     
     localparam WORDS_PER_RAM_INST = WORDS_PER_TRANSFER/NUM_RAM_PARTITIONS;
+    localparam ELEMENTS_PER_RAM_INST = ELEMENTS_PER_TRANSFER/NUM_RAM_PARTITIONS;
     localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST*STRB_WIDTH;
     localparam AXI_RAM_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     localparam ARQOS = 4'b0000;
@@ -325,7 +330,8 @@ module mvm_accelerator_split #(
             wire arvalid_sel = ram_m_axi_arvalid[k] && (ar_ram_sel_k == k);
         
             axi_ram #(
-                .NUM_WORDS(WORDS_PER_RAM_INST),
+                .NUM_WORDS(ELEMENTS_PER_RAM_INST),
+                .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
                 .ID_WIDTH(ID_WIDTH+4)
                 //.ID_WIDTH((ID_WIDTH+4) + $clog2(NUM_CHANNELS))

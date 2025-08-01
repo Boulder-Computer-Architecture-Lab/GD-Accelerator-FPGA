@@ -1,14 +1,16 @@
 `timescale 1ns / 1ps
 
 module mvm_channel_split #(
-    parameter DATA_WIDTH          = 64,
+    parameter DATA_WIDTH          = 1024,
     parameter ADDR_WIDTH          = 32,
     parameter STRB_WIDTH          = DATA_WIDTH / 8,
     parameter ID_WIDTH            = 4,
     
     parameter WORDS_PER_TRANSFER  = 17048,
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / 64, // MUST BE A POWER OF 2!
+    parameter ELEMENT_WIDTH = DATA_WIDTH/ELEMENTS_PER_WORD,
     parameter AXI_RAM_BASE_ADDR   = 32'h8000_0000,
-    parameter NUM_RAM_PARTITIONS = 4,
+    parameter NUM_RAM_PARTITIONS  = 4,
     parameter NUM_CHANNELS = NUM_RAM_PARTITIONS,
     parameter TAG = 0
 )(
@@ -21,7 +23,7 @@ module mvm_channel_split #(
     output wire                  s_axis_a_tready,
     
     // Output result stream
-    output wire [DATA_WIDTH-1:0] m_axis_tdata,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
     output wire                  m_axis_tvalid,
     input  wire                  m_axis_tready,
     output wire                  m_axis_tlast,
@@ -97,7 +99,7 @@ module mvm_channel_split #(
     );
     
     // ========================================
-    //  MM2S DMA FROM INTERCONNECT -> S_AXIS_B
+    //    MM2S DMA FROM CROSSBAR -> S_AXIS_B
     // ========================================
 
     localparam DMA_BURST_LEN = 256;
@@ -191,27 +193,77 @@ module mvm_channel_split #(
     );
     
     // ========================================
-    //          Dot product logic
+    //          DOT PRODUCT LOGIC
     // ========================================
+    
+    wire [ELEMENT_WIDTH-1:0] partial_sum   [ELEMENTS_PER_WORD-1:0];
+    wire                     partial_valid [ELEMENTS_PER_WORD-1:0];
 
-    dot_product #(
-        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
-    ) dp (
-        .clk(clk),
-        .rstn(rstn),
+    genvar i;
+    generate
+        for (i = 0; i < ELEMENTS_PER_WORD; i = i + 1) begin
+            dot_product #(
+                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
+            ) dp (
+                .clk(clk),
+                .rstn(rstn),
+        
+                .s_axis_a_tdata(fifo_a_m_axis_tdata[i*64 +: 64]),
+                .s_axis_a_tvalid(fifo_a_m_axis_tvalid),
+                .s_axis_a_tready(fifo_a_m_axis_tready),
+        
+                .s_axis_b_tdata(fifo_b_m_axis_tdata[i*64 +: 64]),
+                .s_axis_b_tvalid(fifo_b_m_axis_tvalid),
+                .s_axis_b_tready(fifo_b_m_axis_tready),
+        
+                .m_axis_tdata(partial_sum[i]),
+                .m_axis_tvalid(partial_valid[i]),
+                .m_axis_tready(1'b1), // temp
+                .m_axis_tlast() // temp
+            );
+        end
+    endgenerate
+    
+    // ========================================
+    //              ADDER TREE
+    // ========================================
+    
+    localparam integer NUM_LVLS = $clog2(ELEMENTS_PER_WORD);
 
-        .s_axis_a_tdata(fifo_a_m_axis_tdata),
-        .s_axis_a_tvalid(fifo_a_m_axis_tvalid),
-        .s_axis_a_tready(fifo_a_m_axis_tready),
-
-        .s_axis_b_tdata(fifo_b_m_axis_tdata),
-        .s_axis_b_tvalid(fifo_b_m_axis_tvalid),
-        .s_axis_b_tready(fifo_b_m_axis_tready),
-
-        .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
-        .m_axis_tready(m_axis_tready),
-        .m_axis_tlast(m_axis_tlast)
-    );
+    wire [ELEMENT_WIDTH-1:0] adder_tree_data    [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+    wire                     adder_tree_valid   [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+    
+    genvar k;
+    generate
+        for (k = 0; k < ELEMENTS_PER_WORD; k = k + 1) begin : lvl0_assign
+            assign adder_tree_data[0][k]  = partial_sum[k];
+            assign adder_tree_valid[0][k] = partial_valid[k];
+        end
+    endgenerate
+    
+    genvar lvl, j;
+    generate
+        for (lvl = 0; lvl < NUM_LVLS; lvl = lvl + 1) begin : tree_lvl
+            for (j = 0; j < ELEMENTS_PER_WORD >> (lvl + 1); j = j + 1) begin : tree_node
+            
+                fp64_adder fp_add_inst (
+                    .aclk(clk),
+                    .aresetn(rstn),
+    
+                    .s_axis_a_tvalid(adder_tree_valid[lvl][2*j]),
+                    .s_axis_a_tdata(adder_tree_data[lvl][2*j]),
+                    .s_axis_b_tvalid(adder_tree_valid[lvl][2*j+1]),
+                    .s_axis_b_tdata(adder_tree_data[lvl][2*j+1]),
+    
+                    .m_axis_result_tvalid(adder_tree_valid[lvl+1][j]),
+                    .m_axis_result_tdata(adder_tree_data[lvl+1][j])
+                );
+            end
+        end
+    endgenerate
+    
+    assign m_axis_tdata  = adder_tree_data[NUM_LVLS][0];
+    assign m_axis_tvalid = adder_tree_valid[NUM_LVLS][0];
+    assign m_axis_tlast  = 1'b1; // temp
 
 endmodule
