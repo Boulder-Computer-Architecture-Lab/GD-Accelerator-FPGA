@@ -2,13 +2,20 @@
 
 module mvm_accelerator #(
     parameter ARCH_TYPE = 0,
-    parameter DATA_WIDTH = 64,
-    parameter ADDR_WIDTH = 32,
-    parameter STRB_WIDTH = (DATA_WIDTH/8),
-    parameter ID_WIDTH = 4,
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    
+    parameter DATA_WIDTH         = 1024,
+    parameter ADDR_WIDTH         = 32,
+    parameter STRB_WIDTH         = DATA_WIDTH / 8,
+    parameter ID_WIDTH           = 4,
+    
+    parameter ELEMENT_WIDTH      = 64,
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
+    
     parameter WORDS_PER_TRANSFER = 17048,
-    parameter NUM_CHANNELS = 4
+    
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
+    parameter NUM_CHANNELS       = 4,
+    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
 )(
     input wire clk,
     input wire rstn,
@@ -47,45 +54,45 @@ module mvm_accelerator #(
     output wire                  s_axis_a_7_tready,
     
     // Output streams
-    output wire [DATA_WIDTH-1:0] m_axis_0_tdata,
-    output wire                  m_axis_0_tvalid,
-    input  wire                  m_axis_0_tready,
-    output wire                  m_axis_0_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
+    output wire                     m_axis_0_tvalid,
+    input  wire                     m_axis_0_tready,
+    output wire                     m_axis_0_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_1_tdata,
-    output wire                  m_axis_1_tvalid,
-    input  wire                  m_axis_1_tready,
-    output wire                  m_axis_1_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
+    output wire                     m_axis_1_tvalid,
+    input  wire                     m_axis_1_tready,
+    output wire                     m_axis_1_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_2_tdata,
-    output wire                  m_axis_2_tvalid,
-    input  wire                  m_axis_2_tready,
-    output wire                  m_axis_2_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
+    output wire                     m_axis_2_tvalid,
+    input  wire                     m_axis_2_tready,
+    output wire                     m_axis_2_tlast,
 
-    output wire [DATA_WIDTH-1:0] m_axis_3_tdata,
-    output wire                  m_axis_3_tvalid,
-    input  wire                  m_axis_3_tready,
-    output wire                  m_axis_3_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
+    output wire                     m_axis_3_tvalid,
+    input  wire                     m_axis_3_tready,
+    output wire                     m_axis_3_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_4_tdata,
-    output wire                  m_axis_4_tvalid,
-    input  wire                  m_axis_4_tready,
-    output wire                  m_axis_4_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_4_tdata,
+    output wire                     m_axis_4_tvalid,
+    input  wire                     m_axis_4_tready,
+    output wire                     m_axis_4_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_5_tdata,
-    output wire                  m_axis_5_tvalid,
-    input  wire                  m_axis_5_tready,
-    output wire                  m_axis_5_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_5_tdata,
+    output wire                     m_axis_5_tvalid,
+    input  wire                     m_axis_5_tready,
+    output wire                     m_axis_5_tlast,
     
-    output wire [DATA_WIDTH-1:0] m_axis_6_tdata,
-    output wire                  m_axis_6_tvalid,
-    input  wire                  m_axis_6_tready,
-    output wire                  m_axis_6_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_6_tdata,
+    output wire                     m_axis_6_tvalid,
+    input  wire                     m_axis_6_tready,
+    output wire                     m_axis_6_tlast,
 
-    output wire [DATA_WIDTH-1:0] m_axis_7_tdata,
-    output wire                  m_axis_7_tvalid,
-    input  wire                  m_axis_7_tready,
-    output wire                  m_axis_7_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_7_tdata,
+    output wire                     m_axis_7_tvalid,
+    input  wire                     m_axis_7_tready,
+    output wire                     m_axis_7_tlast,
 
     // S-AXI interface (for writing vector b)
     input  wire [(ID_WIDTH+4)-1:0] s_axi_b_awid,
@@ -118,9 +125,12 @@ module mvm_accelerator #(
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
+                .ELEMENT_WIDTH(ELEMENT_WIDTH),
+                .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
                 .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
-                .NUM_CHANNELS(NUM_CHANNELS)
+                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
+                .NUM_CHANNELS(NUM_CHANNELS),
+                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),

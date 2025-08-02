@@ -1,15 +1,18 @@
 `timescale 1ns / 1ps
 
 module mvm_accelerator_split #(
-    parameter DATA_WIDTH = 1024,
-    parameter ADDR_WIDTH = 32,
-    parameter STRB_WIDTH = (DATA_WIDTH/8),
-    parameter ID_WIDTH = 4,
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    parameter DATA_WIDTH         = 1024,
+    parameter ADDR_WIDTH         = 32,
+    parameter STRB_WIDTH         = DATA_WIDTH / 8,
+    parameter ID_WIDTH           = 4,
+    
+    parameter ELEMENT_WIDTH      = 64,
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
+    
     parameter WORDS_PER_TRANSFER = 17048,
-    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / 64, // MUST BE A POWER OF 2!
-    parameter ELEMENT_WIDTH = DATA_WIDTH/ELEMENTS_PER_WORD,
-    parameter NUM_CHANNELS = 4,
+    
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
+    parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
 )(
     input wire clk,
@@ -50,44 +53,44 @@ module mvm_accelerator_split #(
     
     // Output streams
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
-    output wire                  m_axis_0_tvalid,
-    input  wire                  m_axis_0_tready,
-    output wire                  m_axis_0_tlast,
+    output wire                     m_axis_0_tvalid,
+    input  wire                     m_axis_0_tready,
+    output wire                     m_axis_0_tlast,
     
     output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
-    output wire                  m_axis_1_tvalid,
-    input  wire                  m_axis_1_tready,
-    output wire                  m_axis_1_tlast,
+    output wire                     m_axis_1_tvalid,
+    input  wire                     m_axis_1_tready,
+    output wire                     m_axis_1_tlast,
     
     output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
-    output wire                  m_axis_2_tvalid,
-    input  wire                  m_axis_2_tready,
-    output wire                  m_axis_2_tlast,
+    output wire                     m_axis_2_tvalid,
+    input  wire                     m_axis_2_tready,
+    output wire                     m_axis_2_tlast,
 
     output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
-    output wire                  m_axis_3_tvalid,
-    input  wire                  m_axis_3_tready,
-    output wire                  m_axis_3_tlast,
+    output wire                     m_axis_3_tvalid,
+    input  wire                     m_axis_3_tready,
+    output wire                     m_axis_3_tlast,
     
     output wire [ELEMENT_WIDTH-1:0] m_axis_4_tdata,
-    output wire                  m_axis_4_tvalid,
-    input  wire                  m_axis_4_tready,
-    output wire                  m_axis_4_tlast,
+    output wire                     m_axis_4_tvalid,
+    input  wire                     m_axis_4_tready,
+    output wire                     m_axis_4_tlast,
     
     output wire [ELEMENT_WIDTH-1:0] m_axis_5_tdata,
-    output wire                  m_axis_5_tvalid,
-    input  wire                  m_axis_5_tready,
-    output wire                  m_axis_5_tlast,
+    output wire                     m_axis_5_tvalid,
+    input  wire                     m_axis_5_tready,
+    output wire                     m_axis_5_tlast,
     
     output wire [ELEMENT_WIDTH-1:0] m_axis_6_tdata,
-    output wire                  m_axis_6_tvalid,
-    input  wire                  m_axis_6_tready,
-    output wire                  m_axis_6_tlast,
+    output wire                     m_axis_6_tvalid,
+    input  wire                     m_axis_6_tready,
+    output wire                     m_axis_6_tlast,
 
     output wire [ELEMENT_WIDTH-1:0] m_axis_7_tdata,
-    output wire                  m_axis_7_tvalid,
-    input  wire                  m_axis_7_tready,
-    output wire                  m_axis_7_tlast,
+    output wire                     m_axis_7_tvalid,
+    input  wire                     m_axis_7_tready,
+    output wire                     m_axis_7_tlast,
 
     // S-AXI interface
     input  wire [(ID_WIDTH+4)-1:0] s_axi_b_awid,
@@ -113,8 +116,6 @@ module mvm_accelerator_split #(
     input  wire                    s_axi_b_bready
 );  
 
-    localparam ELEMENTS_PER_TRANSFER = WORDS_PER_TRANSFER/ELEMENT_WIDTH;
-
     // =============================================================
     //                      PACK CHANNELS
     // =============================================================
@@ -129,10 +130,10 @@ module mvm_accelerator_split #(
     wire                  s_axis_b_tready [NUM_CHANNELS-1:0];
     
     // Output stream arrays
-    wire [DATA_WIDTH-1:0] m_axis_tdata  [NUM_CHANNELS-1:0];
-    wire                  m_axis_tvalid [NUM_CHANNELS-1:0];
-    wire                  m_axis_tready [NUM_CHANNELS-1:0];
-    wire                  m_axis_tlast  [NUM_CHANNELS-1:0];
+    wire [ELEMENT_WIDTH-1:0] m_axis_tdata  [NUM_CHANNELS-1:0];
+    wire                     m_axis_tvalid [NUM_CHANNELS-1:0];
+    wire                     m_axis_tready [NUM_CHANNELS-1:0];
+    wire                     m_axis_tlast  [NUM_CHANNELS-1:0];
     
     wire [(ID_WIDTH+4)-1:0]  m_axi_arid     [NUM_CHANNELS-1:0];
     wire [ADDR_WIDTH-1:0]    m_axi_araddr   [NUM_CHANNELS-1:0];
@@ -174,7 +175,7 @@ module mvm_accelerator_split #(
         if (!rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 start[p] <= 1'b0;
-                partition_idx[p] <= p % NUM_RAM_PARTITIONS;
+                partition_idx[p] <= p;
                 partition_grant[p] <= 1'b0;
                 channel_active[p] <= 1'b0;
                 row_ready[p] <= 1'b0;
@@ -183,17 +184,18 @@ module mvm_accelerator_split #(
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 if (start[p])
                     row_ready[p] <= 1'b0;
-                else
-                    row_ready[p] <= s_axis_a_tvalid[p] && !channel_active[p];
+                else if (!row_ready[p] && s_axis_a_tvalid[p])
+                    row_ready[p] <= 1'b1;
     
-                if (!start[p])
-                    start[p] <= partition_grant[p] && row_ready[p];
-                else
+                if (!start[p]) begin
+                    start[p] <= partition_grant[p] && row_ready[p] && !channel_active[p];
+                end else begin
                     start[p] <= 1'b0;
+                    channel_active[p] <= 1'b1;
+                end
                                 
                 if (row_ready[p] && !partition_in_use[partition_idx[p]]) begin
                     partition_grant[p] <= 1'b1;
-                    channel_active[p]  <= 1'b1;
                 end
             
                 if (partition_done[p]) begin
@@ -229,9 +231,12 @@ module mvm_accelerator_split #(
               .ADDR_WIDTH(ADDR_WIDTH),
               .STRB_WIDTH(STRB_WIDTH),
               .ID_WIDTH(ID_WIDTH+4),
-              .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
+              .ELEMENT_WIDTH(ELEMENT_WIDTH),
+              .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
               .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
               .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
+              .NUM_CHANNELS(NUM_CHANNELS),
+              .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
               .TAG(ch[7:0])
             ) channel_inst (
               .clk(clk),
@@ -274,9 +279,13 @@ module mvm_accelerator_split #(
     //                          AXI RAM
     // =============================================================
     
+    localparam ELEMENTS_PER_TRANSFER = WORDS_PER_TRANSFER * ELEMENTS_PER_WORD;
     localparam WORDS_PER_RAM_INST = WORDS_PER_TRANSFER/NUM_RAM_PARTITIONS;
     localparam ELEMENTS_PER_RAM_INST = ELEMENTS_PER_TRANSFER/NUM_RAM_PARTITIONS;
     localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST*STRB_WIDTH;
+    
+    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4; // for xilinx crossbar
+    //localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS); // for alex forencich's crossbar
     localparam AXI_RAM_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     localparam ARQOS = 4'b0000;
     
@@ -330,11 +339,10 @@ module mvm_accelerator_split #(
             wire arvalid_sel = ram_m_axi_arvalid[k] && (ar_ram_sel_k == k);
         
             axi_ram #(
-                .NUM_WORDS(ELEMENTS_PER_RAM_INST),
+                .NUM_WORDS(WORDS_PER_RAM_INST),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
-                .ID_WIDTH(ID_WIDTH+4)
-                //.ID_WIDTH((ID_WIDTH+4) + $clog2(NUM_CHANNELS))
+                .ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) axi_ram_inst (
                 .clk(clk),
                 .rstn(rstn),
@@ -385,9 +393,10 @@ module mvm_accelerator_split #(
     endgenerate
     
     // =============================================================
-    //                      AXI CROSSBAR
+    //               AXI CROSSBAR (BETWEEN DMA AND RAM)
     // =============================================================
     
+    /*
     function [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
         input [ADDR_WIDTH-1:0] base;
         input [ADDR_WIDTH-1:0] stride;
@@ -398,7 +407,48 @@ module mvm_accelerator_split #(
             end
         end
     endfunction
-   
+    
+    localparam S_ID_WIDTH = ID_WIDTH + 4;
+    localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
+    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
+    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
+    localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
+    localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
+    
+    axi_crossbar_rd #(
+        .S_COUNT(NUM_CHANNELS),
+        .M_COUNT(NUM_RAM_PARTITIONS),
+        .DATA_WIDTH(DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .S_ID_WIDTH(S_ID_WIDTH),                       
+        .M_ID_WIDTH(M_ID_WIDTH),
+    
+        .ARUSER_ENABLE(0),
+        .RUSER_ENABLE(0),
+        .ARUSER_WIDTH(1),
+        .RUSER_WIDTH(1),
+    
+        .S_THREADS({NUM_CHANNELS{32'd1}}),
+        .S_ACCEPT({NUM_CHANNELS{32'd4}}),
+        .M_ISSUE({NUM_RAM_PARTITIONS{32'd8}}),
+    
+        .M_REGIONS(1),
+        .M_BASE_ADDR(M_BASE_ADDR),
+        .M_ADDR_WIDTH(M_ADDR_WIDTH),
+        .M_CONNECT(M_CONNECT),
+        .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
+    
+        .S_AR_REG_TYPE({NUM_CHANNELS{2'd1}}),
+        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
+        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
+        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}})
+    ) axi_crossbar_inst (
+        `include "split_interconnect_channels.vh"
+        .clk(clk),
+        .rst(~rstn)
+    );
+    */
+
     localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
     localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
     localparam AXI_AWID_WIDTH      = (ID_WIDTH + 4) * NUM_CHANNELS;
@@ -412,102 +462,6 @@ module mvm_accelerator_split #(
     localparam AXI_AWQOS_WIDTH     = 4 * NUM_CHANNELS;
     localparam AXI_AWUSER_WIDTH    = 1 * NUM_CHANNELS;
     
-    localparam S_ID_WIDTH = ID_WIDTH + 4;
-    localparam [31:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
-    localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
-    
-    // Connects DMAs to RAM
-    /*
-    axi_crossbar #(
-        .S_COUNT(NUM_CHANNELS),
-        .M_COUNT(NUM_RAM_PARTITIONS),
-        .DATA_WIDTH(DATA_WIDTH),
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .STRB_WIDTH(STRB_WIDTH),
-        .S_ID_WIDTH(S_ID_WIDTH),
-        .M_ID_WIDTH(S_ID_WIDTH + $clog2(NUM_CHANNELS)),
-    
-        .AWUSER_ENABLE(0),
-        .WUSER_ENABLE(0),
-        .BUSER_ENABLE(0),
-        .ARUSER_ENABLE(0),
-        .RUSER_ENABLE(0),
-    
-        .S_THREADS({NUM_CHANNELS{32'd2}}),
-        .S_ACCEPT({NUM_CHANNELS{32'd16}}),
-        .M_REGIONS(1),
-    
-        .M_BASE_ADDR(M_BASE_ADDR),
-        .M_ADDR_WIDTH(M_ADDR_WIDTH),
-        .M_CONNECT_READ({NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}}),
-        .M_CONNECT_WRITE({NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}}),
-        .M_ISSUE({NUM_RAM_PARTITIONS{32'd4}}),
-        .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
-    
-        .S_AW_REG_TYPE({NUM_CHANNELS{2'd0}}),
-        .S_W_REG_TYPE({NUM_CHANNELS{2'd0}}),
-        .S_B_REG_TYPE({NUM_CHANNELS{2'd1}}),
-        .S_AR_REG_TYPE({NUM_CHANNELS{2'd0}}),
-        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
-        .M_AW_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
-        .M_W_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
-        .M_B_REG_TYPE({NUM_RAM_PARTITIONS{2'd0}}),
-        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
-        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd0}})
-    ) axi_crossbar_inst (
-        .clk(clk),
-        .rstn(rstn),
-
-        `include "split_interconnect_channels.vh"
-
-        // Tie off unused write channels
-        .s_axi_awid    ({AXI_AWID_WIDTH{1'b0}}),
-        .s_axi_awaddr  ({AXI_AWADDR_WIDTH{1'b0}}),
-        .s_axi_awlen   ({AXI_AWLEN_WIDTH{1'b0}}),
-        .s_axi_awsize  ({AXI_AWSIZE_WIDTH{1'b0}}),
-        .s_axi_awburst ({AXI_AWBURST_WIDTH{1'b0}}),
-        .s_axi_awlock  ({AXI_AWLOCK_WIDTH{1'b0}}),
-        .s_axi_awcache ({AXI_AWCACHE_WIDTH{1'b0}}),
-        .s_axi_awprot  ({AXI_AWPROT_WIDTH{1'b0}}),
-        .s_axi_awqos   ({AXI_AWQOS_WIDTH{1'b0}}),
-        .s_axi_awvalid ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wdata   ({AXI_WDATA_WIDTH{1'b0}}),
-        .s_axi_wstrb   ({AXI_WSTRB_WIDTH{1'b0}}),
-        .s_axi_wlast   ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wvalid  ({NUM_CHANNELS{1'b0}}),
-        .s_axi_bready  ({NUM_CHANNELS{1'b0}}),
-
-        .m_axi_awready (),
-        .m_axi_wready  (),
-        .m_axi_bid     (),
-        .m_axi_bresp   (),
-        .m_axi_bvalid  (),
-        .m_axi_bready  (),
-
-        .s_axi_awready (),
-        .s_axi_wready  (),
-        .s_axi_bid     (),
-        .s_axi_bresp   (),
-        .s_axi_bvalid  (),
-
-        .m_axi_awid    (),
-        .m_axi_awaddr  (),
-        .m_axi_awlen   (),
-        .m_axi_awsize  (),
-        .m_axi_awburst (),
-        .m_axi_awlock  (),
-        .m_axi_awcache (),
-        .m_axi_awprot  (),
-        .m_axi_awqos   (),
-        .m_axi_awvalid (),
-        .m_axi_wdata   (),
-        .m_axi_wstrb   (),
-        .m_axi_wlast   (),
-        .m_axi_wvalid  ()
-    );
-    */
-
     axi_crossbar_0 axi_crossbar_inst (
         .aclk(clk),
         .aresetn(rstn),
