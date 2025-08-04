@@ -50,9 +50,12 @@ module mvm_channel_split #(
     
     // Partition arbitration
     input  wire start,
+    output wire row_valid,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
     output wire partition_done
 );
+
+    localparam FIFO_DEPTH = 512; // in words
 
     // ========================================
     //                FIFO A
@@ -62,17 +65,54 @@ module mvm_channel_split #(
     wire                  fifo_a_m_axis_tvalid;
     wire                  fifo_a_m_axis_tready;
     
-    axis_data_fifo_bram axis_data_fifo_in (
-        .s_axis_aclk(clk),
-        .s_axis_aresetn(rstn),
-        
-        .s_axis_tdata (s_axis_a_tdata),    
+    assign row_valid = fifo_a_m_axis_tvalid;
+    
+    axis_fifo #(
+        .DEPTH(FIFO_DEPTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(0),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) axis_data_fifo_in (
+        .clk(clk),
+        .rstn(rstn),
+    
+        .s_axis_tdata(s_axis_a_tdata),
+        .s_axis_tkeep(),
         .s_axis_tvalid(s_axis_a_tvalid),
         .s_axis_tready(s_axis_a_tready),
-
-        .m_axis_tdata (fifo_a_m_axis_tdata),    
+        .s_axis_tlast(1'b0),
+        .s_axis_tid(8'b0),
+        .s_axis_tdest(8'b0),
+        .s_axis_tuser(1'b0),
+    
+        .m_axis_tdata(fifo_a_m_axis_tdata),
+        .m_axis_tkeep(),
         .m_axis_tvalid(fifo_a_m_axis_tvalid),
-        .m_axis_tready(fifo_a_m_axis_tready)
+        .m_axis_tready(fifo_a_m_axis_tready),
+        .m_axis_tlast(),
+        .m_axis_tid(),
+        .m_axis_tdest(),
+        .m_axis_tuser(),
+    
+        .pause_req(1'b0),
+        .pause_ack(),
+    
+        .status_depth(),
+        .status_depth_commit(),
+        .status_overflow(),
+        .status_bad_frame(),
+        .status_good_frame()
     );
     
     // ========================================
@@ -87,21 +127,56 @@ module mvm_channel_split #(
     wire                  fifo_b_m_axis_tvalid;
     wire                  fifo_b_m_axis_tready;
     
-    axis_data_fifo_bram axis_data_fifo_b (
-        .s_axis_aclk(clk),        
-        .s_axis_aresetn(rstn),
-        
-        .s_axis_tdata (fifo_b_s_axis_tdata),
+    axis_fifo #(
+        .DEPTH(FIFO_DEPTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(0),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) axis_data_fifo_b (
+        .clk(clk),
+        .rstn(rstn),
+    
+        .s_axis_tdata(fifo_b_s_axis_tdata),
+        .s_axis_tkeep(),
         .s_axis_tvalid(fifo_b_s_axis_tvalid),
         .s_axis_tready(fifo_b_s_axis_tready),
+        .s_axis_tlast(1'b0),
+        .s_axis_tid(8'b0),
+        .s_axis_tdest(8'b0),
+        .s_axis_tuser(1'b0),
     
-        .m_axis_tdata (fifo_b_m_axis_tdata),
+        .m_axis_tdata(fifo_b_m_axis_tdata),
+        .m_axis_tkeep(),
         .m_axis_tvalid(fifo_b_m_axis_tvalid),
-        .m_axis_tready(fifo_b_m_axis_tready)
-    );
+        .m_axis_tready(fifo_b_m_axis_tready),
+        .m_axis_tlast(),
+        .m_axis_tid(),
+        .m_axis_tdest(),
+        .m_axis_tuser(),
+    
+        .pause_req(1'b0),
+        .pause_ack(),
+    
+        .status_depth(),
+        .status_depth_commit(),
+        .status_overflow(),
+        .status_bad_frame(),
+        .status_good_frame()
+    );   
     
     // ========================================
-    //    MM2S DMA FROM CROSSBAR -> S_AXIS_B
+    //   MM2S DMA (REQ DATA FROM RAM VIA XBAR)
     // ========================================
 
     localparam DMA_BURST_LEN = 256;

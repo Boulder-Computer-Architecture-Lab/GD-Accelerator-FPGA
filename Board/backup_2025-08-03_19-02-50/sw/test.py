@@ -9,38 +9,32 @@ import subprocess, threading, queue
 import time, sys, signal, re
 import numpy as np
 
+from cdma_driver import CDMA
+
 # ==============================================================================
 #  MACROS
 # ==============================================================================
 
-DEBUG = 0
+DEBUG = 2
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
 
-TEST_DIR  = "/home/xilinx/mvm-project/tests/"
-ASYNC_2x1 = TEST_DIR + "async_2x1/"
-ASYNC_2x2 = TEST_DIR + "async_2x2/"
-ASYNC_2x2 = TEST_DIR + "async_2x3/"
-
+CDMA_BASE = 0xA0000000 
 BRAM_BASE = 0x80000000 
 
-N = 8000 # Row size (fixed in hardware)
-I = 1000 # Number of rows to process
+N = 8192 # Row size (fixed in hardware)
+I = 1024 # Number of rows to process
 
-#BATCH_SIZE = 4 # Number of rows per MM2S DMA transfer
-
-ACCEL_INST = 1        # Number of mvm_accelerator instances
-CHANNELS_PER_INST = 8 # Number of input channels per mvm_accelerator instance
-
-NUM_WORKERS = ACCEL_INST * CHANNELS_PER_INST # Number of worker threads
+NUM_CHANNELS = 4 
+BYTES_PER_PARTITION = (N * 8) // NUM_CHANNELS
 
 # ==============================================================================
 #  GLOBALS
 # ==============================================================================
 
 # Buffers
-matrix = None; result_bufs = []
+matrix = None; b = None; result_bufs = []
 
 # Asynchronous row processing
 work_queue = queue.Queue()
@@ -59,7 +53,7 @@ def cleanup():
     for t in threads:
         t.join(timeout=1)
 
-    for buf in [matrix] + result_bufs:
+    for buf in [matrix, b] + result_bufs:
         try: 
             if buf is not None:
                 buf.freebuffer()
@@ -88,12 +82,12 @@ def process_row(row_num, b, result, dma):
 
     if DEBUG > 1:
         actual = float(result[0])
-        expected = np.dot(matrix[row_num], b)
+        expected = np.dot(matrix[row_num], b.flatten())
         print(f"({row_num}) Actual: {actual:.24f} | Expected: {expected:.24f}")
 
 def worker(worker_id, b, dma):
     if DEBUG: print(f"[WORKER {worker_id}] Starting up...")
-        
+
     while not stop_requested:
         try: (row_num,) = work_queue.get(timeout=1)
         except queue.Empty: return
@@ -108,46 +102,47 @@ def worker(worker_id, b, dma):
 # ==============================================================================
 
 if __name__ == "__main__":
-    if DEBUG: print(f"Parameters: N={N}, I={I}, NUM_WORKERS={NUM_WORKERS}")
+    if DEBUG: print(f"Parameters: N={N}, I={I}, NUM_CHANNELS={NUM_CHANNELS}")
 
     try:
-        # Load bitstream
+        # Load HW
         overlay = Overlay(PROJ_DIR + "design_1.bit")
         overlay.download()
         if not overlay.is_loaded():
             raise RuntimeError("Overlay download failed.")
+        if DEBUG:
+            for name, desc in PL.ip_dict.items():
+                    if 'phys_addr' in desc:
+                        print(f"{name}: 0x{desc['phys_addr']:08X}")
+                    else:
+                        print(f"{name}")
+            print()
 
-        # Get all DMAs listed in overlay ip_dict
+        # Get all DMAs listed in ip_dict
         dmas = [
             getattr(overlay, name)
             for name in sorted(overlay.ip_dict, key=lambda n: int(re.search(r"\d+$", n).group()))
             if name.startswith("axi_dma_")
         ]
-        if DEBUG:
-            print("Found DMAs:")
-            for dma in dmas: print(dma.description['fullpath'])
+        if (len(dmas) != NUM_CHANNELS):
+            raise RuntimeError(f"Check overlay. Found {len(dmas)} DMAs with NUM_CHANNELS={NUM_CHANNELS}")
 
-        if (len(dmas) != NUM_WORKERS):
-            print(overlay.ip_dict.keys())
-            raise RuntimeError(f"Check overlay. Found {len(dmas)} DMAs with NUM_WORKERS={NUM_WORKERS}")
-
-        # Write vector `b` to BRAM(s)
+        # Write vector `b` to BRAM
         if DEBUG: print("Writing vector to BRAM")
-        b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
-        b_bits = b.view(np.uint64)
-
-        bram = [MMIO(BRAM_BASE + 0x10000000 * inst, N * 8) for inst in range(ACCEL_INST)]
-
-        for i in range(N):
-            val64 = int(b_bits[i])
-            for bm in bram:
-                bm.write(i * 8, val64 & 0xFFFFFFFF)
-                bm.write(i * 8 + 4, (val64 >> 32) & 0xFFFFFFFF)
+        b = allocate(shape=(NUM_CHANNELS, N // NUM_CHANNELS), dtype=np.float64)
+        cdma = CDMA(overlay.ip_dict['axi_cdma_0'])
+        for i in range(NUM_CHANNELS):
+            b[i, :] = np.arange(
+                i * (N // NUM_CHANNELS) + 1,
+                (i + 1) * (N // NUM_CHANNELS) + 1,
+                dtype=np.float64
+            ) / 10.0
+            cdma.transfer(b[i], BRAM_BASE + i * BYTES_PER_PARTITION)
 
         # Allocate buffers
         if DEBUG: print("Allocating buffers")
         matrix = allocate(shape=(I, N), dtype=np.float64)
-        result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_WORKERS)]
+        result_bufs = [allocate(shape=(1,), dtype=np.float64) for _ in range(NUM_CHANNELS)]
 
         # Read in matrix
         if DEBUG: print("Reading matrix file")
@@ -159,14 +154,13 @@ if __name__ == "__main__":
 
         # Put rows in work queue
         if DEBUG: print("Filling work queue")
-        for i in range(I):
-            work_queue.put((i,))
+        [work_queue.put((i,)) for i in range(I)]
 
         # Create worker threads
         if DEBUG: print("Creating worker threads")
         threads = [
             threading.Thread(target=worker, args=(i, b, dmas[i]))
-            for i in range(NUM_WORKERS)
+            for i in range(NUM_CHANNELS)
         ]
 
         print("Initialization complete")
@@ -178,7 +172,6 @@ if __name__ == "__main__":
         for t in threads: t.join()
         t1 = time.perf_counter()
 
-        # Finished
         print(f"Done. Total time: {t1 - t0:.6f} seconds")
 
     finally: cleanup()

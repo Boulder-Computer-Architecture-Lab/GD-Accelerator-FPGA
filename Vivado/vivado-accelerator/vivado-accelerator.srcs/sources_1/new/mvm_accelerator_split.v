@@ -11,9 +11,11 @@ module mvm_accelerator_split #(
     
     parameter WORDS_PER_TRANSFER = 17048,
     
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
     parameter NUM_CHANNELS       = 4,
-    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
+    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
+    
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
+    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
     input wire clk,
     input wire rstn,
@@ -93,7 +95,7 @@ module mvm_accelerator_split #(
     output wire                     m_axis_7_tlast,
 
     // S-AXI interface
-    input  wire [(ID_WIDTH+4)-1:0] s_axi_b_awid,
+    input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
     input  wire [ADDR_WIDTH-1:0]   s_axi_b_awaddr,
     input  wire [7:0]              s_axi_b_awlen,
     input  wire [2:0]              s_axi_b_awsize,
@@ -110,7 +112,7 @@ module mvm_accelerator_split #(
     input  wire                    s_axi_b_wvalid,
     output wire                    s_axi_b_wready,
     
-    output wire [(ID_WIDTH+4)-1:0] s_axi_b_bid,
+    output wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_bid,
     output wire [1:0]              s_axi_b_bresp,
     output wire                    s_axi_b_bvalid,
     input  wire                    s_axi_b_bready
@@ -135,29 +137,37 @@ module mvm_accelerator_split #(
     wire                     m_axis_tready [NUM_CHANNELS-1:0];
     wire                     m_axis_tlast  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0]  m_axi_arid     [NUM_CHANNELS-1:0];
-    wire [ADDR_WIDTH-1:0]    m_axi_araddr   [NUM_CHANNELS-1:0];
-    wire [7:0]               m_axi_arlen    [NUM_CHANNELS-1:0];
-    wire [2:0]               m_axi_arsize   [NUM_CHANNELS-1:0];
-    wire [1:0]               m_axi_arburst  [NUM_CHANNELS-1:0];
-    wire                     m_axi_arlock   [NUM_CHANNELS-1:0];
-    wire [3:0]               m_axi_arcache  [NUM_CHANNELS-1:0];
-    wire [2:0]               m_axi_arprot   [NUM_CHANNELS-1:0];
-    wire                     m_axi_arvalid  [NUM_CHANNELS-1:0];
-    wire                     m_axi_arready  [NUM_CHANNELS-1:0];
+    wire [(ID_WIDTH+4)-1:0] m_axi_arid     [NUM_CHANNELS-1:0];
+    wire [ADDR_WIDTH-1:0]   m_axi_araddr   [NUM_CHANNELS-1:0];
+    wire [7:0]              m_axi_arlen    [NUM_CHANNELS-1:0];
+    wire [2:0]              m_axi_arsize   [NUM_CHANNELS-1:0];
+    wire [1:0]              m_axi_arburst  [NUM_CHANNELS-1:0];
+    wire                    m_axi_arlock   [NUM_CHANNELS-1:0];
+    wire [3:0]              m_axi_arcache  [NUM_CHANNELS-1:0];
+    wire [2:0]              m_axi_arprot   [NUM_CHANNELS-1:0];
+    wire                    m_axi_arvalid  [NUM_CHANNELS-1:0];
+    wire                    m_axi_arready  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0]  m_axi_rid      [NUM_CHANNELS-1:0];
-    wire [DATA_WIDTH-1:0]    m_axi_rdata    [NUM_CHANNELS-1:0];
-    wire [1:0]               m_axi_rresp    [NUM_CHANNELS-1:0];
-    wire                     m_axi_rlast    [NUM_CHANNELS-1:0];
-    wire                     m_axi_rvalid   [NUM_CHANNELS-1:0];
-    wire                     m_axi_rready   [NUM_CHANNELS-1:0];
+    wire [(ID_WIDTH+4)-1:0] m_axi_rid      [NUM_CHANNELS-1:0];
+    wire [DATA_WIDTH-1:0]   m_axi_rdata    [NUM_CHANNELS-1:0];
+    wire [1:0]              m_axi_rresp    [NUM_CHANNELS-1:0];
+    wire                    m_axi_rlast    [NUM_CHANNELS-1:0];
+    wire                    m_axi_rvalid   [NUM_CHANNELS-1:0];
+    wire                    m_axi_rready   [NUM_CHANNELS-1:0];
     
     `include "bind_channels.vh"
     
     // =============================================================
     //                  PARTITION ACCESS LOGIC
     // =============================================================
+    
+    /* Access pattern for 4 channels 4 partitions:
+     *      ch0: ram0 -> ram1 -> ram2 -> ram3 -> done
+     *      ch1: ram1 -> ram2 -> ram3 -> ram0 -> done
+     *      ch2: ram2 -> ram3 -> ram0 -> ram1 -> done
+     *      ch3: ram3 -> ram0 -> ram1 -> ram2 -> done
+     * Note: must align matrix row inputs accordingly in software
+     */
     
     localparam NUM_CHANNELS_WIDTH = $clog2(NUM_CHANNELS);
     localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
@@ -167,6 +177,7 @@ module mvm_accelerator_split #(
     reg  channel_active   [NUM_CHANNELS-1:0];
     reg  partition_grant  [NUM_CHANNELS-1:0];
     wire partition_done   [NUM_CHANNELS-1:0];
+    wire row_valid        [NUM_CHANNELS-1:0];
     reg  row_ready        [NUM_CHANNELS-1:0];
     reg  start            [NUM_CHANNELS-1:0];
     
@@ -184,7 +195,7 @@ module mvm_accelerator_split #(
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 if (start[p])
                     row_ready[p] <= 1'b0;
-                else if (!row_ready[p] && s_axis_a_tvalid[p])
+                else if (!row_ready[p] && row_valid[p])
                     row_ready[p] <= 1'b1;
     
                 if (!start[p]) begin
@@ -269,6 +280,7 @@ module mvm_accelerator_split #(
               .m_axi_rready  (m_axi_rready[ch]),
               
               .start(start[ch]),
+              .row_valid(row_valid[ch]),
               .partition_index(partition_idx[ch]),
               .partition_done(partition_done[ch])
             );
@@ -284,8 +296,6 @@ module mvm_accelerator_split #(
     localparam ELEMENTS_PER_RAM_INST = ELEMENTS_PER_TRANSFER/NUM_RAM_PARTITIONS;
     localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST*STRB_WIDTH;
     
-    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4; // for xilinx crossbar
-    //localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS); // for alex forencich's crossbar
     localparam AXI_RAM_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     localparam ARQOS = 4'b0000;
     
@@ -294,28 +304,28 @@ module mvm_accelerator_split #(
     wire [ADDR_WIDTH-1:0] rel_addr = s_axi_b_awaddr - AXI_RAM_BASE_ADDR;
     wire [RAM_SEL_WIDTH-1:0] ram_sel = rel_addr / BYTES_PER_RAM_INST;
     
-    wire                     ram_awready  [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_wready   [NUM_RAM_PARTITIONS-1:0];
-    wire [(ID_WIDTH+4)-1:0]  ram_bid      [NUM_RAM_PARTITIONS-1:0];
-    wire [1:0]               ram_bresp    [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_bvalid   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_awready  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_wready   [NUM_RAM_PARTITIONS-1:0];
+    wire [AXI_RAM_ID_WIDTH-1:0] ram_bid      [NUM_RAM_PARTITIONS-1:0];
+    wire [1:0]                  ram_bresp    [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_bvalid   [NUM_RAM_PARTITIONS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0]  ram_m_axi_arid    [NUM_RAM_PARTITIONS-1:0];
-    wire [ADDR_WIDTH-1:0]    ram_m_axi_araddr  [NUM_RAM_PARTITIONS-1:0];
-    wire [7:0]               ram_m_axi_arlen   [NUM_RAM_PARTITIONS-1:0];
-    wire [2:0]               ram_m_axi_arsize  [NUM_RAM_PARTITIONS-1:0];
-    wire [1:0]               ram_m_axi_arburst [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_arlock  [NUM_RAM_PARTITIONS-1:0];
-    wire [3:0]               ram_m_axi_arcache [NUM_RAM_PARTITIONS-1:0];
-    wire [2:0]               ram_m_axi_arprot  [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_arvalid [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_arready [NUM_RAM_PARTITIONS-1:0];
-    wire [(ID_WIDTH+4)-1:0]  ram_m_axi_rid     [NUM_RAM_PARTITIONS-1:0];
-    wire [DATA_WIDTH-1:0]    ram_m_axi_rdata   [NUM_RAM_PARTITIONS-1:0];
-    wire [1:0]               ram_m_axi_rresp   [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_rlast   [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_rvalid  [NUM_RAM_PARTITIONS-1:0];
-    wire                     ram_m_axi_rready  [NUM_RAM_PARTITIONS-1:0];
+    wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_arid    [NUM_RAM_PARTITIONS-1:0];
+    wire [ADDR_WIDTH-1:0]       ram_m_axi_araddr  [NUM_RAM_PARTITIONS-1:0];
+    wire [7:0]                  ram_m_axi_arlen   [NUM_RAM_PARTITIONS-1:0];
+    wire [2:0]                  ram_m_axi_arsize  [NUM_RAM_PARTITIONS-1:0];
+    wire [1:0]                  ram_m_axi_arburst [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_arlock  [NUM_RAM_PARTITIONS-1:0];
+    wire [3:0]                  ram_m_axi_arcache [NUM_RAM_PARTITIONS-1:0];
+    wire [2:0]                  ram_m_axi_arprot  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_arvalid [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_arready [NUM_RAM_PARTITIONS-1:0];
+    wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_rid     [NUM_RAM_PARTITIONS-1:0];
+    wire [DATA_WIDTH-1:0]       ram_m_axi_rdata   [NUM_RAM_PARTITIONS-1:0];
+    wire [1:0]                  ram_m_axi_rresp   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_rlast   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_rvalid  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_rready  [NUM_RAM_PARTITIONS-1:0];
     
     assign s_axi_b_bvalid = ram_bvalid[ram_sel];
     assign s_axi_b_bid    = ram_bid[ram_sel];
@@ -393,9 +403,9 @@ module mvm_accelerator_split #(
     endgenerate
     
     // =============================================================
-    //               AXI CROSSBAR (BETWEEN DMA AND RAM)
+    //              AXI CROSSBAR (BETWEEN DMAs AND RAM)
     // =============================================================
-    
+
     /*
     function [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
         input [ADDR_WIDTH-1:0] base;
@@ -408,19 +418,27 @@ module mvm_accelerator_split #(
         end
     endfunction
     
+    localparam DMA_BURST_LEN = 256;
+    localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = WORDS_PER_RAM_INST / DMA_BURST_LEN;
+    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
+    
     localparam S_ID_WIDTH = ID_WIDTH + 4;
     localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
-    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
-    localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
-    localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
     
+    localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
+    localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_ACCEPT  = {NUM_CHANNELS{32'd4}};
+    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ISSUE = {NUM_RAM_PARTITIONS{RAM_MAX_BURSTS}};
+    
+    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
+    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
+    localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
+
     axi_crossbar_rd #(
         .S_COUNT(NUM_CHANNELS),
         .M_COUNT(NUM_RAM_PARTITIONS),
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(ADDR_WIDTH),
-        .S_ID_WIDTH(S_ID_WIDTH),                       
+        .S_ID_WIDTH(S_ID_WIDTH),
         .M_ID_WIDTH(M_ID_WIDTH),
     
         .ARUSER_ENABLE(0),
@@ -428,9 +446,9 @@ module mvm_accelerator_split #(
         .ARUSER_WIDTH(1),
         .RUSER_WIDTH(1),
     
-        .S_THREADS({NUM_CHANNELS{32'd1}}),
-        .S_ACCEPT({NUM_CHANNELS{32'd4}}),
-        .M_ISSUE({NUM_RAM_PARTITIONS{32'd8}}),
+        .S_THREADS(S_THREADS),
+        .S_ACCEPT(S_ACCEPT),
+        .M_ISSUE(M_ISSUE),
     
         .M_REGIONS(1),
         .M_BASE_ADDR(M_BASE_ADDR),
@@ -439,19 +457,21 @@ module mvm_accelerator_split #(
         .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
     
         .S_AR_REG_TYPE({NUM_CHANNELS{2'd1}}),
-        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
+        .S_R_REG_TYPE({NUM_CHANNELS{2'd1}}),
         .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
         .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}})
     ) axi_crossbar_inst (
-        `include "split_interconnect_channels.vh"
         .clk(clk),
-        .rst(~rstn)
+        .rstn(rstn),
+        `include "split_interconnect_channels.vh"
+        .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
+        .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
     );
     */
 
     localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
     localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
-    localparam AXI_AWID_WIDTH      = (ID_WIDTH + 4) * NUM_CHANNELS;
+    localparam AXI_AWID_WIDTH      = AXI_RAM_ID_WIDTH * NUM_CHANNELS;
     localparam AXI_AWADDR_WIDTH    = ADDR_WIDTH * NUM_CHANNELS;
     localparam AXI_AWLEN_WIDTH     = 8 * NUM_CHANNELS;
     localparam AXI_AWSIZE_WIDTH    = 3 * NUM_CHANNELS;

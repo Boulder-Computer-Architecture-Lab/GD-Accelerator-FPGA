@@ -95,7 +95,7 @@ module axi_crossbar_rd #
 )
 (
     input  wire                             clk,
-    input  wire                             rst,
+    input  wire                             rstn,
 
     /*
      * AXI slave interfaces
@@ -145,10 +145,10 @@ module axi_crossbar_rd #
     output wire [M_COUNT-1:0]               m_axi_rready
 );
 
-parameter CL_S_COUNT = $clog2(S_COUNT);
-parameter CL_M_COUNT = $clog2(M_COUNT);
-parameter M_COUNT_P1 = M_COUNT+1;
-parameter CL_M_COUNT_P1 = $clog2(M_COUNT_P1);
+localparam CL_S_COUNT = $clog2(S_COUNT);
+localparam CL_M_COUNT = $clog2(M_COUNT);
+localparam M_COUNT_P1 = M_COUNT+1;
+localparam CL_M_COUNT_P1 = $clog2(M_COUNT_P1);
 
 integer i;
 
@@ -230,7 +230,7 @@ generate
         )
         addr_inst (
             .clk(clk),
-            .rst(rst),
+            .rst(~rstn),
 
             /*
              * Address input
@@ -310,7 +310,7 @@ generate
         end
 
         always @(posedge clk) begin
-            if (rst) begin
+            if (!rstn) begin
                 decerr_m_axi_rvalid_reg <= 1'b0;
             end else begin
                 decerr_m_axi_rvalid_reg <= decerr_m_axi_rvalid_next;
@@ -337,7 +337,7 @@ generate
         )
         r_arb_inst (
             .clk(clk),
-            .rst(rst),
+            .rst(~rstn),
             .request(r_request),
             .acknowledge(r_acknowledge),
             .grant(r_grant),
@@ -383,7 +383,7 @@ generate
         )
         reg_inst (
             .clk(clk),
-            .rst(rst),
+            .rst(~rstn),
             .s_axi_arid(s_axi_arid[m*S_ID_WIDTH +: S_ID_WIDTH]),
             .s_axi_araddr(s_axi_araddr[m*ADDR_WIDTH +: ADDR_WIDTH]),
             .s_axi_arlen(s_axi_arlen[m*8 +: 8]),
@@ -436,7 +436,7 @@ generate
         wire trans_limit = trans_count_reg >= M_ISSUE[n*32 +: 32] && !trans_complete;
 
         always @(posedge clk) begin
-            if (rst) begin
+            if (!rstn) begin
                 trans_count_reg <= 0;
             end else begin
                 if (trans_start && !trans_complete) begin
@@ -463,7 +463,7 @@ generate
         )
         a_arb_inst (
             .clk(clk),
-            .rst(rst),
+            .rst(~rstn),
             .request(a_request),
             .acknowledge(a_acknowledge),
             .grant(a_grant),
@@ -518,7 +518,7 @@ generate
         )
         reg_inst (
             .clk(clk),
-            .rst(rst),
+            .rst(~rstn),
             .s_axi_arid(s_axi_arid_mux),
             .s_axi_araddr(s_axi_araddr_mux),
             .s_axi_arlen(s_axi_arlen_mux),

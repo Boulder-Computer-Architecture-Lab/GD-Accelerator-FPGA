@@ -13,7 +13,7 @@ import numpy as np
 #  MACROS
 # ==============================================================================
 
-DEBUG = 0
+DEBUG = 2
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 MTRX_PATH = "../trmult_reduced.bin"
@@ -38,13 +38,11 @@ SYNC_2x4 = TEST_DIR + "sync_2x4/"
 
 BRAM_BASE = 0x80000000 
 
-N = 8000 # Row size (fixed in hardware)
-I = 1000 # Number of rows to process
+N = 8192 # Row size (fixed in hardware)
+I = 1024 # Number of rows to process
 
-#DMA_BATCH_SIZE = 4 # Number of rows per MM2S DMA transfer
-
-ACCEL_INST = 2        # Number of mvm_accelerator instances
-CHANNELS_PER_INST = 3 # Number of input channels per mvm_accelerator instance
+ACCEL_INST = 1        # Number of mvm_accelerator instances
+CHANNELS_PER_INST = 4 # Number of input channels per mvm_accelerator instance
 
 NUM_WORKERS = ACCEL_INST * CHANNELS_PER_INST # Number of worker threads
 
@@ -146,7 +144,7 @@ if __name__ == "__main__":
 
         # Write vector `b` to BRAM(s)
         if DEBUG: print("Writing vector to BRAM")
-        b = np.arange(1, N+1, dtype=np.float64) / 100.0 # Dummy `b` vector
+        b = np.arange(1, N+1, dtype=np.float64) / 10000.0 # Dummy `b` vector
         b_bits = b.view(np.uint64)
 
         bram = [MMIO(BRAM_BASE + 0x10000000 * inst, N * 8) for inst in range(ACCEL_INST)]

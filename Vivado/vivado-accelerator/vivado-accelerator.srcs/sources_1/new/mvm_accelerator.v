@@ -13,9 +13,12 @@ module mvm_accelerator #(
     
     parameter WORDS_PER_TRANSFER = 17048,
     
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
     parameter NUM_CHANNELS       = 4,
-    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
+    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
+    
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    //parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4
 )(
     input wire clk,
     input wire rstn,
@@ -95,16 +98,16 @@ module mvm_accelerator #(
     output wire                     m_axis_7_tlast,
 
     // S-AXI interface (for writing vector b)
-    input  wire [(ID_WIDTH+4)-1:0] s_axi_b_awid,
-    input  wire [ADDR_WIDTH-1:0]   s_axi_b_awaddr,
-    input  wire [7:0]              s_axi_b_awlen,
-    input  wire [2:0]              s_axi_b_awsize,
-    input  wire [1:0]              s_axi_b_awburst,
-    input  wire                    s_axi_b_awlock,
-    input  wire [3:0]              s_axi_b_awcache,
-    input  wire [2:0]              s_axi_b_awprot,
-    input  wire                    s_axi_b_awvalid,
-    output wire                    s_axi_b_awready,
+    input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
+    input  wire [ADDR_WIDTH-1:0]       s_axi_b_awaddr,
+    input  wire [7:0]                  s_axi_b_awlen,
+    input  wire [2:0]                  s_axi_b_awsize,
+    input  wire [1:0]                  s_axi_b_awburst,
+    input  wire                        s_axi_b_awlock,
+    input  wire [3:0]                  s_axi_b_awcache,
+    input  wire [2:0]                  s_axi_b_awprot,
+    input  wire                        s_axi_b_awvalid,
+    output wire                        s_axi_b_awready,
     
     input  wire [DATA_WIDTH-1:0]   s_axi_b_wdata,
     input  wire [STRB_WIDTH-1:0]   s_axi_b_wstrb,
@@ -112,10 +115,10 @@ module mvm_accelerator #(
     input  wire                    s_axi_b_wvalid,
     output wire                    s_axi_b_wready,
     
-    output wire [(ID_WIDTH+4)-1:0] s_axi_b_bid,
-    output wire [1:0]              s_axi_b_bresp,
-    output wire                    s_axi_b_bvalid,
-    input  wire                    s_axi_b_bready
+    output wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_bid,
+    output wire [1:0]                  s_axi_b_bresp,
+    output wire                        s_axi_b_bvalid,
+    input  wire                        s_axi_b_bready
 );
 
     generate
@@ -128,9 +131,10 @@ module mvm_accelerator #(
                 .ELEMENT_WIDTH(ELEMENT_WIDTH),
                 .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
                 .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
                 .NUM_CHANNELS(NUM_CHANNELS),
-                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS)
+                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
+                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
+                .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),
