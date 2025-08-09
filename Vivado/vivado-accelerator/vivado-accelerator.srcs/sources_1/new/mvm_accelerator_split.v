@@ -469,6 +469,7 @@ module mvm_accelerator_split #(
     );
     */
 
+    ///*
     localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
     localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
     localparam AXI_AWID_WIDTH      = AXI_RAM_ID_WIDTH * NUM_CHANNELS;
@@ -533,5 +534,6 @@ module mvm_accelerator_split #(
         .m_axi_wlast   (),
         .m_axi_wvalid  ()
     );
+    //*/
 
 endmodule

@@ -144,10 +144,12 @@ module tb_mvm_accelerator;
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
-                .AXI_RAM_BASE_ADDR(32'h1000_0000*inst),
+                .AXI_RAM_BASE_ADDR(32'h8000_0000 + 32'h1000_0000*inst),
                 .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
-                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS)
+                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
+                
+                .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
                 .clk(clk),
                 .rstn(rstn),                
@@ -165,7 +167,7 @@ module tb_mvm_accelerator;
     
     reg done [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];
     
-    integer num_full_bursts, final_burst_len, base_offset;
+    integer num_full_bursts, final_burst_len, base_addr, base_offset;
     
     // Initialization
     initial begin
@@ -199,6 +201,8 @@ module tb_mvm_accelerator;
         
         // Write vector to dut.axi_ram
         for (int i = 0; i < NUM_ACCEL_INST; i = i + 1) begin
+            base_addr = 32'h8000_0000 + 32'h1000_0000 * i;
+        
             for (int j = 0; j < NUM_RAM_PARTITIONS; j = j + 1) begin
                 repeat (10) @(posedge clk);
                 
@@ -210,7 +214,7 @@ module tb_mvm_accelerator;
                 for (int k = 0; k < num_full_bursts; k = k + 1) begin
                     automatic int burst_offset = base_offset + k * MAX_BURST_LEN;
                     axi_write_burst(
-                        32'h1000_0000 * i + burst_offset * STRB_WIDTH,
+                        base_addr + burst_offset * STRB_WIDTH,
                         MAX_BURST_LEN,
                         burst_offset,
                         i
@@ -220,7 +224,7 @@ module tb_mvm_accelerator;
                 if (final_burst_len > 0) begin
                     automatic int burst_offset = base_offset + num_full_bursts * MAX_BURST_LEN;
                     axi_write_burst(
-                        32'h1000_0000*i + burst_offset * STRB_WIDTH,
+                        base_addr + burst_offset * STRB_WIDTH,
                         final_burst_len,
                         burst_offset,
                         i

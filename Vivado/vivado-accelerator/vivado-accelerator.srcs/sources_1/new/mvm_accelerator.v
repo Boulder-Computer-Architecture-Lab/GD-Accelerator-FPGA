@@ -17,8 +17,7 @@ module mvm_accelerator #(
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    //parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
-    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4
+    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
     input wire clk,
     input wire rstn,

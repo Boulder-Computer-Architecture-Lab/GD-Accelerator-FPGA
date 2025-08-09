@@ -1,7 +1,7 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"1.90873",
-   "Default View_TopLeft":"160,-162",
+   "Default View_ScaleFactor":"1.12706",
+   "Default View_TopLeft":"160,-239",
    "ExpandedHierarchyInLayout":"",
    "PinnedBlocks":"/axi_dma_0|/rst_ps7_0_100M|/ps7_0_axi_periph|/smartconnect_1|/mvm_accelerator_0|/processing_system7_0|/smartconnect_0|/axi_dma_1|/smartconnect_4|/axi_dma_2|/axi_dma_3|",
    "PinnedPorts":"DDR|FIXED_IO|",
