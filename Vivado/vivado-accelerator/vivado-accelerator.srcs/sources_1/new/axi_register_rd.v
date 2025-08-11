@@ -58,7 +58,7 @@ module axi_register_rd #
 )
 (
     input  wire                     clk,
-    input  wire                     rst,
+    input  wire                     rstn,
 
     /*
      * AXI slave interface
@@ -197,7 +197,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         s_axi_arready_reg <= 1'b0;
         m_axi_arvalid_reg <= 1'b0;
         temp_m_axi_arvalid_reg <= 1'b0;
@@ -304,7 +304,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         s_axi_arready_reg <= 1'b0;
         m_axi_arvalid_reg <= 1'b0;
     end else begin
@@ -415,7 +415,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         m_axi_rready_reg <= 1'b0;
         s_axi_rvalid_reg <= 1'b0;
         temp_s_axi_rvalid_reg <= 1'b0;
@@ -492,7 +492,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         m_axi_rready_reg <= 1'b0;
         s_axi_rvalid_reg <= 1'b0;
     end else begin

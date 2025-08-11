@@ -26,34 +26,42 @@ module mvm_accelerator #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
     input  wire                  s_axis_a_0_tvalid,
     output wire                  s_axis_a_0_tready,
+    input  wire                  s_axis_a_0_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
     input  wire                  s_axis_a_1_tvalid,
     output wire                  s_axis_a_1_tready,
-    
+    input  wire                  s_axis_a_1_tlast,
+
     input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
     input  wire                  s_axis_a_2_tvalid,
     output wire                  s_axis_a_2_tready,
+    input  wire                  s_axis_a_2_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
     input  wire                  s_axis_a_3_tvalid,
     output wire                  s_axis_a_3_tready,
+    input  wire                  s_axis_a_3_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_4_tdata,
     input  wire                  s_axis_a_4_tvalid,
     output wire                  s_axis_a_4_tready,
-    
+    input  wire                  s_axis_a_4_tlast,
+
     input  wire [DATA_WIDTH-1:0] s_axis_a_5_tdata,
     input  wire                  s_axis_a_5_tvalid,
     output wire                  s_axis_a_5_tready,
+    input  wire                  s_axis_a_5_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_6_tdata,
     input  wire                  s_axis_a_6_tvalid,
     output wire                  s_axis_a_6_tready,
+    input  wire                  s_axis_a_6_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_7_tdata,
     input  wire                  s_axis_a_7_tvalid,
     output wire                  s_axis_a_7_tready,
+    input  wire                  s_axis_a_7_tlast,
     
     // Output streams
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
@@ -142,254 +150,42 @@ module mvm_accelerator #(
                 .s_axis_a_0_tdata(s_axis_a_0_tdata),
                 .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
                 .s_axis_a_0_tready(s_axis_a_0_tready),
+                .s_axis_a_0_tlast(s_axis_a_0_tlast),
             
                 .s_axis_a_1_tdata(s_axis_a_1_tdata),
                 .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
                 .s_axis_a_1_tready(s_axis_a_1_tready),
-            
+                .s_axis_a_1_tlast(s_axis_a_1_tlast),
+
                 .s_axis_a_2_tdata(s_axis_a_2_tdata),
                 .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
                 .s_axis_a_2_tready(s_axis_a_2_tready),
+                .s_axis_a_2_tlast(s_axis_a_2_tlast),
             
                 .s_axis_a_3_tdata(s_axis_a_3_tdata),
                 .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
                 .s_axis_a_3_tready(s_axis_a_3_tready),
+                .s_axis_a_3_tlast(s_axis_a_3_tlast),
             
                 .s_axis_a_4_tdata(s_axis_a_4_tdata),
                 .s_axis_a_4_tvalid(s_axis_a_4_tvalid),
                 .s_axis_a_4_tready(s_axis_a_4_tready),
+                .s_axis_a_4_tlast(s_axis_a_4_tlast),
             
                 .s_axis_a_5_tdata(s_axis_a_5_tdata),
                 .s_axis_a_5_tvalid(s_axis_a_5_tvalid),
                 .s_axis_a_5_tready(s_axis_a_5_tready),
+                .s_axis_a_5_tlast(s_axis_a_5_tlast),
             
                 .s_axis_a_6_tdata(s_axis_a_6_tdata),
                 .s_axis_a_6_tvalid(s_axis_a_6_tvalid),
                 .s_axis_a_6_tready(s_axis_a_6_tready),
+                .s_axis_a_6_tlast(s_axis_a_6_tlast),
             
                 .s_axis_a_7_tdata(s_axis_a_7_tdata),
                 .s_axis_a_7_tvalid(s_axis_a_7_tvalid),
                 .s_axis_a_7_tready(s_axis_a_7_tready),
-            
-                // Output channels
-                .m_axis_0_tdata(m_axis_0_tdata),
-                .m_axis_0_tvalid(m_axis_0_tvalid),
-                .m_axis_0_tready(m_axis_0_tready),
-                .m_axis_0_tlast(m_axis_0_tlast),
-            
-                .m_axis_1_tdata(m_axis_1_tdata),
-                .m_axis_1_tvalid(m_axis_1_tvalid),
-                .m_axis_1_tready(m_axis_1_tready),
-                .m_axis_1_tlast(m_axis_1_tlast),
-            
-                .m_axis_2_tdata(m_axis_2_tdata),
-                .m_axis_2_tvalid(m_axis_2_tvalid),
-                .m_axis_2_tready(m_axis_2_tready),
-                .m_axis_2_tlast(m_axis_2_tlast),
-            
-                .m_axis_3_tdata(m_axis_3_tdata),
-                .m_axis_3_tvalid(m_axis_3_tvalid),
-                .m_axis_3_tready(m_axis_3_tready),
-                .m_axis_3_tlast(m_axis_3_tlast),
-            
-                .m_axis_4_tdata(m_axis_4_tdata),
-                .m_axis_4_tvalid(m_axis_4_tvalid),
-                .m_axis_4_tready(m_axis_4_tready),
-                .m_axis_4_tlast(m_axis_4_tlast),
-            
-                .m_axis_5_tdata(m_axis_5_tdata),
-                .m_axis_5_tvalid(m_axis_5_tvalid),
-                .m_axis_5_tready(m_axis_5_tready),
-                .m_axis_5_tlast(m_axis_5_tlast),
-            
-                .m_axis_6_tdata(m_axis_6_tdata),
-                .m_axis_6_tvalid(m_axis_6_tvalid),
-                .m_axis_6_tready(m_axis_6_tready),
-                .m_axis_6_tlast(m_axis_6_tlast),
-            
-                .m_axis_7_tdata(m_axis_7_tdata),
-                .m_axis_7_tvalid(m_axis_7_tvalid),
-                .m_axis_7_tready(m_axis_7_tready),
-                .m_axis_7_tlast(m_axis_7_tlast),
-            
-                // AXI slave interface
-                .s_axi_b_awid(s_axi_b_awid),
-                .s_axi_b_awaddr(s_axi_b_awaddr),
-                .s_axi_b_awlen(s_axi_b_awlen),
-                .s_axi_b_awsize(s_axi_b_awsize),
-                .s_axi_b_awburst(s_axi_b_awburst),
-                .s_axi_b_awlock(s_axi_b_awlock),
-                .s_axi_b_awcache(s_axi_b_awcache),
-                .s_axi_b_awprot(s_axi_b_awprot),
-                .s_axi_b_awvalid(s_axi_b_awvalid),
-                .s_axi_b_awready(s_axi_b_awready),
-            
-                .s_axi_b_wdata(s_axi_b_wdata),
-                .s_axi_b_wstrb(s_axi_b_wstrb),
-                .s_axi_b_wlast(s_axi_b_wlast),
-                .s_axi_b_wvalid(s_axi_b_wvalid),
-                .s_axi_b_wready(s_axi_b_wready),
-            
-                .s_axi_b_bid(s_axi_b_bid),
-                .s_axi_b_bresp(s_axi_b_bresp),
-                .s_axi_b_bvalid(s_axi_b_bvalid),
-                .s_axi_b_bready(s_axi_b_bready)
-            );
-        end else if (ARCH_TYPE -- 1) begin
-            mvm_accelerator_async #(
-                .DATA_WIDTH(DATA_WIDTH),
-                .ADDR_WIDTH(ADDR_WIDTH),
-                .STRB_WIDTH(STRB_WIDTH),
-                .ID_WIDTH(ID_WIDTH),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
-                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
-                .NUM_CHANNELS(NUM_CHANNELS)
-            ) mvm (
-                .clk(clk),
-                .rstn(rstn),
-            
-                // Input channels
-                .s_axis_a_0_tdata(s_axis_a_0_tdata),
-                .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
-                .s_axis_a_0_tready(s_axis_a_0_tready),
-            
-                .s_axis_a_1_tdata(s_axis_a_1_tdata),
-                .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
-                .s_axis_a_1_tready(s_axis_a_1_tready),
-            
-                .s_axis_a_2_tdata(s_axis_a_2_tdata),
-                .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
-                .s_axis_a_2_tready(s_axis_a_2_tready),
-            
-                .s_axis_a_3_tdata(s_axis_a_3_tdata),
-                .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
-                .s_axis_a_3_tready(s_axis_a_3_tready),
-            
-                .s_axis_a_4_tdata(s_axis_a_4_tdata),
-                .s_axis_a_4_tvalid(s_axis_a_4_tvalid),
-                .s_axis_a_4_tready(s_axis_a_4_tready),
-            
-                .s_axis_a_5_tdata(s_axis_a_5_tdata),
-                .s_axis_a_5_tvalid(s_axis_a_5_tvalid),
-                .s_axis_a_5_tready(s_axis_a_5_tready),
-            
-                .s_axis_a_6_tdata(s_axis_a_6_tdata),
-                .s_axis_a_6_tvalid(s_axis_a_6_tvalid),
-                .s_axis_a_6_tready(s_axis_a_6_tready),
-            
-                .s_axis_a_7_tdata(s_axis_a_7_tdata),
-                .s_axis_a_7_tvalid(s_axis_a_7_tvalid),
-                .s_axis_a_7_tready(s_axis_a_7_tready),
-            
-                // Output channels
-                .m_axis_0_tdata(m_axis_0_tdata),
-                .m_axis_0_tvalid(m_axis_0_tvalid),
-                .m_axis_0_tready(m_axis_0_tready),
-                .m_axis_0_tlast(m_axis_0_tlast),
-            
-                .m_axis_1_tdata(m_axis_1_tdata),
-                .m_axis_1_tvalid(m_axis_1_tvalid),
-                .m_axis_1_tready(m_axis_1_tready),
-                .m_axis_1_tlast(m_axis_1_tlast),
-            
-                .m_axis_2_tdata(m_axis_2_tdata),
-                .m_axis_2_tvalid(m_axis_2_tvalid),
-                .m_axis_2_tready(m_axis_2_tready),
-                .m_axis_2_tlast(m_axis_2_tlast),
-            
-                .m_axis_3_tdata(m_axis_3_tdata),
-                .m_axis_3_tvalid(m_axis_3_tvalid),
-                .m_axis_3_tready(m_axis_3_tready),
-                .m_axis_3_tlast(m_axis_3_tlast),
-            
-                .m_axis_4_tdata(m_axis_4_tdata),
-                .m_axis_4_tvalid(m_axis_4_tvalid),
-                .m_axis_4_tready(m_axis_4_tready),
-                .m_axis_4_tlast(m_axis_4_tlast),
-            
-                .m_axis_5_tdata(m_axis_5_tdata),
-                .m_axis_5_tvalid(m_axis_5_tvalid),
-                .m_axis_5_tready(m_axis_5_tready),
-                .m_axis_5_tlast(m_axis_5_tlast),
-            
-                .m_axis_6_tdata(m_axis_6_tdata),
-                .m_axis_6_tvalid(m_axis_6_tvalid),
-                .m_axis_6_tready(m_axis_6_tready),
-                .m_axis_6_tlast(m_axis_6_tlast),
-            
-                .m_axis_7_tdata(m_axis_7_tdata),
-                .m_axis_7_tvalid(m_axis_7_tvalid),
-                .m_axis_7_tready(m_axis_7_tready),
-                .m_axis_7_tlast(m_axis_7_tlast),
-            
-                // AXI slave interface
-                .s_axi_b_awid(s_axi_b_awid),
-                .s_axi_b_awaddr(s_axi_b_awaddr),
-                .s_axi_b_awlen(s_axi_b_awlen),
-                .s_axi_b_awsize(s_axi_b_awsize),
-                .s_axi_b_awburst(s_axi_b_awburst),
-                .s_axi_b_awlock(s_axi_b_awlock),
-                .s_axi_b_awcache(s_axi_b_awcache),
-                .s_axi_b_awprot(s_axi_b_awprot),
-                .s_axi_b_awvalid(s_axi_b_awvalid),
-                .s_axi_b_awready(s_axi_b_awready),
-            
-                .s_axi_b_wdata(s_axi_b_wdata),
-                .s_axi_b_wstrb(s_axi_b_wstrb),
-                .s_axi_b_wlast(s_axi_b_wlast),
-                .s_axi_b_wvalid(s_axi_b_wvalid),
-                .s_axi_b_wready(s_axi_b_wready),
-            
-                .s_axi_b_bid(s_axi_b_bid),
-                .s_axi_b_bresp(s_axi_b_bresp),
-                .s_axi_b_bvalid(s_axi_b_bvalid),
-                .s_axi_b_bready(s_axi_b_bready)
-            );
-        end else if (ARCH_TYPE == 2) begin
-            mvm_accelerator_sync #(
-                .DATA_WIDTH(DATA_WIDTH),
-                .ADDR_WIDTH(ADDR_WIDTH),
-                .STRB_WIDTH(STRB_WIDTH),
-                .ID_WIDTH(ID_WIDTH),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
-                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
-                .NUM_CHANNELS(NUM_CHANNELS)
-            ) mvm (
-                .clk(clk),
-                .rstn(rstn),
-            
-                // Input channels
-                .s_axis_a_0_tdata(s_axis_a_0_tdata),
-                .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
-                .s_axis_a_0_tready(s_axis_a_0_tready),
-            
-                .s_axis_a_1_tdata(s_axis_a_1_tdata),
-                .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
-                .s_axis_a_1_tready(s_axis_a_1_tready),
-            
-                .s_axis_a_2_tdata(s_axis_a_2_tdata),
-                .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
-                .s_axis_a_2_tready(s_axis_a_2_tready),
-            
-                .s_axis_a_3_tdata(s_axis_a_3_tdata),
-                .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
-                .s_axis_a_3_tready(s_axis_a_3_tready),
-            
-                .s_axis_a_4_tdata(s_axis_a_4_tdata),
-                .s_axis_a_4_tvalid(s_axis_a_4_tvalid),
-                .s_axis_a_4_tready(s_axis_a_4_tready),
-            
-                .s_axis_a_5_tdata(s_axis_a_5_tdata),
-                .s_axis_a_5_tvalid(s_axis_a_5_tvalid),
-                .s_axis_a_5_tready(s_axis_a_5_tready),
-            
-                .s_axis_a_6_tdata(s_axis_a_6_tdata),
-                .s_axis_a_6_tvalid(s_axis_a_6_tvalid),
-                .s_axis_a_6_tready(s_axis_a_6_tready),
-            
-                .s_axis_a_7_tdata(s_axis_a_7_tdata),
-                .s_axis_a_7_tvalid(s_axis_a_7_tvalid),
-                .s_axis_a_7_tready(s_axis_a_7_tready),
+                .s_axis_a_7_tlast(s_axis_a_7_tlast),
             
                 // Output channels
                 .m_axis_0_tdata(m_axis_0_tdata),

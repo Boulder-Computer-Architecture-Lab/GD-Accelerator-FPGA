@@ -45,7 +45,7 @@ module arbiter #
 )
 (
     input  wire                     clk,
-    input  wire                     rst,
+    input  wire                     rstn,
 
     input  wire [PORTS-1:0]         request,
     input  wire [PORTS-1:0]         acknowledge,
@@ -141,7 +141,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         grant_reg <= 0;
         grant_valid_reg <= 0;
         grant_encoded_reg <= 0;

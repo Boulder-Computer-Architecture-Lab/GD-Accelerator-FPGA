@@ -30,7 +30,7 @@ module mvm_channel_split #(
     input  wire                     m_axis_tready,
     output wire                     m_axis_tlast,
     
-    // AXI master read interface (to interconnect)
+    // AXI master read interface (to crossbar)
     output wire [ID_WIDTH-1:0]   m_axi_arid,
     output wire [ADDR_WIDTH-1:0] m_axi_araddr,
     output wire [7:0]            m_axi_arlen,
@@ -50,22 +50,82 @@ module mvm_channel_split #(
     
     // Partition arbitration
     input  wire start,
+    input  wire a_enable,
     output wire row_valid,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
     output wire partition_done
 );
 
-    localparam FIFO_DEPTH = 512; // in words
+    // ========================================
+    //                  COUNTS
+    // ========================================
 
+    localparam WORDS_PER_PARTITION = WORDS_PER_TRANSFER / NUM_RAM_PARTITIONS;
+    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
+    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
+    
+    /*
+    // counters
+    reg [PARTITION_WIDTH-1:0] a_in_cnt = 0, a_out_cnt = 0, b_out_cnt = 0;
+    
+    wire a_in_hs  = s_axis_a_tvalid & s_axis_a_tready;
+    wire a_out_hs = pipe_a_tvalid & pipe_a_tready;
+    wire b_out_hs = pipe_b_tvalid & pipe_b_tready;
+    
+    wire a_in_done  = (a_in_cnt  == WORDS_PER_PARTITION);
+    wire a_out_done = (a_out_cnt == WORDS_PER_PARTITION);
+    wire b_out_done = (b_out_cnt == WORDS_PER_PARTITION);
+        
+    always @(posedge clk) begin
+        if (!rstn || start) begin
+            a_in_cnt  <= 0;
+            a_out_cnt <= 0;
+            b_out_cnt <= 0;
+        end else begin
+            if (a_in_hs  && a_in_cnt  < WORDS_PER_PARTITION) a_in_cnt <= a_in_cnt + 1;
+            if (a_out_hs && a_out_cnt < WORDS_PER_PARTITION) a_out_cnt <= a_out_cnt + 1;
+            if (b_out_hs && b_out_cnt < WORDS_PER_PARTITION) b_out_cnt <= b_out_cnt + 1;
+        end
+    end
+    
+    // make 1 cycle pulse
+    wire part_done_level = a_out_done & b_out_done;
+    reg  part_done_level_q;
+    always @(posedge clk) begin
+      if (!rstn) part_done_level_q <= 1'b0;
+      else       part_done_level_q <= part_done_level;
+    end
+    
+    assign partition_done = part_done_level & ~part_done_level_q;
+    
+    always @(posedge clk) begin
+        if (partition_done) $display("ch%0d ram%0d -> A_in=%0d  A_out=%0d  B_out=%0d",
+                             TAG, partition_index, a_in_cnt, a_out_cnt, b_out_cnt);
+    end
+    */
+    
     // ========================================
-    //                FIFO A
+    //               A BUFFERS
     // ========================================
+    
+    localparam FIFO_DEPTH = 512;
+        
+    wire [DATA_WIDTH-1:0] fifo_a_s_axis_tdata;
+    wire                  fifo_a_s_axis_tvalid;
+    wire                  fifo_a_s_axis_tready;
 
     wire [DATA_WIDTH-1:0] fifo_a_m_axis_tdata;
     wire                  fifo_a_m_axis_tvalid;
     wire                  fifo_a_m_axis_tready;
     
-    assign row_valid = fifo_a_m_axis_tvalid;
+    wire [$clog2(FIFO_DEPTH):0] fifo_a_status_depth;
+    
+    assign row_valid = (fifo_a_status_depth > 0);
+    
+    assign fifo_a_s_axis_tdata = s_axis_a_tdata;
+    assign fifo_a_s_axis_tvalid = s_axis_a_tvalid;
+    //assign s_axis_a_tready = a_enable && !a_in_done && fifo_a_s_axis_tready;
+    assign s_axis_a_tready = fifo_a_s_axis_tready;
     
     axis_fifo #(
         .DEPTH(FIFO_DEPTH),
@@ -87,10 +147,10 @@ module mvm_channel_split #(
         .clk(clk),
         .rstn(rstn),
     
-        .s_axis_tdata(s_axis_a_tdata),
+        .s_axis_tdata(fifo_a_s_axis_tdata),
         .s_axis_tkeep(),
-        .s_axis_tvalid(s_axis_a_tvalid),
-        .s_axis_tready(s_axis_a_tready),
+        .s_axis_tvalid(fifo_a_s_axis_tvalid),
+        .s_axis_tready(fifo_a_s_axis_tready),
         .s_axis_tlast(1'b0),
         .s_axis_tid(8'b0),
         .s_axis_tdest(8'b0),
@@ -108,15 +168,33 @@ module mvm_channel_split #(
         .pause_req(1'b0),
         .pause_ack(),
     
-        .status_depth(),
+        .status_depth(fifo_a_status_depth),
         .status_depth_commit(),
         .status_overflow(),
         .status_bad_frame(),
         .status_good_frame()
     );
     
+    wire [DATA_WIDTH-1:0] pipe_a_tdata;
+    wire                  pipe_a_tvalid;
+    wire                  pipe_a_tready;
+    
+    axis_register #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .REG_TYPE(2)
+    ) a_skid (
+        .clk(clk), .rstn(rstn),
+        .s_axis_tdata (fifo_a_m_axis_tdata),
+        .s_axis_tvalid(fifo_a_m_axis_tvalid),
+        .s_axis_tready(fifo_a_m_axis_tready),
+        .m_axis_tdata (pipe_a_tdata),
+        .m_axis_tvalid(pipe_a_tvalid),
+        .m_axis_tready(pipe_a_tready)
+    );
+    
     // ========================================
-    //                FIFO B
+    //              B BUFFERS
     // ========================================
     
     wire [DATA_WIDTH-1:0] fifo_b_s_axis_tdata;
@@ -173,7 +251,25 @@ module mvm_channel_split #(
         .status_overflow(),
         .status_bad_frame(),
         .status_good_frame()
-    );   
+    );
+    
+    wire [DATA_WIDTH-1:0] pipe_b_tdata;
+    wire                  pipe_b_tvalid;
+    wire                  pipe_b_tready;
+        
+    axis_register #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .REG_TYPE(2)
+    ) b_skid (
+        .clk(clk), .rstn(rstn),
+        .s_axis_tdata (fifo_b_m_axis_tdata),
+        .s_axis_tvalid(fifo_b_m_axis_tvalid),
+        .s_axis_tready(fifo_b_m_axis_tready),
+        .m_axis_tdata (pipe_b_tdata),
+        .m_axis_tvalid(pipe_b_tvalid),
+        .m_axis_tready(pipe_b_tready)
+    );
     
     // ========================================
     //   MM2S DMA (REQ DATA FROM RAM VIA XBAR)
@@ -182,12 +278,9 @@ module mvm_channel_split #(
     localparam DMA_BURST_LEN = 256;
     localparam DMA_LEN_WIDTH = 20;
     localparam DMA_TAG_WIDTH = 8;
-    
-    localparam WORDS_PER_RAM_INST = WORDS_PER_TRANSFER / NUM_RAM_PARTITIONS;
-    localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST * STRB_WIDTH;
-        
-    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_RAM_INST);
-    wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_RAM_INST;
+            
+    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_PARTITION);
+    wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
 
     reg  dma_desc_valid;
     wire dma_desc_ready;
@@ -200,9 +293,9 @@ module mvm_channel_split #(
     wire [7:0] dma_status_tag;
     wire [3:0] dma_status_error;
     wire       dma_status_valid;
-        
+    
     assign partition_done = dma_status_valid && (dma_status_tag == TAG);
-        
+            
     always @(posedge clk) begin
         if (!rstn)
             dma_desc_valid <= 1'b0;
@@ -285,13 +378,13 @@ module mvm_channel_split #(
         .clk(clk),
         .rstn(rstn),
 
-        .s_axis_a_tdata(fifo_a_m_axis_tdata),
-        .s_axis_a_tvalid(fifo_a_m_axis_tvalid),
-        .s_axis_a_tready(fifo_a_m_axis_tready),
+        .s_axis_a_tdata(pipe_a_tdata),
+        .s_axis_a_tvalid(pipe_a_tvalid),
+        .s_axis_a_tready(pipe_a_tready),
 
-        .s_axis_b_tdata(fifo_b_m_axis_tdata),
-        .s_axis_b_tvalid(fifo_b_m_axis_tvalid),
-        .s_axis_b_tready(fifo_b_m_axis_tready),
+        .s_axis_b_tdata(pipe_b_tdata),
+        .s_axis_b_tvalid(pipe_b_tvalid),
+        .s_axis_b_tready(pipe_b_tready),
 
         .m_axis_tdata(m_axis_tdata),
         .m_axis_tvalid(m_axis_tvalid),

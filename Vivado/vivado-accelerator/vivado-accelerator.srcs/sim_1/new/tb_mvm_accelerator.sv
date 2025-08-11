@@ -3,11 +3,11 @@
 module tb_mvm_accelerator;
 
     `include "axi_a_channel_bindings.svh"
-    `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match parameter)
+    `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
                                      // Note: Also run ./Vivado/scripts/update_channels.py when this 
                                      // is changed to update all the relevant header files
 
-    parameter ARCH_TYPE = 0; // Select accelerator type (0=split, 1=async, 2=sync)
+    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
@@ -43,6 +43,7 @@ module tb_mvm_accelerator;
     logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS];
     logic                  s_axis_a_tvalid  [NUM_CHANNELS];
     logic                  s_axis_a_tready  [NUM_CHANNELS];
+    logic                  s_axis_a_tlast   [NUM_CHANNELS];
     
     // Outputs
     logic [ELEMENT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS];
@@ -152,7 +153,7 @@ module tb_mvm_accelerator;
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
                 .clk(clk),
-                .rstn(rstn),                
+                .rstn(rstn),
                 `GET_CHANNELS
                 `include "axi_full_write_bindings.svh"
             );
@@ -183,8 +184,9 @@ module tb_mvm_accelerator;
             for (int j = 0; j < VECTOR_LEN; j = j + 1) begin
                 a_values[i][j] = (j+1) / ((i+1) * 1000.0);
                 b_values[j] = (j+1) / 10000.0;
+                $display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, $realtobits(a_values[i][j]), a_values[i][j]);
             end
-                        
+
             for (int j = 0; j < NUM_TRANSFERS; j = j + 1) begin
                 done[i][j] = 0;
             end
@@ -247,6 +249,8 @@ module tb_mvm_accelerator;
             initial begin
                 wait(start);
                 
+                repeat (5*ch) @(posedge clk); // don't start all channels on the same cycle (more realistic)
+                
                 for (int j = 0; j < NUM_TRANSFERS; j++) begin  
                     expected[ch][j] = 0;
                        
@@ -254,23 +258,31 @@ module tb_mvm_accelerator;
                     for (int word_idx = 0; word_idx < WORDS_PER_TRANSFER; word_idx++) begin
                         s_axis_a_tdata[ch] = '0;
                         
-                        partition_offset = word_idx / WORDS_PER_PARTITION;
-                        local_word_offset = word_idx % WORDS_PER_PARTITION;
-                        rotated_partition = (ch + partition_offset) % NUM_RAM_PARTITIONS;
+                        //partition_offset = word_idx / WORDS_PER_PARTITION;
+                        //local_word_offset = word_idx % WORDS_PER_PARTITION;
+                        //rotated_partition = (ch + partition_offset) % NUM_RAM_PARTITIONS;
                         
                         for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
                             // Accounts for partitioning assignment pattern
-                            automatic int rotated_idx = rotated_partition * ELEMENTS_PER_PARTITION
-                                                      + local_word_offset * ELEMENTS_PER_WORD 
-                                                      + k;
-                            s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][rotated_idx]);
-                            expected[ch][j] += a_values[ch][rotated_idx] * b_values[rotated_idx];
+                            //automatic int rotated_idx = rotated_partition * ELEMENTS_PER_PARTITION
+                            //                          + local_word_offset * ELEMENTS_PER_WORD 
+                            //                          + k;
+                            //s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][rotated_idx]);
+                            //expected[ch][j] += a_values[ch][rotated_idx] * b_values[rotated_idx];
+                            
+                            automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
+                            s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][abs_idx]);
+                            expected[ch][j] += a_values[ch][abs_idx] * b_values[abs_idx];
                         end
                         
                         s_axis_a_tvalid[ch] = 1;
+                        s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_TRANSFER-1);
+
                         wait (s_axis_a_tready[ch]);
                         @(posedge clk);
                         s_axis_a_tvalid[ch] = 0;
+                        s_axis_a_tlast[ch]  = 0;
+
                     end
                     $display("%0d: Channel %0d: All inputs sent. Awaiting result...", j, ch);
     

@@ -67,7 +67,7 @@ module axi_crossbar_addr #
 )
 (
     input  wire                       clk,
-    input  wire                       rst,
+    input  wire                       rstn,
 
     /*
      * Address input
@@ -141,7 +141,7 @@ function [M_COUNT*M_REGIONS*ADDR_WIDTH-1:0] calcBaseAddrs(input [31:0] dummy);
     end
 endfunction
 
-parameter M_BASE_ADDR_INT = M_BASE_ADDR ? M_BASE_ADDR : calcBaseAddrs(0);
+localparam M_BASE_ADDR_INT = M_BASE_ADDR ? M_BASE_ADDR : calcBaseAddrs(0);
 
 integer i, j;
 
@@ -293,7 +293,7 @@ generate
         assign thread_trans_complete[n] = thread_cpl_match[n] && trans_complete;
 
         always @(posedge clk) begin
-            if (rst) begin
+            if (!rstn) begin
                 thread_count_reg[n] <= 0;
             end else begin
                 if (thread_trans_start[n] && !thread_trans_complete[n]) begin
@@ -386,7 +386,7 @@ always @* begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (!rstn) begin
         state_reg <= STATE_IDLE;
         s_axi_aready_reg <= 1'b0;
         m_axi_avalid_reg <= 1'b0;

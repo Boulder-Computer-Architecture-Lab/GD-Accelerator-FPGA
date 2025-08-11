@@ -24,34 +24,42 @@ module mvm_accelerator_split #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
     input  wire                  s_axis_a_0_tvalid,
     output wire                  s_axis_a_0_tready,
+    input  wire                  s_axis_a_0_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
     input  wire                  s_axis_a_1_tvalid,
     output wire                  s_axis_a_1_tready,
-    
+    input  wire                  s_axis_a_1_tlast,
+
     input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
     input  wire                  s_axis_a_2_tvalid,
     output wire                  s_axis_a_2_tready,
+    input  wire                  s_axis_a_2_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
     input  wire                  s_axis_a_3_tvalid,
     output wire                  s_axis_a_3_tready,
+    input  wire                  s_axis_a_3_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_4_tdata,
     input  wire                  s_axis_a_4_tvalid,
     output wire                  s_axis_a_4_tready,
-    
+    input  wire                  s_axis_a_4_tlast,
+
     input  wire [DATA_WIDTH-1:0] s_axis_a_5_tdata,
     input  wire                  s_axis_a_5_tvalid,
     output wire                  s_axis_a_5_tready,
+    input  wire                  s_axis_a_5_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_6_tdata,
     input  wire                  s_axis_a_6_tvalid,
     output wire                  s_axis_a_6_tready,
+    input  wire                  s_axis_a_6_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_7_tdata,
     input  wire                  s_axis_a_7_tvalid,
     output wire                  s_axis_a_7_tready,
+    input  wire                  s_axis_a_7_tlast,
     
     // Output streams
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
@@ -96,26 +104,26 @@ module mvm_accelerator_split #(
 
     // S-AXI interface
     input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
-    input  wire [ADDR_WIDTH-1:0]   s_axi_b_awaddr,
-    input  wire [7:0]              s_axi_b_awlen,
-    input  wire [2:0]              s_axi_b_awsize,
-    input  wire [1:0]              s_axi_b_awburst,
-    input  wire                    s_axi_b_awlock,
-    input  wire [3:0]              s_axi_b_awcache,
-    input  wire [2:0]              s_axi_b_awprot,
-    input  wire                    s_axi_b_awvalid,
-    output wire                    s_axi_b_awready,
+    input  wire [ADDR_WIDTH-1:0]       s_axi_b_awaddr,
+    input  wire [7:0]                  s_axi_b_awlen,
+    input  wire [2:0]                  s_axi_b_awsize,
+    input  wire [1:0]                  s_axi_b_awburst,
+    input  wire                        s_axi_b_awlock,
+    input  wire [3:0]                  s_axi_b_awcache,
+    input  wire [2:0]                  s_axi_b_awprot,
+    input  wire                        s_axi_b_awvalid,
+    output wire                        s_axi_b_awready,
     
-    input  wire [DATA_WIDTH-1:0]   s_axi_b_wdata,
-    input  wire [STRB_WIDTH-1:0]   s_axi_b_wstrb,
-    input  wire                    s_axi_b_wlast,
-    input  wire                    s_axi_b_wvalid,
-    output wire                    s_axi_b_wready,
+    input  wire [DATA_WIDTH-1:0]       s_axi_b_wdata,
+    input  wire [STRB_WIDTH-1:0]       s_axi_b_wstrb,
+    input  wire                        s_axi_b_wlast,
+    input  wire                        s_axi_b_wvalid,
+    output wire                        s_axi_b_wready,
     
     output wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_bid,
-    output wire [1:0]              s_axi_b_bresp,
-    output wire                    s_axi_b_bvalid,
-    input  wire                    s_axi_b_bready
+    output wire [1:0]                  s_axi_b_bresp,
+    output wire                        s_axi_b_bvalid,
+    input  wire                        s_axi_b_bready
 );  
 
     // =============================================================
@@ -126,6 +134,7 @@ module mvm_accelerator_split #(
     wire [DATA_WIDTH-1:0] s_axis_a_tdata  [NUM_CHANNELS-1:0];
     wire                  s_axis_a_tvalid [NUM_CHANNELS-1:0];
     wire                  s_axis_a_tready [NUM_CHANNELS-1:0];
+    wire                  s_axis_a_tlast  [NUM_CHANNELS-1:0];
     
     wire [DATA_WIDTH-1:0] s_axis_b_tdata  [NUM_CHANNELS-1:0];
     wire                  s_axis_b_tvalid [NUM_CHANNELS-1:0];
@@ -137,38 +146,28 @@ module mvm_accelerator_split #(
     wire                     m_axis_tready [NUM_CHANNELS-1:0];
     wire                     m_axis_tlast  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0] m_axi_arid     [NUM_CHANNELS-1:0];
-    wire [ADDR_WIDTH-1:0]   m_axi_araddr   [NUM_CHANNELS-1:0];
-    wire [7:0]              m_axi_arlen    [NUM_CHANNELS-1:0];
-    wire [2:0]              m_axi_arsize   [NUM_CHANNELS-1:0];
-    wire [1:0]              m_axi_arburst  [NUM_CHANNELS-1:0];
-    wire                    m_axi_arlock   [NUM_CHANNELS-1:0];
-    wire [3:0]              m_axi_arcache  [NUM_CHANNELS-1:0];
-    wire [2:0]              m_axi_arprot   [NUM_CHANNELS-1:0];
-    wire                    m_axi_arvalid  [NUM_CHANNELS-1:0];
-    wire                    m_axi_arready  [NUM_CHANNELS-1:0];
+    wire [(ID_WIDTH+4)-1:0]     m_axi_arid     [NUM_CHANNELS-1:0];
+    wire [ADDR_WIDTH-1:0]       m_axi_araddr   [NUM_CHANNELS-1:0];
+    wire [7:0]                  m_axi_arlen    [NUM_CHANNELS-1:0];
+    wire [2:0]                  m_axi_arsize   [NUM_CHANNELS-1:0];
+    wire [1:0]                  m_axi_arburst  [NUM_CHANNELS-1:0];
+    wire                        m_axi_arlock   [NUM_CHANNELS-1:0];
+    wire [3:0]                  m_axi_arcache  [NUM_CHANNELS-1:0];
+    wire [2:0]                  m_axi_arprot   [NUM_CHANNELS-1:0];
+    wire                        m_axi_arvalid  [NUM_CHANNELS-1:0];
+    wire                        m_axi_arready  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0] m_axi_rid      [NUM_CHANNELS-1:0];
-    wire [DATA_WIDTH-1:0]   m_axi_rdata    [NUM_CHANNELS-1:0];
-    wire [1:0]              m_axi_rresp    [NUM_CHANNELS-1:0];
-    wire                    m_axi_rlast    [NUM_CHANNELS-1:0];
-    wire                    m_axi_rvalid   [NUM_CHANNELS-1:0];
-    wire                    m_axi_rready   [NUM_CHANNELS-1:0];
-    
-    `include "bind_channels.vh"
-    
+    wire [(ID_WIDTH+4)-1:0]     m_axi_rid      [NUM_CHANNELS-1:0];
+    wire [DATA_WIDTH-1:0]       m_axi_rdata    [NUM_CHANNELS-1:0];
+    wire [1:0]                  m_axi_rresp    [NUM_CHANNELS-1:0];
+    wire                        m_axi_rlast    [NUM_CHANNELS-1:0];
+    wire                        m_axi_rvalid   [NUM_CHANNELS-1:0];
+    wire                        m_axi_rready   [NUM_CHANNELS-1:0];
+        
     // =============================================================
     //                  PARTITION ACCESS LOGIC
     // =============================================================
-    
-    /* Access pattern for 4 channels 4 partitions:
-     *      ch0: ram0 -> ram1 -> ram2 -> ram3 -> done
-     *      ch1: ram1 -> ram2 -> ram3 -> ram0 -> done
-     *      ch2: ram2 -> ram3 -> ram0 -> ram1 -> done
-     *      ch3: ram3 -> ram0 -> ram1 -> ram2 -> done
-     * Note: must align matrix row inputs accordingly in software
-     */
-    
+
     localparam NUM_CHANNELS_WIDTH = $clog2(NUM_CHANNELS);
     localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
         
@@ -180,23 +179,26 @@ module mvm_accelerator_split #(
     wire row_valid        [NUM_CHANNELS-1:0];
     reg  row_ready        [NUM_CHANNELS-1:0];
     reg  start            [NUM_CHANNELS-1:0];
+    reg  between_rows     [NUM_CHANNELS-1:0];
+    reg  granted;
     
     integer p;
     always @(posedge clk) begin
         if (!rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 start[p] <= 1'b0;
-                partition_idx[p] <= p;
+                partition_idx[p] <= 0;
                 partition_grant[p] <= 1'b0;
                 channel_active[p] <= 1'b0;
                 row_ready[p] <= 1'b0;
             end
         end else begin
+            granted = 1'b0; // only allow 1 grant per cycle (avoids deadlock and/or double-access)
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 if (start[p])
                     row_ready[p] <= 1'b0;
-                else if (!row_ready[p] && row_valid[p])
-                    row_ready[p] <= 1'b1;
+                else
+                    row_ready[p] <= row_valid[p] && !between_rows[p];
     
                 if (!start[p]) begin
                     start[p] <= partition_grant[p] && row_ready[p] && !channel_active[p];
@@ -205,8 +207,9 @@ module mvm_accelerator_split #(
                     channel_active[p] <= 1'b1;
                 end
                                 
-                if (row_ready[p] && !partition_in_use[partition_idx[p]]) begin
+                if (!granted && !partition_in_use[partition_idx[p]]) begin
                     partition_grant[p] <= 1'b1;
+                    granted = 1'b1;
                 end
             
                 if (partition_done[p]) begin
@@ -229,14 +232,38 @@ module mvm_accelerator_split #(
             end
         end
     end
+        
+    integer r;
+    always @(posedge clk) begin
+        if (!rstn) begin
+            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                between_rows[r] <= 1'b1;
+            end
+        end else begin
+            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                if (s_axis_a_tvalid[r] && s_axis_a_tready[r] && s_axis_a_tlast[r])
+                    between_rows[r] <= 1'b1;
+                else if (between_rows[r] && s_axis_a_tvalid[r] && partition_idx[r] == 0)
+                    between_rows[r] <= 1'b0;
+            end
+        end
+    end
 
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================
-
+    
+    `include "bind_channels.vh"
+    
+    wire a_enable [NUM_CHANNELS-1:0];
+    
     genvar ch;
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin: channel_gen
+        
+            assign a_enable[ch] = (partition_grant[ch] || channel_active[ch]) &&
+                        (channel_active[ch] || !between_rows[ch]);
+        
             mvm_channel_split #(
               .DATA_WIDTH(DATA_WIDTH),
               .ADDR_WIDTH(ADDR_WIDTH),
@@ -280,6 +307,7 @@ module mvm_accelerator_split #(
               .m_axi_rready  (m_axi_rready[ch]),
               
               .start(start[ch]),
+              .a_enable(a_enable[ch]),
               .row_valid(row_valid[ch]),
               .partition_index(partition_idx[ch]),
               .partition_done(partition_done[ch])

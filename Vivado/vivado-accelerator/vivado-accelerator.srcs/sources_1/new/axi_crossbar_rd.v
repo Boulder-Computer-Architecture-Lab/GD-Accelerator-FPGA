@@ -230,7 +230,7 @@ generate
         )
         addr_inst (
             .clk(clk),
-            .rst(~rstn),
+            .rstn(rstn),
 
             /*
              * Address input
@@ -337,7 +337,7 @@ generate
         )
         r_arb_inst (
             .clk(clk),
-            .rst(~rstn),
+            .rstn(rstn),
             .request(r_request),
             .acknowledge(r_acknowledge),
             .grant(r_grant),
@@ -383,7 +383,7 @@ generate
         )
         reg_inst (
             .clk(clk),
-            .rst(~rstn),
+            .rstn(rstn),
             .s_axi_arid(s_axi_arid[m*S_ID_WIDTH +: S_ID_WIDTH]),
             .s_axi_araddr(s_axi_araddr[m*ADDR_WIDTH +: ADDR_WIDTH]),
             .s_axi_arlen(s_axi_arlen[m*8 +: 8]),
@@ -463,7 +463,7 @@ generate
         )
         a_arb_inst (
             .clk(clk),
-            .rst(~rstn),
+            .rstn(rstn),
             .request(a_request),
             .acknowledge(a_acknowledge),
             .grant(a_grant),
@@ -518,7 +518,7 @@ generate
         )
         reg_inst (
             .clk(clk),
-            .rst(~rstn),
+            .rstn(rstn),
             .s_axi_arid(s_axi_arid_mux),
             .s_axi_araddr(s_axi_araddr_mux),
             .s_axi_arlen(s_axi_arlen_mux),

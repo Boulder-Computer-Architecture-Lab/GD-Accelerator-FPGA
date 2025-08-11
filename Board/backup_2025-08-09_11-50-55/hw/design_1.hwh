@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun Aug  3 17:12:28 2025" VIVADOVERSION="2023.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Thu Aug  7 10:44:05 2025" VIVADOVERSION="2023.2">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="design_1" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -614,7 +614,7 @@
         <PARAMETER NAME="C_DLYTMR_RESOLUTION" VALUE="256"/>
         <PARAMETER NAME="C_FAMILY" VALUE="zynq"/>
         <PARAMETER NAME="C_INCLUDE_DRE" VALUE="1"/>
-        <PARAMETER NAME="C_INCLUDE_SF" VALUE="1"/>
+        <PARAMETER NAME="C_INCLUDE_SF" VALUE="0"/>
         <PARAMETER NAME="C_INCLUDE_SG" VALUE="0"/>
         <PARAMETER NAME="C_M_AXI_ADDR_WIDTH" VALUE="32"/>
         <PARAMETER NAME="C_M_AXI_DATA_WIDTH" VALUE="64"/>
@@ -6499,7 +6499,7 @@
         <PARAMETER NAME="ADDR_WIDTH" VALUE="32"/>
         <PARAMETER NAME="ARCH_TYPE" VALUE="0"/>
         <PARAMETER NAME="AXI_RAM_BASE_ADDR" VALUE="0x80000000"/>
-        <PARAMETER NAME="AXI_RAM_ID_WIDTH" VALUE="8"/>
+        <PARAMETER NAME="AXI_RAM_ID_WIDTH" VALUE="10"/>
         <PARAMETER NAME="DATA_WIDTH" VALUE="64"/>
         <PARAMETER NAME="ELEMENTS_PER_WORD" VALUE="1"/>
         <PARAMETER NAME="ELEMENT_WIDTH" VALUE="64"/>
@@ -7124,7 +7124,7 @@
           <PARAMETER NAME="HAS_REGION" VALUE="0"/>
           <PARAMETER NAME="HAS_RRESP" VALUE="0"/>
           <PARAMETER NAME="HAS_WSTRB" VALUE="1"/>
-          <PARAMETER NAME="ID_WIDTH" VALUE="8"/>
+          <PARAMETER NAME="ID_WIDTH" VALUE="10"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
           <PARAMETER NAME="MAX_BURST_LENGTH" VALUE="256"/>
           <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="2"/>
@@ -8233,7 +8233,6 @@
             <CONNECTION INSTANCE="axi_dma_3" PORT="m_axi_mm2s_aclk"/>
             <CONNECTION INSTANCE="axi_dma_3" PORT="m_axi_s2mm_aclk"/>
             <CONNECTION INSTANCE="axi_dma_3" PORT="s_axi_lite_aclk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="clk"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="m_axi_aclk"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="s_axi_lite_aclk"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="ACLK"/>
@@ -8242,6 +8241,7 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M02_ACLK"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="S00_ACLK"/>
             <CONNECTION INSTANCE="smartconnect_2" PORT="aclk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="clk"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="FCLK_RESET0_N" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="processing_system7_0_FCLK_RESET0_N">
@@ -11330,7 +11330,6 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M01_ARESETN"/>
             <CONNECTION INSTANCE="axi_dma_2" PORT="axi_resetn"/>
             <CONNECTION INSTANCE="axi_dma_3" PORT="axi_resetn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="rstn"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="s_axi_lite_aresetn"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="ARESETN"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M00_ARESETN"/>
@@ -11338,6 +11337,7 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M02_ARESETN"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="S00_ARESETN"/>
             <CONNECTION INSTANCE="smartconnect_2" PORT="aresetn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="rstn"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" LEFT="0" NAME="peripheral_reset" POLARITY="ACTIVE_HIGH" RIGHT="0" SIGIS="rst"/>
