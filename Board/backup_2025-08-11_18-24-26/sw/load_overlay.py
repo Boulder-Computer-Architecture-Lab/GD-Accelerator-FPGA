@@ -5,7 +5,7 @@ from time import sleep
 import subprocess, os
 
 PROJ_DIR = "/home/xilinx/mvm-project/hw/"
-#PROJ_DIR = "/home/xilinx/mvm-project/tests/async_2x2/"
+#PROJ_DIR = "/home/xilinx/mvm-project/tests/async_1x4/"
 DTBO_NAME = "axi_ram.dtbo"
 OVERLAY_NAME = "axi_ram"
 OVERLAY_PATH = f"/sys/kernel/config/device-tree/overlays/{OVERLAY_NAME}"

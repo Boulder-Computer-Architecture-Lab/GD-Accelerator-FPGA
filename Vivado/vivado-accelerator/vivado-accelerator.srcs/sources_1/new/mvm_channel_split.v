@@ -23,6 +23,7 @@ module mvm_channel_split #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
+    input  wire                  s_axis_a_tlast,
     
     // Output result stream
     output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
@@ -50,66 +51,22 @@ module mvm_channel_split #(
     
     // Partition arbitration
     input  wire start,
-    input  wire a_enable,
+    input  wire channel_active,
     output wire row_valid,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
     output wire partition_done
 );
-
+    
     // ========================================
-    //                  COUNTS
+    //               BUFFERS
     // ========================================
-
+    
     localparam WORDS_PER_PARTITION = WORDS_PER_TRANSFER / NUM_RAM_PARTITIONS;
     localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
     localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
-    
-    /*
-    // counters
-    reg [PARTITION_WIDTH-1:0] a_in_cnt = 0, a_out_cnt = 0, b_out_cnt = 0;
-    
-    wire a_in_hs  = s_axis_a_tvalid & s_axis_a_tready;
-    wire a_out_hs = pipe_a_tvalid & pipe_a_tready;
-    wire b_out_hs = pipe_b_tvalid & pipe_b_tready;
-    
-    wire a_in_done  = (a_in_cnt  == WORDS_PER_PARTITION);
-    wire a_out_done = (a_out_cnt == WORDS_PER_PARTITION);
-    wire b_out_done = (b_out_cnt == WORDS_PER_PARTITION);
-        
-    always @(posedge clk) begin
-        if (!rstn || start) begin
-            a_in_cnt  <= 0;
-            a_out_cnt <= 0;
-            b_out_cnt <= 0;
-        end else begin
-            if (a_in_hs  && a_in_cnt  < WORDS_PER_PARTITION) a_in_cnt <= a_in_cnt + 1;
-            if (a_out_hs && a_out_cnt < WORDS_PER_PARTITION) a_out_cnt <= a_out_cnt + 1;
-            if (b_out_hs && b_out_cnt < WORDS_PER_PARTITION) b_out_cnt <= b_out_cnt + 1;
-        end
-    end
-    
-    // make 1 cycle pulse
-    wire part_done_level = a_out_done & b_out_done;
-    reg  part_done_level_q;
-    always @(posedge clk) begin
-      if (!rstn) part_done_level_q <= 1'b0;
-      else       part_done_level_q <= part_done_level;
-    end
-    
-    assign partition_done = part_done_level & ~part_done_level_q;
-    
-    always @(posedge clk) begin
-        if (partition_done) $display("ch%0d ram%0d -> A_in=%0d  A_out=%0d  B_out=%0d",
-                             TAG, partition_index, a_in_cnt, a_out_cnt, b_out_cnt);
-    end
-    */
-    
-    // ========================================
-    //               A BUFFERS
-    // ========================================
-    
     localparam FIFO_DEPTH = 512;
         
+    // A buffers
     wire [DATA_WIDTH-1:0] fifo_a_s_axis_tdata;
     wire                  fifo_a_s_axis_tvalid;
     wire                  fifo_a_s_axis_tready;
@@ -124,7 +81,6 @@ module mvm_channel_split #(
     
     assign fifo_a_s_axis_tdata = s_axis_a_tdata;
     assign fifo_a_s_axis_tvalid = s_axis_a_tvalid;
-    //assign s_axis_a_tready = a_enable && !a_in_done && fifo_a_s_axis_tready;
     assign s_axis_a_tready = fifo_a_s_axis_tready;
     
     axis_fifo #(
@@ -192,11 +148,8 @@ module mvm_channel_split #(
         .m_axis_tvalid(pipe_a_tvalid),
         .m_axis_tready(pipe_a_tready)
     );
-    
-    // ========================================
-    //              B BUFFERS
-    // ========================================
-    
+
+    // B buffers
     wire [DATA_WIDTH-1:0] fifo_b_s_axis_tdata;
     wire                  fifo_b_s_axis_tvalid;
     wire                  fifo_b_s_axis_tready;
@@ -270,7 +223,7 @@ module mvm_channel_split #(
         .m_axis_tvalid(pipe_b_tvalid),
         .m_axis_tready(pipe_b_tready)
     );
-    
+            
     // ========================================
     //   MM2S DMA (REQ DATA FROM RAM VIA XBAR)
     // ========================================

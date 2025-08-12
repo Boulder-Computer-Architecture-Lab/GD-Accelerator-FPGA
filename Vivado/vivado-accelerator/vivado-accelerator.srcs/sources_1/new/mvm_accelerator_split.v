@@ -254,15 +254,10 @@ module mvm_accelerator_split #(
     // =============================================================
     
     `include "bind_channels.vh"
-    
-    wire a_enable [NUM_CHANNELS-1:0];
-    
+        
     genvar ch;
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin: channel_gen
-        
-            assign a_enable[ch] = (partition_grant[ch] || channel_active[ch]) &&
-                        (channel_active[ch] || !between_rows[ch]);
         
             mvm_channel_split #(
               .DATA_WIDTH(DATA_WIDTH),
@@ -283,6 +278,7 @@ module mvm_accelerator_split #(
               .s_axis_a_tdata (s_axis_a_tdata[ch]),
               .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
               .s_axis_a_tready(s_axis_a_tready[ch]),
+              .s_axis_a_tlast (s_axis_a_tlast[ch]),
               
               .m_axis_tdata (m_axis_tdata[ch]),
               .m_axis_tvalid(m_axis_tvalid[ch]),
@@ -307,7 +303,7 @@ module mvm_accelerator_split #(
               .m_axi_rready  (m_axi_rready[ch]),
               
               .start(start[ch]),
-              .a_enable(a_enable[ch]),
+              .channel_active(channel_active[ch]),
               .row_valid(row_valid[ch]),
               .partition_index(partition_idx[ch]),
               .partition_done(partition_done[ch])

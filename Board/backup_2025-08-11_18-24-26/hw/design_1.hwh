@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Thu Aug  7 10:44:05 2025" VIVADOVERSION="2023.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon Aug 11 16:42:45 2025" VIVADOVERSION="2023.2">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="design_1" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -2051,6 +2051,11 @@
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef" SIGNAME="axi_dma_0_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef" SIGNAME="axi_dma_0_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_tready"/>
@@ -2339,6 +2344,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="m_axis_mm2s_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="m_axis_mm2s_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="m_axis_mm2s_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_mm2s_tvalid"/>
           </PORTMAPS>
@@ -3423,6 +3429,11 @@
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef" SIGNAME="axi_dma_1_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef" SIGNAME="axi_dma_1_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_tready"/>
@@ -3711,6 +3722,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="m_axis_mm2s_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="m_axis_mm2s_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="m_axis_mm2s_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_mm2s_tvalid"/>
           </PORTMAPS>
@@ -4795,6 +4807,11 @@
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef" SIGNAME="axi_dma_2_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef" SIGNAME="axi_dma_2_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_tready"/>
@@ -5083,6 +5100,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="m_axis_mm2s_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="m_axis_mm2s_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="m_axis_mm2s_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_mm2s_tvalid"/>
           </PORTMAPS>
@@ -6167,6 +6185,11 @@
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef" SIGNAME="axi_dma_3_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef" SIGNAME="axi_dma_3_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_tready"/>
@@ -6455,6 +6478,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="m_axis_mm2s_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="m_axis_mm2s_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="m_axis_mm2s_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_mm2s_tvalid"/>
           </PORTMAPS>
@@ -6710,6 +6734,11 @@
             <CONNECTION INSTANCE="axi_dma_0" PORT="m_axis_mm2s_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="I" NAME="s_axis_a_0_tlast" SIGIS="undef" SIGNAME="axi_dma_0_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="m_axis_mm2s_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="O" NAME="s_axis_a_0_tready" SIGIS="undef" SIGNAME="axi_dma_0_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="axi_dma_0" PORT="m_axis_mm2s_tready"/>
@@ -6723,6 +6752,11 @@
         <PORT DIR="I" LEFT="63" NAME="s_axis_a_1_tdata" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_1_m_axis_mm2s_tdata">
           <CONNECTIONS>
             <CONNECTION INSTANCE="axi_dma_1" PORT="m_axis_mm2s_tdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axis_a_1_tlast" SIGIS="undef" SIGNAME="axi_dma_1_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_1" PORT="m_axis_mm2s_tlast"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="s_axis_a_1_tready" SIGIS="undef" SIGNAME="axi_dma_1_m_axis_mm2s_tready">
@@ -6740,6 +6774,11 @@
             <CONNECTION INSTANCE="axi_dma_2" PORT="m_axis_mm2s_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="I" NAME="s_axis_a_2_tlast" SIGIS="undef" SIGNAME="axi_dma_2_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_2" PORT="m_axis_mm2s_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="O" NAME="s_axis_a_2_tready" SIGIS="undef" SIGNAME="axi_dma_2_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="axi_dma_2" PORT="m_axis_mm2s_tready"/>
@@ -6755,6 +6794,11 @@
             <CONNECTION INSTANCE="axi_dma_3" PORT="m_axis_mm2s_tdata"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="I" NAME="s_axis_a_3_tlast" SIGIS="undef" SIGNAME="axi_dma_3_m_axis_mm2s_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_3" PORT="m_axis_mm2s_tlast"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="O" NAME="s_axis_a_3_tready" SIGIS="undef" SIGNAME="axi_dma_3_m_axis_mm2s_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="axi_dma_3" PORT="m_axis_mm2s_tready"/>
@@ -6766,15 +6810,19 @@
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="63" NAME="s_axis_a_4_tdata" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="s_axis_a_4_tlast" SIGIS="undef"/>
         <PORT DIR="O" NAME="s_axis_a_4_tready" SIGIS="undef"/>
         <PORT DIR="I" NAME="s_axis_a_4_tvalid" SIGIS="undef"/>
         <PORT DIR="I" LEFT="63" NAME="s_axis_a_5_tdata" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="s_axis_a_5_tlast" SIGIS="undef"/>
         <PORT DIR="O" NAME="s_axis_a_5_tready" SIGIS="undef"/>
         <PORT DIR="I" NAME="s_axis_a_5_tvalid" SIGIS="undef"/>
         <PORT DIR="I" LEFT="63" NAME="s_axis_a_6_tdata" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="s_axis_a_6_tlast" SIGIS="undef"/>
         <PORT DIR="O" NAME="s_axis_a_6_tready" SIGIS="undef"/>
         <PORT DIR="I" NAME="s_axis_a_6_tvalid" SIGIS="undef"/>
         <PORT DIR="I" LEFT="63" NAME="s_axis_a_7_tdata" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="s_axis_a_7_tlast" SIGIS="undef"/>
         <PORT DIR="O" NAME="s_axis_a_7_tready" SIGIS="undef"/>
         <PORT DIR="I" NAME="s_axis_a_7_tvalid" SIGIS="undef"/>
       </PORTS>
@@ -6951,7 +6999,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -6963,6 +7011,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_0_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_0_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_0_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_0_tvalid"/>
           </PORTMAPS>
@@ -6971,7 +7020,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -6983,6 +7032,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_1_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_1_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_1_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_1_tvalid"/>
           </PORTMAPS>
@@ -6991,7 +7041,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7003,6 +7053,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_2_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_2_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_2_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_2_tvalid"/>
           </PORTMAPS>
@@ -7011,7 +7062,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7023,6 +7074,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_3_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_3_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_3_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_3_tvalid"/>
           </PORTMAPS>
@@ -7031,7 +7083,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7043,6 +7095,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_4_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_4_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_4_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_4_tvalid"/>
           </PORTMAPS>
@@ -7051,7 +7104,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7063,6 +7116,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_5_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_5_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_5_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_5_tvalid"/>
           </PORTMAPS>
@@ -7071,7 +7125,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7083,6 +7137,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_6_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_6_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_6_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_6_tvalid"/>
           </PORTMAPS>
@@ -7091,7 +7146,7 @@
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_processing_system7_0_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="0"/>
-          <PARAMETER NAME="HAS_TLAST" VALUE="0"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
           <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
           <PARAMETER NAME="HAS_TSTRB" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
@@ -7103,6 +7158,7 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_a_7_tdata"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_a_7_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_a_7_tready"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_a_7_tvalid"/>
           </PORTMAPS>

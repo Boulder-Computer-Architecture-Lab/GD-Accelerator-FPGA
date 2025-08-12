@@ -22,7 +22,7 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int VECTOR_LEN    = 8192;
-    parameter int NUM_TRANSFERS = 1;
+    parameter int NUM_TRANSFERS = 4;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH/ELEMENT_WIDTH;
     localparam WORDS_PER_TRANSFER     = VECTOR_LEN/ELEMENTS_PER_WORD;
@@ -240,7 +240,6 @@ module tb_mvm_accelerator;
     end
         
     real expected [NUM_CHANNELS-1:0][NUM_TRANSFERS-1:0];    
-    int partition_offset, local_word_offset, rotated_partition;
     
     // Parallel channel drivers
     genvar ch;
@@ -253,23 +252,12 @@ module tb_mvm_accelerator;
                 
                 for (int j = 0; j < NUM_TRANSFERS; j++) begin  
                     expected[ch][j] = 0;
-                       
+                    
                     // Send inputs
                     for (int word_idx = 0; word_idx < WORDS_PER_TRANSFER; word_idx++) begin
                         s_axis_a_tdata[ch] = '0;
                         
-                        //partition_offset = word_idx / WORDS_PER_PARTITION;
-                        //local_word_offset = word_idx % WORDS_PER_PARTITION;
-                        //rotated_partition = (ch + partition_offset) % NUM_RAM_PARTITIONS;
-                        
                         for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
-                            // Accounts for partitioning assignment pattern
-                            //automatic int rotated_idx = rotated_partition * ELEMENTS_PER_PARTITION
-                            //                          + local_word_offset * ELEMENTS_PER_WORD 
-                            //                          + k;
-                            //s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][rotated_idx]);
-                            //expected[ch][j] += a_values[ch][rotated_idx] * b_values[rotated_idx];
-                            
                             automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
                             s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][abs_idx]);
                             expected[ch][j] += a_values[ch][abs_idx] * b_values[abs_idx];
@@ -278,17 +266,19 @@ module tb_mvm_accelerator;
                         s_axis_a_tvalid[ch] = 1;
                         s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_TRANSFER-1);
 
-                        wait (s_axis_a_tready[ch]);
-                        @(posedge clk);
+                        do begin
+                            @(posedge clk);
+                        end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
+                        
                         s_axis_a_tvalid[ch] = 0;
                         s_axis_a_tlast[ch]  = 0;
-
                     end
                     $display("%0d: Channel %0d: All inputs sent. Awaiting result...", j, ch);
     
                     // Wait for output
-                    wait (m_axis_tvalid[ch] && m_axis_tready[ch] && m_axis_tlast[ch]);
-                    @(posedge clk);
+                    do begin
+                        @(posedge clk);
+                    end while (!(m_axis_tvalid[ch] && m_axis_tready[ch] && m_axis_tlast[ch]));
     
                     done[ch][j] = 1;
     
