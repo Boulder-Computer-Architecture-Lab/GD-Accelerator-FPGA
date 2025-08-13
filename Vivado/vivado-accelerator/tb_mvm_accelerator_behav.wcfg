@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="82,722.541 ns"></ZoomStartTime>
-      <ZoomEndTime time="84,529.949 ns"></ZoomEndTime>
-      <Cursor1Time time="279,025.000 ns"></Cursor1Time>
+      <ZoomStartTime time="90,357.875 ns"></ZoomStartTime>
+      <ZoomEndTime time="91,352.376 ns"></ZoomEndTime>
+      <Cursor1Time time="90,677.500 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="1961"></NameColumnWidth>
+      <NameColumnWidth column_width="1951"></NameColumnWidth>
       <ValueColumnWidth column_width="146"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="280" />
+   <WVObjectSize size="281" />
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -250,6 +250,11 @@
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /partition_done" type="array">
       <obj_property name="ElementShortName">partition_done[3:0]</obj_property>
       <obj_property name="ObjectShortName">partition_done[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /partition_in_use" type="array">
+      <obj_property name="ElementShortName">partition_in_use[3:0]</obj_property>
+      <obj_property name="ObjectShortName">partition_in_use[3:0]</obj_property>
       <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /row_ready" type="array">

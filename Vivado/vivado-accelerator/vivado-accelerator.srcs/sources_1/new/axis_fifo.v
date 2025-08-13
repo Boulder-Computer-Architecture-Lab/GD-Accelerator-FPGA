@@ -38,7 +38,7 @@ module axis_fifo #
     // Rounded up to nearest power of 2 cycles
     parameter DEPTH = 4096,
     // Width of AXI stream interfaces in bits
-    parameter DATA_WIDTH = 8,
+    parameter DATA_WIDTH = 64,
     // Propagate tkeep signal
     // If disabled, tkeep assumed to be 1'b1
     parameter KEEP_ENABLE = (DATA_WIDTH>8),

@@ -74,22 +74,21 @@ module dot_product #(
     // ========================================
     // Tlast handling
     
-    reg [$clog2(WORDS_PER_TRANSFER+1):0] word_count;
+    reg [$clog2(WORDS_PER_TRANSFER+1):0] word_count_in;
     
-    assign tlast = (word_count == WORDS_PER_TRANSFER - 1);
+    assign tlast = (word_count_in == WORDS_PER_TRANSFER - 1);
     assign acc_axis_a_tlast = tlast && acc_axis_a_tready && acc_axis_a_tvalid;
     assign m_axis_tlast = tlast && m_axis_tvalid;
     
     always @(posedge clk) begin
         if (!rstn) begin
-            word_count <= 0;
+            word_count_in <= 0;
         end else begin
             if (!tlast) begin
-                if (acc_axis_a_tvalid && acc_axis_a_tready) begin
-                    word_count <= word_count + 1;
-                end
+                if (acc_axis_a_tvalid && acc_axis_a_tready)
+                    word_count_in <= word_count_in + 1;
             end else if (m_axis_tvalid && m_axis_tready && m_axis_tlast) begin
-                word_count <= 0;
+                word_count_in <= 0;
             end
         end
     end

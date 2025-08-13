@@ -41,26 +41,6 @@ module mvm_accelerator_split #(
     output wire                  s_axis_a_3_tready,
     input  wire                  s_axis_a_3_tlast,
     
-    input  wire [DATA_WIDTH-1:0] s_axis_a_4_tdata,
-    input  wire                  s_axis_a_4_tvalid,
-    output wire                  s_axis_a_4_tready,
-    input  wire                  s_axis_a_4_tlast,
-
-    input  wire [DATA_WIDTH-1:0] s_axis_a_5_tdata,
-    input  wire                  s_axis_a_5_tvalid,
-    output wire                  s_axis_a_5_tready,
-    input  wire                  s_axis_a_5_tlast,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_6_tdata,
-    input  wire                  s_axis_a_6_tvalid,
-    output wire                  s_axis_a_6_tready,
-    input  wire                  s_axis_a_6_tlast,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_7_tdata,
-    input  wire                  s_axis_a_7_tvalid,
-    output wire                  s_axis_a_7_tready,
-    input  wire                  s_axis_a_7_tlast,
-    
     // Output streams
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
     output wire                     m_axis_0_tvalid,
@@ -81,26 +61,6 @@ module mvm_accelerator_split #(
     output wire                     m_axis_3_tvalid,
     input  wire                     m_axis_3_tready,
     output wire                     m_axis_3_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_4_tdata,
-    output wire                     m_axis_4_tvalid,
-    input  wire                     m_axis_4_tready,
-    output wire                     m_axis_4_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_5_tdata,
-    output wire                     m_axis_5_tvalid,
-    input  wire                     m_axis_5_tready,
-    output wire                     m_axis_5_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_6_tdata,
-    output wire                     m_axis_6_tvalid,
-    input  wire                     m_axis_6_tready,
-    output wire                     m_axis_6_tlast,
-
-    output wire [ELEMENT_WIDTH-1:0] m_axis_7_tdata,
-    output wire                     m_axis_7_tvalid,
-    input  wire                     m_axis_7_tready,
-    output wire                     m_axis_7_tlast,
 
     // S-AXI interface
     input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
@@ -163,7 +123,7 @@ module mvm_accelerator_split #(
     wire                        m_axi_rlast    [NUM_CHANNELS-1:0];
     wire                        m_axi_rvalid   [NUM_CHANNELS-1:0];
     wire                        m_axi_rready   [NUM_CHANNELS-1:0];
-        
+
     // =============================================================
     //                  PARTITION ACCESS LOGIC
     // =============================================================
@@ -207,7 +167,7 @@ module mvm_accelerator_split #(
                     channel_active[p] <= 1'b1;
                 end
                                 
-                if (!granted && !partition_in_use[partition_idx[p]]) begin
+                if (!granted && !between_rows[p] && !partition_in_use[partition_idx[p]]) begin
                     partition_grant[p] <= 1'b1;
                     granted = 1'b1;
                 end

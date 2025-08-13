@@ -64,30 +64,36 @@ module mvm_channel_split #(
     localparam WORDS_PER_PARTITION = WORDS_PER_TRANSFER / NUM_RAM_PARTITIONS;
     localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
     localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
-    localparam FIFO_DEPTH = 512;
+    localparam INPUT_FIFO_DEPTH = 512;
+    localparam OUTPUT_FIFO_DEPTH = 64;
         
-    // A buffers
+    // ------------- Input Buffers ------------
+        
+    // A
     wire [DATA_WIDTH-1:0] fifo_a_s_axis_tdata;
     wire                  fifo_a_s_axis_tvalid;
     wire                  fifo_a_s_axis_tready;
+    wire                  fifo_a_s_axis_tlast;
 
     wire [DATA_WIDTH-1:0] fifo_a_m_axis_tdata;
     wire                  fifo_a_m_axis_tvalid;
     wire                  fifo_a_m_axis_tready;
+    wire                  fifo_a_m_axis_tlast;
     
-    wire [$clog2(FIFO_DEPTH):0] fifo_a_status_depth;
+    wire [$clog2(INPUT_FIFO_DEPTH):0] fifo_a_status_depth;
     
     assign row_valid = (fifo_a_status_depth > 0);
     
     assign fifo_a_s_axis_tdata = s_axis_a_tdata;
     assign fifo_a_s_axis_tvalid = s_axis_a_tvalid;
     assign s_axis_a_tready = fifo_a_s_axis_tready;
+    assign fifo_a_s_axis_tlast = s_axis_a_tlast;
     
     axis_fifo #(
-        .DEPTH(FIFO_DEPTH),
+        .DEPTH(INPUT_FIFO_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0),
-        .LAST_ENABLE(0),
+        .LAST_ENABLE(1),
         .ID_ENABLE(0),
         .DEST_ENABLE(0),
         .USER_ENABLE(0),
@@ -107,7 +113,7 @@ module mvm_channel_split #(
         .s_axis_tkeep(),
         .s_axis_tvalid(fifo_a_s_axis_tvalid),
         .s_axis_tready(fifo_a_s_axis_tready),
-        .s_axis_tlast(1'b0),
+        .s_axis_tlast(fifo_a_s_axis_tlast),
         .s_axis_tid(8'b0),
         .s_axis_tdest(8'b0),
         .s_axis_tuser(1'b0),
@@ -134,35 +140,40 @@ module mvm_channel_split #(
     wire [DATA_WIDTH-1:0] pipe_a_tdata;
     wire                  pipe_a_tvalid;
     wire                  pipe_a_tready;
+    wire                  pipe_a_tlast;
     
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
-        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
         .REG_TYPE(2)
     ) a_skid (
         .clk(clk), .rstn(rstn),
         .s_axis_tdata (fifo_a_m_axis_tdata),
         .s_axis_tvalid(fifo_a_m_axis_tvalid),
         .s_axis_tready(fifo_a_m_axis_tready),
+        .s_axis_tlast(fifo_a_m_axis_tlast),
         .m_axis_tdata (pipe_a_tdata),
         .m_axis_tvalid(pipe_a_tvalid),
-        .m_axis_tready(pipe_a_tready)
+        .m_axis_tready(pipe_a_tready),
+        .m_axis_tlast(pipe_a_tlast)
     );
 
-    // B buffers
+    // B
     wire [DATA_WIDTH-1:0] fifo_b_s_axis_tdata;
     wire                  fifo_b_s_axis_tvalid;
     wire                  fifo_b_s_axis_tready;
+    wire                  fifo_b_s_axis_tlast;
     
     wire [DATA_WIDTH-1:0] fifo_b_m_axis_tdata;
     wire                  fifo_b_m_axis_tvalid;
     wire                  fifo_b_m_axis_tready;
+    wire                  fifo_b_m_axis_tlast;
     
     axis_fifo #(
-        .DEPTH(FIFO_DEPTH),
+        .DEPTH(INPUT_FIFO_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0),
-        .LAST_ENABLE(0),
+        .LAST_ENABLE(1),
         .ID_ENABLE(0),
         .DEST_ENABLE(0),
         .USER_ENABLE(0),
@@ -182,7 +193,7 @@ module mvm_channel_split #(
         .s_axis_tkeep(),
         .s_axis_tvalid(fifo_b_s_axis_tvalid),
         .s_axis_tready(fifo_b_s_axis_tready),
-        .s_axis_tlast(1'b0),
+        .s_axis_tlast(fifo_b_s_axis_tlast),
         .s_axis_tid(8'b0),
         .s_axis_tdest(8'b0),
         .s_axis_tuser(1'b0),
@@ -191,7 +202,7 @@ module mvm_channel_split #(
         .m_axis_tkeep(),
         .m_axis_tvalid(fifo_b_m_axis_tvalid),
         .m_axis_tready(fifo_b_m_axis_tready),
-        .m_axis_tlast(),
+        .m_axis_tlast(fifo_b_m_axis_tlast),
         .m_axis_tid(),
         .m_axis_tdest(),
         .m_axis_tuser(),
@@ -209,21 +220,100 @@ module mvm_channel_split #(
     wire [DATA_WIDTH-1:0] pipe_b_tdata;
     wire                  pipe_b_tvalid;
     wire                  pipe_b_tready;
+    wire                  pipe_b_tlast;
         
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
-        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
         .REG_TYPE(2)
     ) b_skid (
         .clk(clk), .rstn(rstn),
         .s_axis_tdata (fifo_b_m_axis_tdata),
         .s_axis_tvalid(fifo_b_m_axis_tvalid),
         .s_axis_tready(fifo_b_m_axis_tready),
+        .s_axis_tlast(fifo_b_m_axis_tlast),
         .m_axis_tdata (pipe_b_tdata),
         .m_axis_tvalid(pipe_b_tvalid),
-        .m_axis_tready(pipe_b_tready)
+        .m_axis_tready(pipe_b_tready),
+        .m_axis_tlast(pipe_b_tlast)
     );
-            
+    
+    // ------------ Output Buffer -------------
+    
+    wire [ELEMENT_WIDTH-1:0] pipe_out_tdata;
+    wire                     pipe_out_tvalid;
+    wire                     pipe_out_tready;
+    wire                     pipe_out_tlast;
+    
+    wire [ELEMENT_WIDTH-1:0] fifo_out_s_axis_tdata;
+    wire                     fifo_out_s_axis_tvalid;
+    wire                     fifo_out_s_axis_tready;
+    wire                     fifo_out_s_axis_tlast;
+    
+    axis_register #(
+        .DATA_WIDTH(ELEMENT_WIDTH),
+        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .REG_TYPE(2)
+    ) out_skid (
+        .clk(clk), .rstn(rstn),
+        .s_axis_tdata (pipe_out_tdata),
+        .s_axis_tvalid(pipe_out_tvalid),
+        .s_axis_tready(pipe_out_tready),
+        .s_axis_tlast(pipe_out_tlast),
+        .m_axis_tdata (fifo_out_s_axis_tdata),
+        .m_axis_tvalid(fifo_out_s_axis_tvalid),
+        .m_axis_tready(fifo_out_s_axis_tready),
+        .m_axis_tlast(fifo_out_s_axis_tlast)
+    );
+    
+    axis_fifo #(
+        .DEPTH(OUTPUT_FIFO_DEPTH),
+        .DATA_WIDTH(ELEMENT_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(1),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) axis_data_fifo_out (
+        .clk(clk),
+        .rstn(rstn),
+    
+        .s_axis_tdata(fifo_out_s_axis_tdata),
+        .s_axis_tkeep(),
+        .s_axis_tvalid(fifo_out_s_axis_tvalid),
+        .s_axis_tready(fifo_out_s_axis_tready),
+        .s_axis_tlast(fifo_out_s_axis_tlast),
+        .s_axis_tid(8'b0),
+        .s_axis_tdest(8'b0),
+        .s_axis_tuser(1'b0),
+    
+        .m_axis_tdata(m_axis_tdata),
+        .m_axis_tkeep(),
+        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tready(m_axis_tready),
+        .m_axis_tlast(m_axis_tlast),
+        .m_axis_tid(),
+        .m_axis_tdest(),
+        .m_axis_tuser(),
+    
+        .pause_req(1'b0),
+        .pause_ack(),
+    
+        .status_depth(),
+        .status_depth_commit(),
+        .status_overflow(),
+        .status_bad_frame(),
+        .status_good_frame()
+    );
+                
     // ========================================
     //   MM2S DMA (REQ DATA FROM RAM VIA XBAR)
     // ========================================
@@ -339,10 +429,10 @@ module mvm_channel_split #(
         .s_axis_b_tvalid(pipe_b_tvalid),
         .s_axis_b_tready(pipe_b_tready),
 
-        .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
-        .m_axis_tready(m_axis_tready),
-        .m_axis_tlast(m_axis_tlast)
+        .m_axis_tdata(pipe_out_tdata),
+        .m_axis_tvalid(pipe_out_tvalid),
+        .m_axis_tready(pipe_out_tready),
+        .m_axis_tlast(pipe_out_tlast)
     );
 
 endmodule

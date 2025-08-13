@@ -42,27 +42,7 @@ module mvm_accelerator #(
     input  wire                  s_axis_a_3_tvalid,
     output wire                  s_axis_a_3_tready,
     input  wire                  s_axis_a_3_tlast,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_4_tdata,
-    input  wire                  s_axis_a_4_tvalid,
-    output wire                  s_axis_a_4_tready,
-    input  wire                  s_axis_a_4_tlast,
 
-    input  wire [DATA_WIDTH-1:0] s_axis_a_5_tdata,
-    input  wire                  s_axis_a_5_tvalid,
-    output wire                  s_axis_a_5_tready,
-    input  wire                  s_axis_a_5_tlast,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_6_tdata,
-    input  wire                  s_axis_a_6_tvalid,
-    output wire                  s_axis_a_6_tready,
-    input  wire                  s_axis_a_6_tlast,
-    
-    input  wire [DATA_WIDTH-1:0] s_axis_a_7_tdata,
-    input  wire                  s_axis_a_7_tvalid,
-    output wire                  s_axis_a_7_tready,
-    input  wire                  s_axis_a_7_tlast,
-    
     // Output streams
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
     output wire                     m_axis_0_tvalid,
@@ -83,26 +63,6 @@ module mvm_accelerator #(
     output wire                     m_axis_3_tvalid,
     input  wire                     m_axis_3_tready,
     output wire                     m_axis_3_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_4_tdata,
-    output wire                     m_axis_4_tvalid,
-    input  wire                     m_axis_4_tready,
-    output wire                     m_axis_4_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_5_tdata,
-    output wire                     m_axis_5_tvalid,
-    input  wire                     m_axis_5_tready,
-    output wire                     m_axis_5_tlast,
-    
-    output wire [ELEMENT_WIDTH-1:0] m_axis_6_tdata,
-    output wire                     m_axis_6_tvalid,
-    input  wire                     m_axis_6_tready,
-    output wire                     m_axis_6_tlast,
-
-    output wire [ELEMENT_WIDTH-1:0] m_axis_7_tdata,
-    output wire                     m_axis_7_tvalid,
-    input  wire                     m_axis_7_tready,
-    output wire                     m_axis_7_tlast,
 
     // S-AXI interface (for writing vector b)
     input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
@@ -167,26 +127,6 @@ module mvm_accelerator #(
                 .s_axis_a_3_tready(s_axis_a_3_tready),
                 .s_axis_a_3_tlast(s_axis_a_3_tlast),
             
-                .s_axis_a_4_tdata(s_axis_a_4_tdata),
-                .s_axis_a_4_tvalid(s_axis_a_4_tvalid),
-                .s_axis_a_4_tready(s_axis_a_4_tready),
-                .s_axis_a_4_tlast(s_axis_a_4_tlast),
-            
-                .s_axis_a_5_tdata(s_axis_a_5_tdata),
-                .s_axis_a_5_tvalid(s_axis_a_5_tvalid),
-                .s_axis_a_5_tready(s_axis_a_5_tready),
-                .s_axis_a_5_tlast(s_axis_a_5_tlast),
-            
-                .s_axis_a_6_tdata(s_axis_a_6_tdata),
-                .s_axis_a_6_tvalid(s_axis_a_6_tvalid),
-                .s_axis_a_6_tready(s_axis_a_6_tready),
-                .s_axis_a_6_tlast(s_axis_a_6_tlast),
-            
-                .s_axis_a_7_tdata(s_axis_a_7_tdata),
-                .s_axis_a_7_tvalid(s_axis_a_7_tvalid),
-                .s_axis_a_7_tready(s_axis_a_7_tready),
-                .s_axis_a_7_tlast(s_axis_a_7_tlast),
-            
                 // Output channels
                 .m_axis_0_tdata(m_axis_0_tdata),
                 .m_axis_0_tvalid(m_axis_0_tvalid),
@@ -207,26 +147,6 @@ module mvm_accelerator #(
                 .m_axis_3_tvalid(m_axis_3_tvalid),
                 .m_axis_3_tready(m_axis_3_tready),
                 .m_axis_3_tlast(m_axis_3_tlast),
-            
-                .m_axis_4_tdata(m_axis_4_tdata),
-                .m_axis_4_tvalid(m_axis_4_tvalid),
-                .m_axis_4_tready(m_axis_4_tready),
-                .m_axis_4_tlast(m_axis_4_tlast),
-            
-                .m_axis_5_tdata(m_axis_5_tdata),
-                .m_axis_5_tvalid(m_axis_5_tvalid),
-                .m_axis_5_tready(m_axis_5_tready),
-                .m_axis_5_tlast(m_axis_5_tlast),
-            
-                .m_axis_6_tdata(m_axis_6_tdata),
-                .m_axis_6_tvalid(m_axis_6_tvalid),
-                .m_axis_6_tready(m_axis_6_tready),
-                .m_axis_6_tlast(m_axis_6_tlast),
-            
-                .m_axis_7_tdata(m_axis_7_tdata),
-                .m_axis_7_tvalid(m_axis_7_tvalid),
-                .m_axis_7_tready(m_axis_7_tready),
-                .m_axis_7_tlast(m_axis_7_tlast),
             
                 // AXI slave interface
                 .s_axi_b_awid(s_axi_b_awid),
