@@ -19,52 +19,75 @@ module mvm_accelerator #(
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
-    input wire clk,
-    input wire rstn,
+
+    // Note: per channel clock signals are for vivado to auto-infer 
+    // associated clocks on BD, but all s_axis/b_axi clocks should be
+    // on the same frequency (limited by PS/S_AXI_HP interface) and
+    // m_axi clocks can be different frequency (limited by PS/S_AXI_ACP
+    // and PS/M_AXI_GP* interfaces).
     
     // Input streams
+    input  wire                  s_axis_a_0_clk,
+    input  wire                  s_axis_a_0_rstn,
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
     input  wire                  s_axis_a_0_tvalid,
     output wire                  s_axis_a_0_tready,
     input  wire                  s_axis_a_0_tlast,
     
+    input  wire                  s_axis_a_1_clk,
+    input  wire                  s_axis_a_1_rstn,
     input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
     input  wire                  s_axis_a_1_tvalid,
     output wire                  s_axis_a_1_tready,
     input  wire                  s_axis_a_1_tlast,
 
+    input  wire                  s_axis_a_2_clk,
+    input  wire                  s_axis_a_2_rstn,
     input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
     input  wire                  s_axis_a_2_tvalid,
     output wire                  s_axis_a_2_tready,
     input  wire                  s_axis_a_2_tlast,
     
+    input  wire                  s_axis_a_3_clk,
+    input  wire                  s_axis_a_3_rstn, 
     input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
     input  wire                  s_axis_a_3_tvalid,
     output wire                  s_axis_a_3_tready,
     input  wire                  s_axis_a_3_tlast,
 
     // Output streams
+    input  wire                     m_axis_0_clk,
+    input  wire                     m_axis_0_rstn,
     output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
     output wire                     m_axis_0_tvalid,
     input  wire                     m_axis_0_tready,
     output wire                     m_axis_0_tlast,
     
+    input  wire                     m_axis_1_clk,
+    input  wire                     m_axis_1_rstn,    
     output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
     output wire                     m_axis_1_tvalid,
     input  wire                     m_axis_1_tready,
     output wire                     m_axis_1_tlast,
     
+    input  wire                     m_axis_2_clk,
+    input  wire                     m_axis_2_rstn,    
     output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
     output wire                     m_axis_2_tvalid,
     input  wire                     m_axis_2_tready,
     output wire                     m_axis_2_tlast,
 
+    input  wire                     m_axis_3_clk,
+    input  wire                     m_axis_3_rstn,
     output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
     output wire                     m_axis_3_tvalid,
     input  wire                     m_axis_3_tready,
     output wire                     m_axis_3_tlast,
 
     // S-AXI interface (for writing vector b)
+    input wire                         s_axi_b_clk,
+    input wire                         s_axi_b_rstn,
+
     input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
     input  wire [ADDR_WIDTH-1:0]       s_axi_b_awaddr,
     input  wire [7:0]                  s_axi_b_awlen,
@@ -76,11 +99,11 @@ module mvm_accelerator #(
     input  wire                        s_axi_b_awvalid,
     output wire                        s_axi_b_awready,
     
-    input  wire [DATA_WIDTH-1:0]   s_axi_b_wdata,
-    input  wire [STRB_WIDTH-1:0]   s_axi_b_wstrb,
-    input  wire                    s_axi_b_wlast,
-    input  wire                    s_axi_b_wvalid,
-    output wire                    s_axi_b_wready,
+    input  wire [DATA_WIDTH-1:0]       s_axi_b_wdata,
+    input  wire [STRB_WIDTH-1:0]       s_axi_b_wstrb,
+    input  wire                        s_axi_b_wlast,
+    input  wire                        s_axi_b_wvalid,
+    output wire                        s_axi_b_wready,
     
     output wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_bid,
     output wire [1:0]                  s_axi_b_bresp,
@@ -103,9 +126,9 @@ module mvm_accelerator #(
                 .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) mvm (
-                .clk(clk),
-                .rstn(rstn),
-                            
+                .s_clk(s_axis_a_0_clk), .m_clk(m_axis_0_clk),
+                .s_rstn(s_axis_a_0_rstn), .m_rstn(m_axis_0_rstn),
+                
                 // Input channels
                 .s_axis_a_0_tdata(s_axis_a_0_tdata),
                 .s_axis_a_0_tvalid(s_axis_a_0_tvalid),

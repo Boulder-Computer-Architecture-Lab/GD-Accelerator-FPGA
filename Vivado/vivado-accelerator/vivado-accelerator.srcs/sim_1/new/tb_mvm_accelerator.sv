@@ -34,8 +34,8 @@ module tb_mvm_accelerator;
     //localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS);
     localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4;
     
-    reg clk = 0;
-    reg rstn = 1;
+    reg s_clk = 0, m_clk = 0;
+    reg s_rstn = 1, m_rstn = 1;
 
     reg start = 0;
     
@@ -92,7 +92,7 @@ module tb_mvm_accelerator;
             $display("[AXI WRITE]   Total Size = %0d bytes", len * (1 << s_axi_b_awsize[inst]));
 
             wait (s_axi_b_awready[inst] && s_axi_b_awvalid[inst]);
-            @(posedge clk);
+            @(posedge s_clk);
             s_axi_b_awvalid[inst] = 0;
             $display("[AXI WRITE] Instance %0d: AW handshake done", inst);
                 
@@ -106,7 +106,7 @@ module tb_mvm_accelerator;
                 s_axi_b_wlast[inst] = (k == len-1);
                 
                 wait (s_axi_b_wready[inst] && s_axi_b_wvalid[inst]);
-                @(posedge clk);
+                @(posedge s_clk);
                 s_axi_b_wvalid[inst] = 0;
             end
             s_axi_b_wvalid[inst] = 0;
@@ -116,7 +116,7 @@ module tb_mvm_accelerator;
             // Write response
             s_axi_b_bready[inst] = 1;
             wait (s_axi_b_bvalid[inst] && s_axi_b_bready[inst]);
-            @(posedge clk);
+            @(posedge s_clk);
             s_axi_b_bready[inst] = 0;
             $display("[AXI WRITE] Instance %0d: Received B response", inst);
             
@@ -149,34 +149,49 @@ module tb_mvm_accelerator;
                 .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
-                .clk(clk),
-                .rstn(rstn),
+                .s_axis_a_0_clk(s_clk), .m_axis_0_clk(m_clk),
+                .s_axis_a_1_clk(s_clk), .m_axis_1_clk(m_clk),
+                .s_axis_a_2_clk(s_clk), .m_axis_2_clk(m_clk),
+                .s_axis_a_3_clk(s_clk), .m_axis_3_clk(m_clk),
+                                
+                .s_axis_a_0_rstn(s_rstn), .m_axis_0_rstn(m_rstn),
+                .s_axis_a_1_rstn(s_rstn), .m_axis_1_rstn(m_rstn),
+                .s_axis_a_2_rstn(s_rstn), .m_axis_2_rstn(m_rstn),
+                .s_axis_a_3_rstn(s_rstn), .m_axis_3_rstn(m_rstn),
+                
+                .s_axi_b_clk(s_clk), .s_axi_b_rstn(s_rstn),
+                                
                 `GET_CHANNELS
                 `include "axi_full_write_bindings.svh"
             );
         end
     endgenerate
         
-    // Clock (200 MHz)
-    always #2.5 clk = ~clk;
+    // Clock generation
+    always #2.5 s_clk = ~s_clk; // (200 MHz)
+    always #5   m_clk = ~m_clk; // (100 MHz)
     
     real a_values [NUM_CHANNELS][VECTOR_LEN];
     real b_values [VECTOR_LEN];
     
     reg done [NUM_CHANNELS-1:0];
     
-    integer num_full_bursts, final_burst_len, base_addr, base_offset;
+    integer base_addr, base_offset;
+    integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
+    integer final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
     
     // Initialization
     initial begin
     
-        rstn = 0;
-        #45 rstn = 1;
+        s_rstn = 0;
+        m_rstn = 0;
+        #45 
+        s_rstn = 1;
+        m_rstn = 1;
         
-        repeat (3) @(posedge clk);
+        repeat (3) @(posedge s_clk);
     
         for (int i = 0; i < NUM_CHANNELS; i++) begin
             m_axis_tready[i] = 1;
@@ -203,11 +218,8 @@ module tb_mvm_accelerator;
             base_addr = 32'h8000_0000 + 32'h1000_0000 * i;
         
             for (int j = 0; j < NUM_RAM_PARTITIONS; j++) begin
-                repeat (10) @(posedge clk);
-                
-                num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
-                final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
-                
+                repeat (10) @(posedge s_clk);
+                                
                 base_offset = j * WORDS_PER_PARTITION;
                 
                 for (int k = 0; k < num_full_bursts; k++) begin
@@ -245,7 +257,7 @@ module tb_mvm_accelerator;
             initial begin
                 wait(start);
                 
-                repeat (5*ch) @(posedge clk); // don't start all channels on the same cycle (more realistic)
+                repeat (5*ch) @(posedge s_clk); // don't start all channels on the same cycle (more realistic)
                 
                 for (int j = 0; j < NUM_TRANSFERS; j++) begin  
                     expected[ch] = 0;
@@ -264,7 +276,7 @@ module tb_mvm_accelerator;
                         s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_TRANSFER-1);
 
                         do begin
-                            @(posedge clk);
+                            @(posedge s_clk);
                         end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
                         
                         s_axis_a_tvalid[ch] = 0;
@@ -274,7 +286,7 @@ module tb_mvm_accelerator;
     
                     // Wait for output
                     do begin
-                        @(posedge clk);
+                        @(posedge s_clk);
                     end while (!(m_axis_tvalid[ch] && m_axis_tready[ch] && m_axis_tlast[ch]));
         
                     $display("%0d: Channel %0d: Result = %f | Expected = %f",
@@ -303,10 +315,10 @@ module tb_mvm_accelerator;
                 $display("All transfers complete.");
                 break;
             end
-            @(posedge clk);
+            @(posedge s_clk);
         end
     
-        repeat (10) @(posedge clk);
+        repeat (10) @(posedge s_clk);
         
         $finish;
     end

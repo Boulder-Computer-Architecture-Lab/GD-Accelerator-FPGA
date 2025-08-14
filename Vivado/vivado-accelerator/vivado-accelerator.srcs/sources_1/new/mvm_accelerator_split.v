@@ -17,8 +17,13 @@ module mvm_accelerator_split #(
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
     parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
-    input wire clk,
-    input wire rstn,
+    // Fast clock
+    input wire s_clk,
+    input wire s_rstn,
+    
+    // Slow clocks
+    input wire m_clk,
+    input wire m_rstn,
     
     // Input streams
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
@@ -143,8 +148,8 @@ module mvm_accelerator_split #(
     reg  granted;
     
     integer p;
-    always @(posedge clk) begin
-        if (!rstn) begin
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 start[p] <= 1'b0;
                 partition_idx[p] <= 0;
@@ -194,8 +199,8 @@ module mvm_accelerator_split #(
     end
         
     integer r;
-    always @(posedge clk) begin
-        if (!rstn) begin
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
             for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
                 between_rows[r] <= 1'b1;
             end
@@ -223,7 +228,7 @@ module mvm_accelerator_split #(
               .DATA_WIDTH(DATA_WIDTH),
               .ADDR_WIDTH(ADDR_WIDTH),
               .STRB_WIDTH(STRB_WIDTH),
-              .ID_WIDTH(ID_WIDTH+4),
+              .ID_WIDTH(AXI_RAM_ID_WIDTH),
               .ELEMENT_WIDTH(ELEMENT_WIDTH),
               .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
               .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
@@ -232,8 +237,8 @@ module mvm_accelerator_split #(
               .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
               .TAG(ch[7:0])
             ) channel_inst (
-              .clk(clk),
-              .rstn(rstn),
+              .s_clk(s_clk), .m_clk(m_clk),
+              .s_rstn(s_rstn), .m_rstn(m_rstn),
                       
               .s_axis_a_tdata (s_axis_a_tdata[ch]),
               .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
@@ -338,8 +343,8 @@ module mvm_accelerator_split #(
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
                 .ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) axi_ram_inst (
-                .clk(clk),
-                .rstn(rstn),
+                .clk(s_clk),
+                .rstn(s_rstn),
         
                 // AXI Full Slave
                 .s_axi_awid(s_axi_b_awid),
@@ -445,15 +450,14 @@ module mvm_accelerator_split #(
         .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
         .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}})
     ) axi_crossbar_inst (
-        .clk(clk),
-        .rstn(rstn),
+        .clk(s_clk),
+        .rstn(s_rstn),
         `include "split_interconnect_channels.vh"
         .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
         .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
     );
     */
 
-    ///*
     localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
     localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
     localparam AXI_AWID_WIDTH      = AXI_RAM_ID_WIDTH * NUM_CHANNELS;
@@ -468,8 +472,8 @@ module mvm_accelerator_split #(
     localparam AXI_AWUSER_WIDTH    = 1 * NUM_CHANNELS;
     
     axi_crossbar_0 axi_crossbar_inst (
-        .aclk(clk),
-        .aresetn(rstn),
+        .aclk(s_clk),
+        .aresetn(s_rstn),
 
         `include "split_interconnect_channels.vh"
 
@@ -518,6 +522,5 @@ module mvm_accelerator_split #(
         .m_axi_wlast   (),
         .m_axi_wvalid  ()
     );
-    //*/
 
 endmodule

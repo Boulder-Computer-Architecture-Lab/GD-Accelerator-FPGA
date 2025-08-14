@@ -11,22 +11,30 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="90,357.875 ns"></ZoomStartTime>
-      <ZoomEndTime time="91,352.376 ns"></ZoomEndTime>
-      <Cursor1Time time="90,677.500 ns"></Cursor1Time>
+      <ZoomStartTime time="115,648.290 ns"></ZoomStartTime>
+      <ZoomEndTime time="116,886.343 ns"></ZoomEndTime>
+      <Cursor1Time time="116,680.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="1951"></NameColumnWidth>
+      <NameColumnWidth column_width="1941"></NameColumnWidth>
       <ValueColumnWidth column_width="146"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="281" />
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /clk" type="logic">
-      <obj_property name="ElementShortName">clk</obj_property>
-      <obj_property name="ObjectShortName">clk</obj_property>
+   <WVObjectSize size="279" />
+   <wvobject fp_name="/tb_mvm_accelerator/s_clk" type="logic">
+      <obj_property name="ElementShortName">s_clk</obj_property>
+      <obj_property name="ObjectShortName">s_clk</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /rstn" type="logic">
-      <obj_property name="ElementShortName">rstn</obj_property>
-      <obj_property name="ObjectShortName">rstn</obj_property>
+   <wvobject fp_name="/tb_mvm_accelerator/m_clk" type="logic">
+      <obj_property name="ElementShortName">m_clk</obj_property>
+      <obj_property name="ObjectShortName">m_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/s_rstn" type="logic">
+      <obj_property name="ElementShortName">s_rstn</obj_property>
+      <obj_property name="ObjectShortName">s_rstn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/m_rstn" type="logic">
+      <obj_property name="ElementShortName">m_rstn</obj_property>
+      <obj_property name="ObjectShortName">m_rstn</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /s_axi_b_awid" type="array">
       <obj_property name="ElementShortName">s_axi_b_awid[7:0]</obj_property>
@@ -277,11 +285,6 @@
       <obj_property name="ObjectShortName">start[3:0]</obj_property>
       <obj_property name="isExpanded"></obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[0].channel_inst /compute_inst/\gen_single.dp_single /word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[14:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[14:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[0].channel_inst /compute_inst/s_axis_a_tdata" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
       <obj_property name="ElementShortName">s_axis_a_tdata[63:0]</obj_property>
@@ -331,11 +334,6 @@
       <obj_property name="DisplayName">FullPathName</obj_property>
       <obj_property name="ElementShortName">m_axis_tlast</obj_property>
       <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[1].channel_inst /compute_inst/\gen_single.dp_single /word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[14:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[14:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[1].channel_inst /compute_inst/s_axis_a_tdata" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
@@ -387,11 +385,6 @@
       <obj_property name="ElementShortName">m_axis_tlast</obj_property>
       <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[2].channel_inst /compute_inst/\gen_single.dp_single /word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[14:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[14:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[2].channel_inst /compute_inst/s_axis_a_tdata" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
       <obj_property name="ElementShortName">s_axis_a_tdata[63:0]</obj_property>
@@ -441,11 +434,6 @@
       <obj_property name="DisplayName">FullPathName</obj_property>
       <obj_property name="ElementShortName">m_axis_tlast</obj_property>
       <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[3].channel_inst /compute_inst/\gen_single.dp_single /word_count" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">word_count[14:0]</obj_property>
-      <obj_property name="ObjectShortName">word_count[14:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[3].channel_inst /compute_inst/s_axis_a_tdata" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
