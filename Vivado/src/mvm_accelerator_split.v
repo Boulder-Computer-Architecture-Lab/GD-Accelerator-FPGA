@@ -9,15 +9,12 @@ module mvm_accelerator_split #(
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
-    parameter NUM_ROWS = 1024,
+    parameter WORDS_PER_TRANSFER = 17048,
     
     parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
     
-    parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS,
-    
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,    
     parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
     // Fast clock
@@ -209,10 +206,9 @@ module mvm_accelerator_split #(
             end
         end else begin
             for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
-                if (s_axis_a_tready[r] && s_axis_a_tvalid[r] && s_axis_a_tlast[r])
+                if (s_axis_a_tvalid[r] && s_axis_a_tready[r] && s_axis_a_tlast[r])
                     between_rows[r] <= 1'b1;
-                //else if (between_rows[r] && s_axis_a_tvalid[r] && partition_idx[r] == 0)
-                else if (between_rows[r] && s_axis_a_tready[r] && s_axis_a_tvalid[r])
+                else if (between_rows[r] && s_axis_a_tvalid[r] && partition_idx[r] == 0)
                     between_rows[r] <= 1'b0;
             end
         end
@@ -235,11 +231,10 @@ module mvm_accelerator_split #(
               .ID_WIDTH(AXI_RAM_ID_WIDTH),
               .ELEMENT_WIDTH(ELEMENT_WIDTH),
               .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
-              .WORDS_PER_ROW(WORDS_PER_ROW),
+              .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
               .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
               .NUM_CHANNELS(NUM_CHANNELS),
               .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-              .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
               .TAG(ch[7:0])
             ) channel_inst (
               .s_clk(s_clk), .m_clk(m_clk),
@@ -285,10 +280,10 @@ module mvm_accelerator_split #(
     //                          AXI RAM
     // =============================================================
     
-    localparam ELEMENTS_PER_ROW = WORDS_PER_ROW * ELEMENTS_PER_WORD;
-    localparam WORDS_PER_RAM_INST = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam ELEMENTS_PER_RAM_INST = WORDS_PER_RAM_INST * ELEMENTS_PER_WORD;
-    localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST * STRB_WIDTH;
+    localparam ELEMENTS_PER_TRANSFER = WORDS_PER_TRANSFER * ELEMENTS_PER_WORD;
+    localparam WORDS_PER_RAM_INST = WORDS_PER_TRANSFER/NUM_RAM_PARTITIONS;
+    localparam ELEMENTS_PER_RAM_INST = ELEMENTS_PER_TRANSFER/NUM_RAM_PARTITIONS;
+    localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST*STRB_WIDTH;
     
     localparam AXI_RAM_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     localparam ARQOS = 4'b0000;

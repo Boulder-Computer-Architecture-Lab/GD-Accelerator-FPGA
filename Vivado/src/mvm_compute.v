@@ -4,8 +4,7 @@ module mvm_compute #(
     parameter DATA_WIDTH         = 1024,
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH,
-    parameter WORDS_PER_ROW = 17048,
-    parameter ROWS_PER_CHANNEL = 4262
+    parameter WORDS_PER_TRANSFER = 17048
 )(
     input  wire clk,
     input  wire rstn,
@@ -26,10 +25,6 @@ module mvm_compute #(
     output wire                     m_axis_tlast
 );
 
-    // ========================================
-    //              GENERATE MACs
-    // ========================================
-
     generate
         if (ELEMENTS_PER_WORD > 1) begin : gen_multi
             wire [ELEMENTS_PER_WORD-1:0] s_axis_a_tready_vec;
@@ -45,9 +40,7 @@ module mvm_compute #(
             genvar i;
             for (i = 0; i < ELEMENTS_PER_WORD; i = i + 1) begin
                 dot_product #(
-                    .DATA_WIDTH(ELEMENT_WIDTH),
-                    .WORDS_PER_ROW(WORDS_PER_ROW),
-                    .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
+                    .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
                 ) dp (
                     .clk(clk),
                     .rstn(rstn),
@@ -62,7 +55,8 @@ module mvm_compute #(
     
                     .m_axis_tdata(partial_sum[i]),
                     .m_axis_tvalid(partial_valid[i]),
-                    .m_axis_tready(partial_ready[i])
+                    .m_axis_tready(partial_ready[i]),
+                    .m_axis_tlast()
                 );
             end
         
@@ -105,9 +99,7 @@ module mvm_compute #(
         
         end else if (ELEMENTS_PER_WORD == 1) begin : gen_single
             dot_product #(
-                .DATA_WIDTH(ELEMENT_WIDTH),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
+                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
             ) dp_single (
                 .clk(clk),
                 .rstn(rstn),

@@ -11,22 +11,19 @@ module mvm_accelerator #(
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
-    parameter NUM_ROWS = 17048,
+    parameter WORDS_PER_TRANSFER = 17048,
     
     parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
-    
-    parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
 
-    // Note: per port clock signals are for vivado to auto-infer 
+    // Note: per channel clock signals are for vivado to auto-infer 
     // associated clocks per port on BD, but all s_axis/b_axi clocks
     // must be the same frequency (limited by PS/S_AXI_HP interface)
-    // and m_axi clocks can be another frequency (limited by
+    // and m_axi clocks can be different frequency (limited by
     // PS/S_AXI_ACP and PS/M_AXI_GP interfaces).
     
     // Input streams
@@ -123,11 +120,9 @@ module mvm_accelerator #(
                 .ID_WIDTH(ID_WIDTH),
                 .ELEMENT_WIDTH(ELEMENT_WIDTH),
                 .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
-                .NUM_ROWS(NUM_ROWS),
+                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
                 .NUM_CHANNELS(NUM_CHANNELS),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
                 .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) mvm (

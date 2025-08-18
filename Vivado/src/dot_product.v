@@ -2,8 +2,7 @@
 
 module dot_product #(
     parameter DATA_WIDTH = 64,
-    parameter WORDS_PER_ROW = 17048,
-    parameter ROWS_PER_CHANNEL = 4262
+    parameter WORDS_PER_TRANSFER = 17048
 )(
     input wire clk,
     input wire rstn,
@@ -26,9 +25,7 @@ module dot_product #(
 );
   
     // ========================================
-    //            INSTANTIATE MACs
-    // ========================================   
-     
+    
     // Accumulator input (multiplier output)
     wire                  acc_axis_a_tvalid;
     wire                  acc_axis_a_tready;
@@ -41,6 +38,7 @@ module dot_product #(
     wire [DATA_WIDTH-1:0] acc_axis_result_tdata;
     wire                  acc_axis_result_tlast;
 
+    // Instance
     fp64_mult u_fp64_mult (
         .aclk(clk),
         .aresetn(rstn),
@@ -74,51 +72,26 @@ module dot_product #(
     );
     
     // ========================================
-    //             TLAST HANDLING
-    // ========================================
+    // Tlast handling
     
-    // Accumulator input tlast (per row)
-    reg [$clog2(WORDS_PER_ROW)-1:0] word_count_in;
+    reg [$clog2(WORDS_PER_TRANSFER+1):0] word_count_in;
     
-    wire handshake_in = acc_axis_a_tready && acc_axis_a_tvalid;
-    wire last_in = (word_count_in == WORDS_PER_ROW - 1);
+    assign tlast = (word_count_in == WORDS_PER_TRANSFER - 1);
+    assign acc_axis_a_tlast = tlast && acc_axis_a_tready && acc_axis_a_tvalid;
+    assign m_axis_tlast = tlast && m_axis_tvalid;
     
     always @(posedge clk) begin
         if (!rstn) begin
             word_count_in <= 0;
         end else begin
-            if (handshake_in) begin
-                if (last_in)
-                    word_count_in <= 0;
-                else
+            if (!tlast) begin
+                if (acc_axis_a_tvalid && acc_axis_a_tready)
                     word_count_in <= word_count_in + 1;
+            end else if (m_axis_tvalid && m_axis_tready && m_axis_tlast) begin
+                word_count_in <= 0;
             end
         end
     end
-    
-    assign acc_axis_a_tlast = last_in && handshake_in;
-    
-    /*
-    // Accumulator output tlast (after all rows)
-    reg [$clog2(ROWS_PER_CHANNEL)-1:0] word_count_out;
-    
-    wire handshake_out = m_axis_tready && m_axis_tvalid;
-    wire last_out = (word_count_out == ROWS_PER_CHANNEL-1);
-
-    always @(posedge clk) begin
-        if (!rstn) begin
-            word_count_out <= 0;
-        end else if (handshake_out) begin
-            if (last_out)
-                word_count_out <= 0;
-            else
-                word_count_out <= word_count_out + 1;
-        end
-    end
-    
-    assign m_axis_tlast = last_out && handshake_out; 
-    */
-    assign m_axis_tlast = last_in && m_axis_tvalid; // temp
     
     // ========================================
     // Forward output
@@ -142,5 +115,6 @@ module dot_product #(
     end
     
     assign acc_axis_result_tready = !m_axis_tvalid || (m_axis_tvalid & m_axis_tready);
+
 
 endmodule

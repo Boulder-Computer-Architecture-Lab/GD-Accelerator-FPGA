@@ -21,13 +21,12 @@ module tb_mvm_accelerator;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
-    parameter int VECTOR_LEN       = 8192;
-    parameter int NUM_ROWS         = 8;
-    parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
+    parameter int VECTOR_LEN    = 8192;
+    parameter int NUM_TRANSFERS = 1;
     
-    localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
-    localparam WORDS_PER_ROW          = VECTOR_LEN / ELEMENTS_PER_WORD;
-    localparam WORDS_PER_PARTITION    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam ELEMENTS_PER_WORD      = DATA_WIDTH/ELEMENT_WIDTH;
+    localparam WORDS_PER_TRANSFER     = VECTOR_LEN/ELEMENTS_PER_WORD;
+    localparam WORDS_PER_PARTITION    = WORDS_PER_TRANSFER/NUM_RAM_PARTITIONS;
     localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
     
     localparam MAX_BURST_LEN = 256;
@@ -73,7 +72,7 @@ module tb_mvm_accelerator;
     wire                        s_axi_b_bvalid    [NUM_ACCEL_INST];
     reg                         s_axi_b_bready    [NUM_ACCEL_INST];
              
-    reg [DATA_WIDTH-1:0] bram [WORDS_PER_ROW-1:0];
+    reg [DATA_WIDTH-1:0] bram [WORDS_PER_TRANSFER-1:0];
     
     // AXI full write task
     task axi_write_burst(input [31:0] addr, input integer len, input integer bram_offset, input integer inst);
@@ -146,12 +145,10 @@ module tb_mvm_accelerator;
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
-                .NUM_ROWS(NUM_ROWS),
+                .AXI_RAM_BASE_ADDR(32'h8000_0000 + 32'h1000_0000*inst),
+                .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
-                .AXI_RAM_BASE_ADDR(32'h8000_0000 + 32'h1000_0000*inst),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
                 .s_axis_a_0_clk(s_clk), .m_axis_0_clk(m_clk),
@@ -179,10 +176,7 @@ module tb_mvm_accelerator;
     real a_values [NUM_CHANNELS][VECTOR_LEN];
     real b_values [VECTOR_LEN];
     
-    reg inputs_sent      [NUM_CHANNELS-1:0];
-    reg outputs_received [NUM_CHANNELS-1:0];
-    
-    real expected [NUM_CHANNELS-1:0][ROWS_PER_CHANNEL-1:0];    
+    reg done [NUM_CHANNELS-1:0];
     
     integer base_addr, base_offset;
     integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
@@ -191,7 +185,6 @@ module tb_mvm_accelerator;
     // Initialization
     initial begin
     
-        // Reset
         s_rstn = 0;
         m_rstn = 0;
         #45 
@@ -201,10 +194,8 @@ module tb_mvm_accelerator;
         repeat (3) @(posedge s_clk);
     
         for (int i = 0; i < NUM_CHANNELS; i++) begin
-            inputs_sent[i] = 0;
-            outputs_received[i] = 0;
-                    
             m_axis_tready[i] = 1;
+            done[i] = 0;
         
             for (int j = 0; j < VECTOR_LEN; j++) begin
                 a_values[i][j] = (j+1) / ((i+1) * 1000.0);
@@ -213,7 +204,7 @@ module tb_mvm_accelerator;
             end
         end
         
-        for (int w = 0; w < WORDS_PER_ROW; w++) begin
+        for (int w = 0; w < WORDS_PER_TRANSFER; w++) begin
             bram[w] = '0;
             for (int j = 0; j < ELEMENTS_PER_WORD; j++) begin
                 bram[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(b_values[w * ELEMENTS_PER_WORD + j]);
@@ -256,30 +247,33 @@ module tb_mvm_accelerator;
         $display("Initialization complete\n");
         start = 1;
     end
-            
+        
+    real expected [NUM_CHANNELS-1:0];    
+    
     // Parallel channel drivers
+    genvar ch;
     generate
-        for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
+        for (ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
             initial begin
                 wait(start);
                 
                 repeat (5*ch) @(posedge s_clk); // don't start all channels on the same cycle (more realistic)
                 
-                for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
-                    expected[ch][j] = 0;
+                for (int j = 0; j < NUM_TRANSFERS; j++) begin  
+                    expected[ch] = 0;
                     
                     // Send inputs
-                    for (int word_idx = 0; word_idx < WORDS_PER_ROW; word_idx++) begin
+                    for (int word_idx = 0; word_idx < WORDS_PER_TRANSFER; word_idx++) begin
                         s_axis_a_tdata[ch] = '0;
                         
                         for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
                             automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
                             s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][abs_idx]);
-                            expected[ch][j] += a_values[ch][abs_idx] * b_values[abs_idx];
+                            expected[ch] += a_values[ch][abs_idx] * b_values[abs_idx];
                         end
                         
                         s_axis_a_tvalid[ch] = 1;
-                        s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW-1);
+                        s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_TRANSFER-1);
 
                         do begin
                             @(posedge s_clk);
@@ -288,40 +282,37 @@ module tb_mvm_accelerator;
                         s_axis_a_tvalid[ch] = 0;
                         s_axis_a_tlast[ch]  = 0;
                     end
-                    $display("%0d: Channel %0d: All inputs sent.", j, ch);
+                    $display("%0d: Channel %0d: All inputs sent. Awaiting result...", j, ch);
+    
+                    // Wait for output
+                    do begin
+                        @(posedge s_clk);
+                    end while (!(m_axis_tvalid[ch] && m_axis_tready[ch] && m_axis_tlast[ch]));
+        
+                    $display("%0d: Channel %0d: Result = %f | Expected = %f",
+                             j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch]);
                 end
                 
-                inputs_sent[ch] = 1;
+                done[ch] = 1;
+
             end
         end
     endgenerate
-        
-    // Capture outputs
-    generate
-      for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : capture_output
-        initial begin
-          for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
-            @(posedge m_clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
-            $display("%0d: Ch%0d: Result=%f | Expected=%f",
-                     j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
-          end
-          outputs_received[ch] = 1;
-        end
-      end
-    endgenerate
     
-    // Finish once all outputs are received
+    integer all_done = 0;
+
+    // Wait for all transfers to complete
     initial begin
         wait(start);
     
         forever begin
-            automatic int finished = 1;
+            all_done = 1;
             for (int ch = 0; ch < NUM_CHANNELS; ch++) begin
-                if (!inputs_sent[ch] || !outputs_received[ch])
-                    finished = 0;
+                if (!done[ch])
+                    all_done = 0;
             end
-            if (finished) begin
-                $display("All outputs received.");
+            if (all_done) begin
+                $display("All transfers complete.");
                 break;
             end
             @(posedge s_clk);

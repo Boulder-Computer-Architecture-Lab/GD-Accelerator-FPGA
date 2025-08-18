@@ -10,14 +10,11 @@ module mvm_channel_split #(
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
-    parameter NUM_ROWS = 17048,
+    parameter WORDS_PER_TRANSFER = 17048,
 
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
     parameter NUM_CHANNELS       = 4,
-    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
-    
-    parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS
+    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS
 )(
     // Fast clock
     input  wire s_clk,
@@ -69,6 +66,9 @@ module mvm_channel_split #(
     //               BUFFERS
     // ========================================
     
+    localparam WORDS_PER_PARTITION = WORDS_PER_TRANSFER / NUM_RAM_PARTITIONS;
+    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
+    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
     localparam INPUT_FIFO_DEPTH = 512;
     localparam OUTPUT_FIFO_DEPTH = 64;
         
@@ -306,12 +306,8 @@ module mvm_channel_split #(
     );
 
     // ========================================
-    //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)
+    //   MM2S DMA (REQ DATA FROM RAM VIA XBAR)
     // ========================================
-    
-    localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
-    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
 
     localparam DMA_BURST_LEN = 256;
     localparam DMA_LEN_WIDTH = 20;
@@ -332,7 +328,7 @@ module mvm_channel_split #(
     wire [3:0] dma_status_error;
     wire       dma_status_valid;
     
-    assign partition_done = dma_status_valid && (dma_status_error == 0) && (dma_status_tag == TAG);
+    assign partition_done = dma_status_valid && (dma_status_tag == TAG);
             
     always @(posedge s_clk) begin
         if (!s_rstn)
@@ -411,8 +407,7 @@ module mvm_channel_split #(
         .DATA_WIDTH(DATA_WIDTH),
         .ELEMENT_WIDTH(ELEMENT_WIDTH),
         .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
-        .WORDS_PER_ROW(WORDS_PER_ROW),
-        .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
+        .WORDS_PER_TRANSFER(WORDS_PER_TRANSFER)
     ) compute_inst (
         .clk(s_clk),
         .rstn(s_rstn),
