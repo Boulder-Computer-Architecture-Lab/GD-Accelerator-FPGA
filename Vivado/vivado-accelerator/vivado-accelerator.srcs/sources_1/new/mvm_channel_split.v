@@ -59,8 +59,8 @@ module mvm_channel_split #(
     
     // Partition arbitration
     input  wire start,
+    input  wire init_activate,
     input  wire channel_active,
-    output wire row_valid,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
     output wire partition_done
 );
@@ -83,11 +83,7 @@ module mvm_channel_split #(
     wire [DATA_WIDTH-1:0] fifo_a_m_axis_tdata;
     wire                  fifo_a_m_axis_tvalid;
     wire                  fifo_a_m_axis_tready;
-    wire                  fifo_a_m_axis_tlast;
-    
-    wire [$clog2(INPUT_FIFO_DEPTH):0] fifo_a_status_depth;
-    
-    assign row_valid = (fifo_a_status_depth > 0);
+    wire                  fifo_a_m_axis_tlast;    
     
     assign fifo_a_s_axis_tdata = s_axis_a_tdata;
     assign fifo_a_s_axis_tvalid = s_axis_a_tvalid;
@@ -135,7 +131,7 @@ module mvm_channel_split #(
         .pause_req(1'b0),
         .pause_ack(),
     
-        .status_depth(fifo_a_status_depth),
+        .status_depth(),
         .status_depth_commit(),
         .status_overflow(),
         .status_bad_frame(),
@@ -407,6 +403,11 @@ module mvm_channel_split #(
     //     COMPUTE LOGIC (MACS + ADDER TREE)
     // ========================================
     
+    wire a_to_comp_tvalid = init_activate && pipe_a_tvalid;
+    wire a_to_comp_tready;
+
+    assign pipe_a_tready = init_activate ? a_to_comp_tready : 1'b0;
+    
     mvm_compute #(
         .DATA_WIDTH(DATA_WIDTH),
         .ELEMENT_WIDTH(ELEMENT_WIDTH),
@@ -418,8 +419,8 @@ module mvm_channel_split #(
         .rstn(s_rstn),
 
         .s_axis_a_tdata(pipe_a_tdata),
-        .s_axis_a_tvalid(pipe_a_tvalid),
-        .s_axis_a_tready(pipe_a_tready),
+        .s_axis_a_tvalid(a_to_comp_tvalid),
+        .s_axis_a_tready(a_to_comp_tready),
 
         .s_axis_b_tdata(pipe_b_tdata),
         .s_axis_b_tvalid(pipe_b_tvalid),

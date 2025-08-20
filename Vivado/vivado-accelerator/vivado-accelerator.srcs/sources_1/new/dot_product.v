@@ -98,7 +98,6 @@ module dot_product #(
     
     assign acc_axis_a_tlast = last_in && handshake_in;
     
-    /*
     // Accumulator output tlast (after all rows)
     reg [$clog2(ROWS_PER_CHANNEL)-1:0] word_count_out;
     
@@ -117,8 +116,6 @@ module dot_product #(
     end
     
     assign m_axis_tlast = last_out && handshake_out; 
-    */
-    assign m_axis_tlast = last_in && m_axis_tvalid; // temp
     
     // ========================================
     // Forward output

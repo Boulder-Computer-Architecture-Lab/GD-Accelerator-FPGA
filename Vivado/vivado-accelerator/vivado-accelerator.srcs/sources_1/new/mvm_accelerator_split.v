@@ -9,16 +9,16 @@ module mvm_accelerator_split #(
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
-    parameter NUM_ROWS = 1024,
+    parameter WORDS_PER_ROW      = 17048,
+    parameter NUM_ROWS           = 1024,
     
     parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
     
-    parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS,
+    parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
 )(
     // Fast clock
     input wire s_clk,
@@ -140,17 +140,18 @@ module mvm_accelerator_split #(
     localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
         
     reg  [NUM_PARTITIONS_WIDTH-1:0] partition_idx  [NUM_CHANNELS-1:0];
+    
     reg  partition_in_use [NUM_RAM_PARTITIONS-1:0];
+    reg  partition_grant  [NUM_RAM_PARTITIONS-1:0];
+    wire partition_done   [NUM_RAM_PARTITIONS-1:0];
+
     reg  channel_active   [NUM_CHANNELS-1:0];
-    reg  partition_grant  [NUM_CHANNELS-1:0];
-    wire partition_done   [NUM_CHANNELS-1:0];
-    wire row_valid        [NUM_CHANNELS-1:0];
-    reg  row_ready        [NUM_CHANNELS-1:0];
     reg  start            [NUM_CHANNELS-1:0];
     reg  between_rows     [NUM_CHANNELS-1:0];
-    reg  granted;
+    reg  init_activate    [NUM_CHANNELS-1:0];
     
-    integer p;
+    integer p, q, r, s;
+    
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
@@ -158,27 +159,18 @@ module mvm_accelerator_split #(
                 partition_idx[p] <= 0;
                 partition_grant[p] <= 1'b0;
                 channel_active[p] <= 1'b0;
-                row_ready[p] <= 1'b0;
             end
         end else begin
-            granted = 1'b0; // only allow 1 grant per cycle (avoids deadlock and/or double-access)
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                if (start[p])
-                    row_ready[p] <= 1'b0;
-                else
-                    row_ready[p] <= row_valid[p] && !between_rows[p];
-    
                 if (!start[p]) begin
-                    start[p] <= partition_grant[p] && row_ready[p] && !channel_active[p];
+                    start[p] <= partition_grant[p] && init_activate[p] && !channel_active[p];
                 end else begin
                     start[p] <= 1'b0;
                     channel_active[p] <= 1'b1;
                 end
-                                
-                if (!granted && !between_rows[p] && !partition_in_use[partition_idx[p]]) begin
+                
+                if (!between_rows[p] && !partition_in_use[partition_idx[p]])
                     partition_grant[p] <= 1'b1;
-                    granted = 1'b1;
-                end
             
                 if (partition_done[p]) begin
                     partition_grant[p] <= 1'b0;
@@ -189,19 +181,16 @@ module mvm_accelerator_split #(
         end
     end
     
-    integer q;
     always @* begin
         for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
             partition_in_use[q] = 1'b0;
         end
-        for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
-            if (partition_grant[q]) begin
+        for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+            if (partition_grant[q])
                 partition_in_use[partition_idx[q]] = 1'b1;
-            end
         end
     end
         
-    integer r;
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
@@ -211,13 +200,25 @@ module mvm_accelerator_split #(
             for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
                 if (s_axis_a_tready[r] && s_axis_a_tvalid[r] && s_axis_a_tlast[r])
                     between_rows[r] <= 1'b1;
-                //else if (between_rows[r] && s_axis_a_tvalid[r] && partition_idx[r] == 0)
                 else if (between_rows[r] && s_axis_a_tready[r] && s_axis_a_tvalid[r])
                     between_rows[r] <= 1'b0;
             end
         end
     end
-
+    
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
+            for (s = 1; s < NUM_CHANNELS; s = s + 1) begin
+                init_activate[s] <= (s == 0);
+            end
+        end else begin
+            for (s = 1; s < NUM_CHANNELS; s = s + 1) begin
+                if (!init_activate[s] && partition_done[s-1])
+                    init_activate[s] <= 1'b1;
+            end
+        end
+    end
+    
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================
@@ -273,8 +274,8 @@ module mvm_accelerator_split #(
               .m_axi_rready  (m_axi_rready[ch]),
               
               .start(start[ch]),
+              .init_activate(init_activate[ch]),
               .channel_active(channel_active[ch]),
-              .row_valid(row_valid[ch]),
               .partition_index(partition_idx[ch]),
               .partition_done(partition_done[ch])
             );

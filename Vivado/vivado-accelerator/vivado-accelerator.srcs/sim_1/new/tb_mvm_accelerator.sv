@@ -194,7 +194,7 @@ module tb_mvm_accelerator;
         // Reset
         s_rstn = 0;
         m_rstn = 0;
-        #45 
+        repeat (16) @(posedge m_clk); 
         s_rstn = 1;
         m_rstn = 1;
         
