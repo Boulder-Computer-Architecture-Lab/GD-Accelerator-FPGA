@@ -31,9 +31,7 @@ module tb_mvm_accelerator;
     localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
     
     localparam MAX_BURST_LEN = 256;
-    
-    //localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS); // for Forencich crossbar
-    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4; // for Xilinx crossbar
+    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS);
     
     reg s_clk = 0, m_clk = 0;
     reg s_rstn = 1, m_rstn = 1;
@@ -173,30 +171,28 @@ module tb_mvm_accelerator;
     endgenerate
         
     // Clock generation
-    always #2.5 s_clk = ~s_clk; // (FCLK0: 200 MHz)
-    always #5   m_clk = ~m_clk; // (FCLK1: 100 MHz)
+    always #2.5 s_clk = ~s_clk;   // (FCLK0: 200 MHz)
+    always #5   m_clk = ~m_clk;   // (FCLK1: 100 MHz)
     
     real a_values [NUM_CHANNELS][VECTOR_LEN];
     real b_values [VECTOR_LEN];
     
     reg inputs_sent      [NUM_CHANNELS-1:0];
     reg outputs_received [NUM_CHANNELS-1:0];
-    
+
     real expected [NUM_CHANNELS-1:0][ROWS_PER_CHANNEL-1:0];    
     
     integer base_addr, base_offset;
     integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
     integer final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
-    
+
     // Initialization
     initial begin
     
         // Reset
-        s_rstn = 0;
-        m_rstn = 0;
+        s_rstn = 0; m_rstn = 0;
         repeat (16) @(posedge m_clk); 
-        s_rstn = 1;
-        m_rstn = 1;
+        s_rstn = 1; m_rstn = 1;
         
         repeat (3) @(posedge s_clk);
     

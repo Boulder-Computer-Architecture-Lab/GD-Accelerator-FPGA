@@ -208,7 +208,7 @@ module mvm_accelerator_split #(
     
     always @(posedge s_clk) begin
         if (!s_rstn) begin
-            for (s = 1; s < NUM_CHANNELS; s = s + 1) begin
+            for (s = 0; s < NUM_CHANNELS; s = s + 1) begin
                 init_activate[s] <= (s == 0);
             end
         end else begin
@@ -401,7 +401,6 @@ module mvm_accelerator_split #(
     //              AXI CROSSBAR (BETWEEN DMAs AND RAM)
     // =============================================================
 
-    /*
     function [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
         input [ADDR_WIDTH-1:0] base;
         input [ADDR_WIDTH-1:0] stride;
@@ -451,82 +450,16 @@ module mvm_accelerator_split #(
         .M_CONNECT(M_CONNECT),
         .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
     
-        .S_AR_REG_TYPE({NUM_CHANNELS{2'd1}}),
-        .S_R_REG_TYPE({NUM_CHANNELS{2'd1}}),
-        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}}),
-        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd1}})
+        .S_AR_REG_TYPE({NUM_CHANNELS{2'd2}}),
+        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
+        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
+        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}})
     ) axi_crossbar_inst (
         .clk(s_clk),
         .rstn(s_rstn),
         `include "split_interconnect_channels.vh"
         .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
         .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
-    );
-    */
-
-    localparam AXI_WDATA_WIDTH     = DATA_WIDTH * NUM_CHANNELS;
-    localparam AXI_WSTRB_WIDTH     = STRB_WIDTH * NUM_CHANNELS;
-    localparam AXI_AWID_WIDTH      = AXI_RAM_ID_WIDTH * NUM_CHANNELS;
-    localparam AXI_AWADDR_WIDTH    = ADDR_WIDTH * NUM_CHANNELS;
-    localparam AXI_AWLEN_WIDTH     = 8 * NUM_CHANNELS;
-    localparam AXI_AWSIZE_WIDTH    = 3 * NUM_CHANNELS;
-    localparam AXI_AWBURST_WIDTH   = 2 * NUM_CHANNELS;
-    localparam AXI_AWLOCK_WIDTH    = 1 * NUM_CHANNELS;
-    localparam AXI_AWCACHE_WIDTH   = 4 * NUM_CHANNELS;
-    localparam AXI_AWPROT_WIDTH    = 3 * NUM_CHANNELS;
-    localparam AXI_AWQOS_WIDTH     = 4 * NUM_CHANNELS;
-    localparam AXI_AWUSER_WIDTH    = 1 * NUM_CHANNELS;
-    
-    axi_crossbar_0 axi_crossbar_inst (
-        .aclk(s_clk),
-        .aresetn(s_rstn),
-
-        `include "split_interconnect_channels.vh"
-
-        // Tie off unused write channels
-        .s_axi_awid    ({AXI_AWID_WIDTH{1'b0}}),
-        .s_axi_awaddr  ({AXI_AWADDR_WIDTH{1'b0}}),
-        .s_axi_awlen   ({AXI_AWLEN_WIDTH{1'b0}}),
-        .s_axi_awsize  ({AXI_AWSIZE_WIDTH{1'b0}}),
-        .s_axi_awburst ({AXI_AWBURST_WIDTH{1'b0}}),
-        .s_axi_awlock  ({AXI_AWLOCK_WIDTH{1'b0}}),
-        .s_axi_awcache ({AXI_AWCACHE_WIDTH{1'b0}}),
-        .s_axi_awprot  ({AXI_AWPROT_WIDTH{1'b0}}),
-        .s_axi_awqos   ({AXI_AWQOS_WIDTH{1'b0}}),
-        .s_axi_awvalid ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wdata   ({AXI_WDATA_WIDTH{1'b0}}),
-        .s_axi_wstrb   ({AXI_WSTRB_WIDTH{1'b0}}),
-        .s_axi_wlast   ({NUM_CHANNELS{1'b0}}),
-        .s_axi_wvalid  ({NUM_CHANNELS{1'b0}}),
-        .s_axi_bready  ({NUM_CHANNELS{1'b0}}),
-
-        .m_axi_awready (),
-        .m_axi_wready  (),
-        .m_axi_bid     (),
-        .m_axi_bresp   (),
-        .m_axi_bvalid  (),
-        .m_axi_bready  (),
-
-        .s_axi_awready (),
-        .s_axi_wready  (),
-        .s_axi_bid     (),
-        .s_axi_bresp   (),
-        .s_axi_bvalid  (),
-
-        .m_axi_awid    (),
-        .m_axi_awaddr  (),
-        .m_axi_awlen   (),
-        .m_axi_awsize  (),
-        .m_axi_awburst (),
-        .m_axi_awlock  (),
-        .m_axi_awcache (),
-        .m_axi_awprot  (),
-        .m_axi_awqos   (),
-        .m_axi_awvalid (),
-        .m_axi_wdata   (),
-        .m_axi_wstrb   (),
-        .m_axi_wlast   (),
-        .m_axi_wvalid  ()
     );
 
 endmodule
