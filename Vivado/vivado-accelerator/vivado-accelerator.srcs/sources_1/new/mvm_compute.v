@@ -4,8 +4,9 @@ module mvm_compute #(
     parameter DATA_WIDTH         = 1024,
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH,
-    parameter WORDS_PER_ROW = 17048,
-    parameter ROWS_PER_CHANNEL = 4262
+    parameter ELEMENTS_PER_ROW   = 17048,
+    parameter WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
+    parameter ROWS_PER_CHANNEL   = 4262
 )(
     input  wire clk,
     input  wire rstn,
@@ -46,7 +47,7 @@ module mvm_compute #(
             for (i = 0; i < ELEMENTS_PER_WORD; i = i + 1) begin
                 dot_product #(
                     .DATA_WIDTH(ELEMENT_WIDTH),
-                    .WORDS_PER_ROW(WORDS_PER_ROW),
+                    .WORDS_PER_ROW(ELEMENTS_PER_ROW),
                     .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
                 ) dp (
                     .clk(clk),
@@ -106,7 +107,7 @@ module mvm_compute #(
         end else if (ELEMENTS_PER_WORD == 1) begin : gen_single
             dot_product #(
                 .DATA_WIDTH(ELEMENT_WIDTH),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
+                .WORDS_PER_ROW(ELEMENTS_PER_ROW),
                 .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
             ) dp_single (
                 .clk(clk),

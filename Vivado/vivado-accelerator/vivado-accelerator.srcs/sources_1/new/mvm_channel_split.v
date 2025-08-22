@@ -10,7 +10,8 @@ module mvm_channel_split #(
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
+    parameter ELEMENTS_PER_ROW = 17048,
+    parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
     parameter NUM_ROWS = 17048,
 
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
@@ -403,8 +404,8 @@ module mvm_channel_split #(
     //     COMPUTE LOGIC (MACS + ADDER TREE)
     // ========================================
     
-    wire a_to_comp_tvalid = init_activate && pipe_a_tvalid;
     wire a_to_comp_tready;
+    wire a_to_comp_tvalid = init_activate && pipe_a_tvalid;
 
     assign pipe_a_tready = init_activate ? a_to_comp_tready : 1'b0;
     
@@ -412,6 +413,7 @@ module mvm_channel_split #(
         .DATA_WIDTH(DATA_WIDTH),
         .ELEMENT_WIDTH(ELEMENT_WIDTH),
         .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
+        .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
         .WORDS_PER_ROW(WORDS_PER_ROW),
         .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
     ) compute_inst (

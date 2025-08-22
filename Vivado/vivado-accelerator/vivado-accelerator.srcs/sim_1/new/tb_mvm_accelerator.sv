@@ -11,7 +11,7 @@ module tb_mvm_accelerator;
 
     parameter DATA_WIDTH = 64;
     parameter ADDR_WIDTH = 32;
-    parameter ID_WIDTH = 4;
+    parameter ID_WIDTH   = 8;
     parameter STRB_WIDTH = DATA_WIDTH/8;
     
     parameter ELEMENT_WIDTH = 64;
@@ -21,17 +21,17 @@ module tb_mvm_accelerator;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
-    parameter int VECTOR_LEN       = 8192;
+    parameter int ELEMENTS_PER_ROW = 8192;
     parameter int NUM_ROWS         = 8;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
-    localparam WORDS_PER_ROW          = VECTOR_LEN / ELEMENTS_PER_WORD;
+    localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
     localparam WORDS_PER_PARTITION    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
     
     localparam MAX_BURST_LEN = 256;
-    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS);
+    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS);
     
     reg s_clk = 0, m_clk = 0;
     reg s_rstn = 1, m_rstn = 1;
@@ -74,9 +74,16 @@ module tb_mvm_accelerator;
     reg [DATA_WIDTH-1:0] bram [WORDS_PER_ROW-1:0];
     
     // AXI full write task
-    task axi_write_burst(input [31:0] addr, input integer len, input integer bram_offset, input integer inst);
+    task axi_write_burst(
+        input logic [ADDR_WIDTH-1:0] addr, 
+        input int len, 
+        input int bram_offset, 
+        input int glob_inst
+    );
         integer k, idx;
         begin
+            int inst = glob_inst;
+
             // Write address
             s_axi_b_awaddr[inst]  = addr;
             s_axi_b_awlen[inst]   = len - 1;
@@ -100,7 +107,7 @@ module tb_mvm_accelerator;
                 idx = k + bram_offset;
                 $display("[AXI WRITE] Instance %0d: Writing beat %0d: data = %h (bram[%0d])", inst, k, bram[idx], idx);
                 s_axi_b_wdata[inst] = bram[idx];
-                s_axi_b_wstrb[inst] = {STRB_WIDTH{1'b1}};;
+                s_axi_b_wstrb[inst] = {STRB_WIDTH{1'b1}};
                 s_axi_b_wvalid[inst] = 1;
                 s_axi_b_wlast[inst] = (k == len-1);
                 
@@ -144,6 +151,7 @@ module tb_mvm_accelerator;
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
+                .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
                 .WORDS_PER_ROW(WORDS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
@@ -174,8 +182,8 @@ module tb_mvm_accelerator;
     always #2.5 s_clk = ~s_clk;   // (FCLK0: 200 MHz)
     always #5   m_clk = ~m_clk;   // (FCLK1: 100 MHz)
     
-    real a_values [NUM_CHANNELS][VECTOR_LEN];
-    real b_values [VECTOR_LEN];
+    real a_values [NUM_CHANNELS][ELEMENTS_PER_ROW];
+    real b_values [ELEMENTS_PER_ROW];
     
     reg inputs_sent      [NUM_CHANNELS-1:0];
     reg outputs_received [NUM_CHANNELS-1:0];
@@ -202,7 +210,7 @@ module tb_mvm_accelerator;
                     
             m_axis_tready[i] = 1;
         
-            for (int j = 0; j < VECTOR_LEN; j++) begin
+            for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
                 a_values[i][j] = (j+1) / ((i+1) * 1000.0);
                 b_values[j] = (j+1) / 10000.0;
                 $display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, $realtobits(a_values[i][j]), a_values[i][j]);

@@ -4,12 +4,13 @@ module mvm_accelerator_split #(
     parameter DATA_WIDTH         = 1024,
     parameter ADDR_WIDTH         = 32,
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
-    parameter ID_WIDTH           = 4,
+    parameter ID_WIDTH           = 8,
     
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW      = 17048,
+    parameter ELEMENTS_PER_ROW   = 17048,
+    parameter WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
     parameter NUM_ROWS           = 1024,
     
     parameter NUM_CHANNELS       = 4,
@@ -18,7 +19,7 @@ module mvm_accelerator_split #(
     parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + $clog2(NUM_CHANNELS)
 )(
     // Fast clock
     input wire s_clk,
@@ -114,7 +115,7 @@ module mvm_accelerator_split #(
     wire                     m_axis_tready [NUM_CHANNELS-1:0];
     wire                     m_axis_tlast  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0]     m_axi_arid     [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]         m_axi_arid     [NUM_CHANNELS-1:0];
     wire [ADDR_WIDTH-1:0]       m_axi_araddr   [NUM_CHANNELS-1:0];
     wire [7:0]                  m_axi_arlen    [NUM_CHANNELS-1:0];
     wire [2:0]                  m_axi_arsize   [NUM_CHANNELS-1:0];
@@ -125,21 +126,20 @@ module mvm_accelerator_split #(
     wire                        m_axi_arvalid  [NUM_CHANNELS-1:0];
     wire                        m_axi_arready  [NUM_CHANNELS-1:0];
     
-    wire [(ID_WIDTH+4)-1:0]     m_axi_rid      [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]         m_axi_rid      [NUM_CHANNELS-1:0];
     wire [DATA_WIDTH-1:0]       m_axi_rdata    [NUM_CHANNELS-1:0];
     wire [1:0]                  m_axi_rresp    [NUM_CHANNELS-1:0];
     wire                        m_axi_rlast    [NUM_CHANNELS-1:0];
     wire                        m_axi_rvalid   [NUM_CHANNELS-1:0];
     wire                        m_axi_rready   [NUM_CHANNELS-1:0];
 
+    `include "bind_channels.vh"
+        
     // =============================================================
     //                  PARTITION ACCESS LOGIC
     // =============================================================
 
-    localparam NUM_CHANNELS_WIDTH = $clog2(NUM_CHANNELS);
-    localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS);
-        
-    reg  [NUM_PARTITIONS_WIDTH-1:0] partition_idx  [NUM_CHANNELS-1:0];
+    reg  [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_idx [NUM_CHANNELS-1:0];
     
     reg  partition_in_use [NUM_RAM_PARTITIONS-1:0];
     reg  partition_grant  [NUM_RAM_PARTITIONS-1:0];
@@ -150,18 +150,25 @@ module mvm_accelerator_split #(
     reg  between_rows     [NUM_CHANNELS-1:0];
     reg  init_activate    [NUM_CHANNELS-1:0];
     
-    integer p, q, r, s;
+    integer p, q;
     
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                start[p] <= 1'b0;
-                partition_idx[p] <= 0;
+                start[p]           <= 1'b0;
+                partition_idx[p]   <= 0;
                 partition_grant[p] <= 1'b0;
-                channel_active[p] <= 1'b0;
+                channel_active[p]  <= 1'b0;
+                between_rows[p]    <= 1'b1;
+                init_activate[p]   <= (p == 0);
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
+                // Initial activate (for filling the pipeline)
+                if (p > 0 && !init_activate[p] && partition_done[p-1])
+                    init_activate[p] <= 1'b1;
+
+                // Start signal
                 if (!start[p]) begin
                     start[p] <= partition_grant[p] && init_activate[p] && !channel_active[p];
                 end else begin
@@ -169,18 +176,27 @@ module mvm_accelerator_split #(
                     channel_active[p] <= 1'b1;
                 end
                 
+                // Grant partition
                 if (!between_rows[p] && !partition_in_use[partition_idx[p]])
                     partition_grant[p] <= 1'b1;
             
+                // Partition done
                 if (partition_done[p]) begin
                     partition_grant[p] <= 1'b0;
                     channel_active[p] <= 1'b0;
                     partition_idx[p] <= (partition_idx[p] + 1) % NUM_RAM_PARTITIONS;
                 end
+
+                // Between rows
+                if (s_axis_a_tready[p] && s_axis_a_tvalid[p] && s_axis_a_tlast[p])
+                    between_rows[p] <= 1'b1;
+                else if (between_rows[p] && s_axis_a_tready[p] && s_axis_a_tvalid[p])
+                    between_rows[p] <= 1'b0;
             end
         end
     end
     
+    // Partition in use
     always @* begin
         for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
             partition_in_use[q] = 1'b0;
@@ -190,41 +206,11 @@ module mvm_accelerator_split #(
                 partition_in_use[partition_idx[q]] = 1'b1;
         end
     end
-        
-    always @(posedge s_clk) begin
-        if (!s_rstn) begin
-            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
-                between_rows[r] <= 1'b1;
-            end
-        end else begin
-            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
-                if (s_axis_a_tready[r] && s_axis_a_tvalid[r] && s_axis_a_tlast[r])
-                    between_rows[r] <= 1'b1;
-                else if (between_rows[r] && s_axis_a_tready[r] && s_axis_a_tvalid[r])
-                    between_rows[r] <= 1'b0;
-            end
-        end
-    end
-    
-    always @(posedge s_clk) begin
-        if (!s_rstn) begin
-            for (s = 0; s < NUM_CHANNELS; s = s + 1) begin
-                init_activate[s] <= (s == 0);
-            end
-        end else begin
-            for (s = 1; s < NUM_CHANNELS; s = s + 1) begin
-                if (!init_activate[s] && partition_done[s-1])
-                    init_activate[s] <= 1'b1;
-            end
-        end
-    end
     
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================
     
-    `include "bind_channels.vh"
-        
     genvar ch;
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin: channel_gen
@@ -233,9 +219,10 @@ module mvm_accelerator_split #(
               .DATA_WIDTH(DATA_WIDTH),
               .ADDR_WIDTH(ADDR_WIDTH),
               .STRB_WIDTH(STRB_WIDTH),
-              .ID_WIDTH(AXI_RAM_ID_WIDTH),
+              .ID_WIDTH(ID_WIDTH),
               .ELEMENT_WIDTH(ELEMENT_WIDTH),
               .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
+              .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
               .WORDS_PER_ROW(WORDS_PER_ROW),
               .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
               .NUM_CHANNELS(NUM_CHANNELS),
@@ -286,18 +273,16 @@ module mvm_accelerator_split #(
     //                          AXI RAM
     // =============================================================
     
-    localparam ELEMENTS_PER_ROW = WORDS_PER_ROW * ELEMENTS_PER_WORD;
-    localparam WORDS_PER_RAM_INST = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam WORDS_PER_RAM_INST    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam ELEMENTS_PER_RAM_INST = WORDS_PER_RAM_INST * ELEMENTS_PER_WORD;
-    localparam BYTES_PER_RAM_INST = WORDS_PER_RAM_INST * STRB_WIDTH;
+    localparam BYTES_PER_RAM_INST    = WORDS_PER_RAM_INST * STRB_WIDTH;
     
-    localparam AXI_RAM_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
-    localparam ARQOS = 4'b0000;
+    localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_RAM_INST);
+    localparam RAM_SEL_WIDTH         = $clog2(NUM_RAM_PARTITIONS);
+
+    localparam ARQOS                 = 4'b0000;
     
-    localparam RAM_SEL_WIDTH = $clog2(NUM_RAM_PARTITIONS);
-    
-    wire [ADDR_WIDTH-1:0] rel_addr = s_axi_b_awaddr - AXI_RAM_BASE_ADDR;
-    wire [RAM_SEL_WIDTH-1:0] ram_sel = rel_addr / BYTES_PER_RAM_INST;
+    wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_RAM_INST;
     
     wire                        ram_awready  [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_wready   [NUM_RAM_PARTITIONS-1:0];
@@ -322,9 +307,9 @@ module mvm_accelerator_split #(
     wire                        ram_m_axi_rvalid  [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_rready  [NUM_RAM_PARTITIONS-1:0];
     
-    assign s_axi_b_bvalid = ram_bvalid[ram_sel];
-    assign s_axi_b_bid    = ram_bid[ram_sel];
-    assign s_axi_b_bresp  = ram_bresp[ram_sel];
+    assign s_axi_b_bvalid  = ram_bvalid[ram_sel];
+    assign s_axi_b_bid     = ram_bid[ram_sel];
+    assign s_axi_b_bresp   = ram_bresp[ram_sel];
     assign s_axi_b_awready = ram_awready[ram_sel];
     assign s_axi_b_wready  = ram_wready[ram_sel];
     
@@ -416,7 +401,7 @@ module mvm_accelerator_split #(
     localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = WORDS_PER_RAM_INST / DMA_BURST_LEN;
     localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
     
-    localparam S_ID_WIDTH = ID_WIDTH + 4;
+    localparam S_ID_WIDTH = ID_WIDTH;
     localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
     
     localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
@@ -459,6 +444,7 @@ module mvm_accelerator_split #(
         .rstn(s_rstn),
         `include "split_interconnect_channels.vh"
         .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
+        .s_axi_aruser({NUM_RAM_PARTITIONS{1'b0}}),
         .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
     );
 

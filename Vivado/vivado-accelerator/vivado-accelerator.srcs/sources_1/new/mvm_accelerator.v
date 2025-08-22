@@ -6,12 +6,13 @@ module mvm_accelerator #(
     parameter DATA_WIDTH         = 1024,
     parameter ADDR_WIDTH         = 32,
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
-    parameter ID_WIDTH           = 4,
+    parameter ID_WIDTH           = 8,
     
     parameter ELEMENT_WIDTH      = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter WORDS_PER_ROW = 17048,
+    parameter ELEMENTS_PER_ROW = 17048,
+    parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
     parameter NUM_ROWS = 17048,
     
     parameter NUM_CHANNELS       = 4,
@@ -123,6 +124,7 @@ module mvm_accelerator #(
                 .ID_WIDTH(ID_WIDTH),
                 .ELEMENT_WIDTH(ELEMENT_WIDTH),
                 .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
+                .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
                 .WORDS_PER_ROW(WORDS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(NUM_CHANNELS),
