@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="51,771.700 ns"></ZoomStartTime>
-      <ZoomEndTime time="52,179.501 ns"></ZoomEndTime>
-      <Cursor1Time time="51,877.500 ns"></Cursor1Time>
+      <ZoomStartTime time="51,382.498 ns"></ZoomStartTime>
+      <ZoomEndTime time="52,929.877 ns"></ZoomEndTime>
+      <Cursor1Time time="255,812.500 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="1901"></NameColumnWidth>
+      <NameColumnWidth column_width="1891"></NameColumnWidth>
       <ValueColumnWidth column_width="146"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="288" />
+   <WVObjectSize size="290" />
    <wvobject fp_name="/tb_mvm_accelerator/s_clk" type="logic">
       <obj_property name="ElementShortName">s_clk</obj_property>
       <obj_property name="ObjectShortName">s_clk</obj_property>
@@ -37,8 +37,8 @@
       <obj_property name="ObjectShortName">m_rstn</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /s_axi_b_awid" type="array">
-      <obj_property name="ElementShortName">s_axi_b_awid[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axi_b_awid[7:0]</obj_property>
+      <obj_property name="ElementShortName">s_axi_b_awid[9:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_b_awid[9:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /s_axi_b_awaddr" type="array">
       <obj_property name="ElementShortName">s_axi_b_awaddr[31:0]</obj_property>
@@ -97,8 +97,8 @@
       <obj_property name="ObjectShortName">s_axi_b_wready</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /s_axi_b_bid" type="array">
-      <obj_property name="ElementShortName">s_axi_b_bid[7:0]</obj_property>
-      <obj_property name="ObjectShortName">s_axi_b_bid[7:0]</obj_property>
+      <obj_property name="ElementShortName">s_axi_b_bid[9:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_b_bid[9:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /s_axi_b_bresp" type="array">
       <obj_property name="ElementShortName">s_axi_b_bresp[1:0]</obj_property>
@@ -265,16 +265,6 @@
       <obj_property name="ObjectShortName">partition_in_use[3:0]</obj_property>
       <obj_property name="isExpanded"></obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /row_ready" type="array">
-      <obj_property name="ElementShortName">row_ready[3:0]</obj_property>
-      <obj_property name="ObjectShortName">row_ready[3:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /row_valid" type="array">
-      <obj_property name="ElementShortName">row_valid[3:0]</obj_property>
-      <obj_property name="ObjectShortName">row_valid[3:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-   </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /between_rows" type="array">
       <obj_property name="ElementShortName">between_rows[3:0]</obj_property>
       <obj_property name="ObjectShortName">between_rows[3:0]</obj_property>
@@ -329,6 +319,22 @@
       <obj_property name="DisplayName">FullPathName</obj_property>
       <obj_property name="ElementShortName">status_depth[9:0]</obj_property>
       <obj_property name="ObjectShortName">status_depth[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[0].channel_inst /compute_inst/\gen_single.dp_single /word_count_in" type="array">
+      <obj_property name="ElementShortName">word_count_in[12:0]</obj_property>
+      <obj_property name="ObjectShortName">word_count_in[12:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[1].channel_inst /compute_inst/\gen_single.dp_single /word_count_in" type="array">
+      <obj_property name="ElementShortName">word_count_in[12:0]</obj_property>
+      <obj_property name="ObjectShortName">word_count_in[12:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[2].channel_inst /compute_inst/\gen_single.dp_single /word_count_in" type="array">
+      <obj_property name="ElementShortName">word_count_in[12:0]</obj_property>
+      <obj_property name="ObjectShortName">word_count_in[12:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[3].channel_inst /compute_inst/\gen_single.dp_single /word_count_in" type="array">
+      <obj_property name="ElementShortName">word_count_in[12:0]</obj_property>
+      <obj_property name="ObjectShortName">word_count_in[12:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /\channel_gen[0].channel_inst /compute_inst/s_axis_a_tdata" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
@@ -599,8 +605,8 @@
       <obj_property name="ObjectShortName">s_axi_rready[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /axi_crossbar_inst/m_axi_arid" type="array">
-      <obj_property name="ElementShortName">m_axi_arid[31:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axi_arid[31:0]</obj_property>
+      <obj_property name="ElementShortName">m_axi_arid[39:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axi_arid[39:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /axi_crossbar_inst/m_axi_araddr" type="array">
       <obj_property name="ElementShortName">m_axi_araddr[127:0]</obj_property>
@@ -647,8 +653,8 @@
       <obj_property name="ObjectShortName">m_axi_arready[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /axi_crossbar_inst/m_axi_rid" type="array">
-      <obj_property name="ElementShortName">m_axi_rid[31:0]</obj_property>
-      <obj_property name="ObjectShortName">m_axi_rid[31:0]</obj_property>
+      <obj_property name="ElementShortName">m_axi_rid[39:0]</obj_property>
+      <obj_property name="ObjectShortName">m_axi_rid[39:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk1.mvm /axi_crossbar_inst/m_axi_rdata" type="array">
       <obj_property name="ElementShortName">m_axi_rdata[255:0]</obj_property>

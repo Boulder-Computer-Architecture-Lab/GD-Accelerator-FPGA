@@ -39,16 +39,16 @@ module tb_mvm_accelerator;
     reg start = 0;
     
     // Inputs
-    logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS];
-    logic                  s_axis_a_tvalid  [NUM_CHANNELS];
-    logic                  s_axis_a_tready  [NUM_CHANNELS];
-    logic                  s_axis_a_tlast   [NUM_CHANNELS];
+    logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS] = '{default:'0};
+    logic                  s_axis_a_tvalid  [NUM_CHANNELS] = '{default:1'b0};
+    logic                  s_axis_a_tready  [NUM_CHANNELS] = '{default:1'b0};
+    logic                  s_axis_a_tlast   [NUM_CHANNELS] = '{default:1'b0};
     
     // Outputs
-    logic [ELEMENT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS];
-    logic                     m_axis_tvalid    [NUM_CHANNELS];
-    logic                     m_axis_tready    [NUM_CHANNELS];
-    logic                     m_axis_tlast     [NUM_CHANNELS];
+    logic [ELEMENT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS] = '{default:'0};
+    logic                     m_axis_tvalid    [NUM_CHANNELS] = '{default:1'b0};
+    logic                     m_axis_tready    [NUM_CHANNELS] = '{default:1'b0};
+    logic                     m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
 
     // AXI Full write interface for vector b
     reg  [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid      [NUM_ACCEL_INST];
@@ -207,7 +207,7 @@ module tb_mvm_accelerator;
         for (int i = 0; i < NUM_CHANNELS; i++) begin
             inputs_sent[i] = 0;
             outputs_received[i] = 0;
-                    
+            
             m_axis_tready[i] = 1;
         
             for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin

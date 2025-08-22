@@ -7,7 +7,8 @@
       "name": "design_1",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2023.2"
+      "tool_version": "2023.2",
+      "validated": "true"
     },
     "design_tree": {
       "axi_dma_0": "",
@@ -383,6 +384,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -442,6 +451,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -501,6 +518,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -560,6 +585,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -619,6 +652,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -678,6 +719,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -737,6 +786,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -796,6 +853,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -831,6 +896,10 @@
               "PROTOCOL": {
                 "value": "AXI4",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
               },
               "ID_WIDTH": {
                 "value": "10",
@@ -915,6 +984,26 @@
               "MAX_BURST_LENGTH": {
                 "value": "256",
                 "value_src": "auto"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
+              },
+              "NUM_READ_THREADS": {
+                "value": "1",
+                "value_src": "user_prop"
+              },
+              "NUM_WRITE_THREADS": {
+                "value": "1",
+                "value_src": "user_prop"
+              },
+              "RUSER_BITS_PER_BYTE": {
+                "value": "0",
+                "value_src": "user_prop"
+              },
+              "WUSER_BITS_PER_BYTE": {
+                "value": "0",
+                "value_src": "user_prop"
               }
             },
             "memory_map_ref": "s_axi_b",
@@ -1032,6 +1121,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axis_a_0_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1056,6 +1153,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axis_a_1_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1080,6 +1185,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axis_a_2_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1104,6 +1217,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axis_a_3_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1128,6 +1249,14 @@
               "ASSOCIATED_RESET": {
                 "value": "m_axis_0_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1152,6 +1281,14 @@
               "ASSOCIATED_RESET": {
                 "value": "m_axis_1_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1176,6 +1313,14 @@
               "ASSOCIATED_RESET": {
                 "value": "m_axis_2_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1200,6 +1345,14 @@
               "ASSOCIATED_RESET": {
                 "value": "m_axis_3_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK1",
+                "value_src": "default_prop"
               }
             }
           },
@@ -1224,6 +1377,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axi_b_rstn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "200000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_processing_system7_0_1_FCLK_CLK0",
+                "value_src": "default_prop"
               }
             }
           },

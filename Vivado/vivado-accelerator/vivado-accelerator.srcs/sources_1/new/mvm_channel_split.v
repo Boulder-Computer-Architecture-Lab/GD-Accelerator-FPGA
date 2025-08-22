@@ -76,6 +76,11 @@ module mvm_channel_split #(
     // ------------- Input Buffers ------------
         
     // A
+    wire [DATA_WIDTH-1:0] gate_a_tdata;
+    wire                  gate_a_tvalid;
+    wire                  gate_a_tready;
+    wire                  gate_a_tlast;
+    
     wire [DATA_WIDTH-1:0] fifo_a_s_axis_tdata;
     wire                  fifo_a_s_axis_tvalid;
     wire                  fifo_a_s_axis_tready;
@@ -86,11 +91,32 @@ module mvm_channel_split #(
     wire                  fifo_a_m_axis_tready;
     wire                  fifo_a_m_axis_tlast;    
     
-    assign fifo_a_s_axis_tdata = s_axis_a_tdata;
-    assign fifo_a_s_axis_tvalid = s_axis_a_tvalid;
-    assign s_axis_a_tready = fifo_a_s_axis_tready;
-    assign fifo_a_s_axis_tlast = s_axis_a_tlast;
+    wire [DATA_WIDTH-1:0] pipe_a_tdata;
+    wire                  pipe_a_tvalid;
+    wire                  pipe_a_tready;
+    wire                  pipe_a_tlast;
+
+    assign fifo_a_s_axis_tdata = gate_a_tdata;
+    assign fifo_a_s_axis_tvalid = init_activate && gate_a_tvalid;
+    assign gate_a_tready = init_activate && fifo_a_s_axis_tready;
+    assign fifo_a_s_axis_tlast = gate_a_tlast;
     
+    axis_register #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .REG_TYPE(2)
+    ) a_gate (
+        .clk(s_clk), .rstn(s_rstn),
+        .s_axis_tdata (s_axis_a_tdata),
+        .s_axis_tvalid(s_axis_a_tvalid),
+        .s_axis_tready(s_axis_a_tready),
+        .s_axis_tlast(s_axis_a_tlast),
+        .m_axis_tdata (gate_a_tdata),
+        .m_axis_tvalid(gate_a_tvalid),
+        .m_axis_tready(gate_a_tready),
+        .m_axis_tlast(gate_a_tlast)
+    );
+
     axis_fifo #(
         .DEPTH(INPUT_FIFO_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
@@ -124,7 +150,7 @@ module mvm_channel_split #(
         .m_axis_tkeep(),
         .m_axis_tvalid(fifo_a_m_axis_tvalid),
         .m_axis_tready(fifo_a_m_axis_tready),
-        .m_axis_tlast(),
+        .m_axis_tlast(fifo_a_m_axis_tlast),
         .m_axis_tid(),
         .m_axis_tdest(),
         .m_axis_tuser(),
@@ -138,11 +164,6 @@ module mvm_channel_split #(
         .status_bad_frame(),
         .status_good_frame()
     );
-    
-    wire [DATA_WIDTH-1:0] pipe_a_tdata;
-    wire                  pipe_a_tvalid;
-    wire                  pipe_a_tready;
-    wire                  pipe_a_tlast;
     
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -161,6 +182,16 @@ module mvm_channel_split #(
     );
 
     // B
+    wire [DATA_WIDTH-1:0] s_axis_b_tdata;
+    wire                  s_axis_b_tvalid;
+    wire                  s_axis_b_tready;
+    wire                  s_axis_b_tlast;
+
+    wire [DATA_WIDTH-1:0] gate_b_tdata;
+    wire                  gate_b_tvalid;
+    wire                  gate_b_tready;
+    wire                  gate_b_tlast;
+
     wire [DATA_WIDTH-1:0] fifo_b_s_axis_tdata;
     wire                  fifo_b_s_axis_tvalid;
     wire                  fifo_b_s_axis_tready;
@@ -171,6 +202,32 @@ module mvm_channel_split #(
     wire                  fifo_b_m_axis_tready;
     wire                  fifo_b_m_axis_tlast;
     
+    wire [DATA_WIDTH-1:0] pipe_b_tdata;
+    wire                  pipe_b_tvalid;
+    wire                  pipe_b_tready;
+    wire                  pipe_b_tlast;
+
+    assign fifo_b_s_axis_tdata = gate_b_tdata;
+    assign fifo_b_s_axis_tvalid = gate_b_tvalid;
+    assign gate_b_tready = fifo_b_s_axis_tready;
+    assign fifo_b_s_axis_tlast = gate_b_tlast;
+    
+    axis_register #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .REG_TYPE(2)
+    ) b_gate (
+        .clk(s_clk), .rstn(s_rstn),
+        .s_axis_tdata (s_axis_b_tdata),
+        .s_axis_tvalid(s_axis_b_tvalid),
+        .s_axis_tready(s_axis_b_tready),
+        .s_axis_tlast(s_axis_b_tlast),
+        .m_axis_tdata (gate_b_tdata),
+        .m_axis_tvalid(gate_b_tvalid),
+        .m_axis_tready(gate_b_tready),
+        .m_axis_tlast(gate_b_tlast)
+    );
+
     axis_fifo #(
         .DEPTH(INPUT_FIFO_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
@@ -218,11 +275,6 @@ module mvm_channel_split #(
         .status_bad_frame(),
         .status_good_frame()
     );
-    
-    wire [DATA_WIDTH-1:0] pipe_b_tdata;
-    wire                  pipe_b_tvalid;
-    wire                  pipe_b_tready;
-    wire                  pipe_b_tlast;
         
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -371,11 +423,11 @@ module mvm_channel_split #(
         .m_axis_read_desc_status_error(dma_status_error),
         .m_axis_read_desc_status_valid(dma_status_valid),
     
-        .m_axis_read_data_tdata(fifo_b_s_axis_tdata),
+        .m_axis_read_data_tdata(s_axis_b_tdata),
         .m_axis_read_data_tkeep(),
-        .m_axis_read_data_tvalid(fifo_b_s_axis_tvalid),
-        .m_axis_read_data_tready(fifo_b_s_axis_tready),
-        .m_axis_read_data_tlast(),
+        .m_axis_read_data_tvalid(s_axis_b_tvalid),
+        .m_axis_read_data_tready(s_axis_b_tready),
+        .m_axis_read_data_tlast(s_axis_b_tlast),
         .m_axis_read_data_tid(),
         .m_axis_read_data_tdest(),
         .m_axis_read_data_tuser(),
@@ -404,11 +456,6 @@ module mvm_channel_split #(
     //     COMPUTE LOGIC (MACS + ADDER TREE)
     // ========================================
     
-    wire a_to_comp_tready;
-    wire a_to_comp_tvalid = init_activate && pipe_a_tvalid;
-
-    assign pipe_a_tready = init_activate ? a_to_comp_tready : 1'b0;
-    
     mvm_compute #(
         .DATA_WIDTH(DATA_WIDTH),
         .ELEMENT_WIDTH(ELEMENT_WIDTH),
@@ -421,8 +468,8 @@ module mvm_channel_split #(
         .rstn(s_rstn),
 
         .s_axis_a_tdata(pipe_a_tdata),
-        .s_axis_a_tvalid(a_to_comp_tvalid),
-        .s_axis_a_tready(a_to_comp_tready),
+        .s_axis_a_tvalid(pipe_a_tvalid),
+        .s_axis_a_tready(pipe_a_tready),
 
         .s_axis_b_tdata(pipe_b_tdata),
         .s_axis_b_tvalid(pipe_b_tvalid),

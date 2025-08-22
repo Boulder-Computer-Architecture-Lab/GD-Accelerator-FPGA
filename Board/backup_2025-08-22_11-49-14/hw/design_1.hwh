@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon Aug 18 15:54:47 2025" VIVADOVERSION="2023.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Fri Aug 22 11:24:11 2025" VIVADOVERSION="2023.2">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="design_1" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -6523,11 +6523,12 @@
         <PARAMETER NAME="ADDR_WIDTH" VALUE="32"/>
         <PARAMETER NAME="ARCH_TYPE" VALUE="0"/>
         <PARAMETER NAME="AXI_RAM_BASE_ADDR" VALUE="0x80000000"/>
-        <PARAMETER NAME="AXI_RAM_ID_WIDTH" VALUE="8"/>
+        <PARAMETER NAME="AXI_RAM_ID_WIDTH" VALUE="10"/>
         <PARAMETER NAME="DATA_WIDTH" VALUE="64"/>
+        <PARAMETER NAME="ELEMENTS_PER_ROW" VALUE="8192"/>
         <PARAMETER NAME="ELEMENTS_PER_WORD" VALUE="1"/>
         <PARAMETER NAME="ELEMENT_WIDTH" VALUE="64"/>
-        <PARAMETER NAME="ID_WIDTH" VALUE="4"/>
+        <PARAMETER NAME="ID_WIDTH" VALUE="8"/>
         <PARAMETER NAME="NUM_CHANNELS" VALUE="4"/>
         <PARAMETER NAME="NUM_RAM_PARTITIONS" VALUE="4"/>
         <PARAMETER NAME="NUM_ROWS" VALUE="1024"/>
@@ -7062,7 +7063,7 @@
           <PARAMETER NAME="HAS_REGION" VALUE="0"/>
           <PARAMETER NAME="HAS_RRESP" VALUE="0"/>
           <PARAMETER NAME="HAS_WSTRB" VALUE="1"/>
-          <PARAMETER NAME="ID_WIDTH" VALUE="8"/>
+          <PARAMETER NAME="ID_WIDTH" VALUE="10"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
           <PARAMETER NAME="MAX_BURST_LENGTH" VALUE="256"/>
           <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="2"/>
@@ -7139,15 +7140,15 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M02_ARESETN"/>
             <CONNECTION INSTANCE="util_vector_logic_0" PORT="Op2"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M03_ARESETN"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_0_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_1_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_2_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_3_rstn"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="ARESETN"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="S00_ARESETN"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="M00_ARESETN"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="s_axi_lite_aresetn"/>
             <CONNECTION INSTANCE="smartconnect_1" PORT="aresetn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_0_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_1_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_2_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_3_rstn"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" LEFT="0" NAME="peripheral_reset" POLARITY="ACTIVE_HIGH" RIGHT="0" SIGIS="rst"/>
@@ -8214,17 +8215,17 @@
             <CONNECTION INSTANCE="processing_system7_0" PORT="S_AXI_HP2_ACLK"/>
             <CONNECTION INSTANCE="processing_system7_0" PORT="S_AXI_HP3_ACLK"/>
             <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="slowest_sync_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axi_b_clk"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="m_axi_aclk"/>
             <CONNECTION INSTANCE="smartconnect_0" PORT="aclk"/>
             <CONNECTION INSTANCE="smartconnect_4" PORT="aclk"/>
             <CONNECTION INSTANCE="smartconnect_5" PORT="aclk"/>
             <CONNECTION INSTANCE="smartconnect_3" PORT="aclk"/>
             <CONNECTION INSTANCE="smartconnect_2" PORT="aclk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axi_b_clk"/>
           </CONNECTIONS>
         </PORT>
         <PORT CLKFREQUENCY="100000000" DIR="O" NAME="FCLK_CLK1" SIGIS="clk" SIGNAME="processing_system7_0_FCLK_CLK1">
@@ -8247,15 +8248,15 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph1" PORT="M03_ACLK"/>
             <CONNECTION INSTANCE="processing_system7_0" PORT="M_AXI_GP0_ACLK"/>
             <CONNECTION INSTANCE="processing_system7_0" PORT="M_AXI_GP1_ACLK"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_0_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_1_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_2_clk"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_3_clk"/>
             <CONNECTION INSTANCE="axi_cdma_0" PORT="s_axi_lite_aclk"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="ACLK"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="S00_ACLK"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph2" PORT="M00_ACLK"/>
             <CONNECTION INSTANCE="smartconnect_1" PORT="aclk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_0_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_1_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_2_clk"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="m_axis_3_clk"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="FCLK_RESET0_N" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="processing_system7_0_FCLK_RESET0_N">
@@ -11464,16 +11465,16 @@
         <PORT DIR="O" LEFT="0" NAME="peripheral_aresetn" POLARITY="ACTIVE_LOW" RIGHT="0" SIGIS="rst" SIGNAME="rst_ps7_0_100M_peripheral_aresetn">
           <CONNECTIONS>
             <CONNECTION INSTANCE="util_vector_logic_0" PORT="Op1"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_rstn"/>
-            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axi_b_rstn"/>
             <CONNECTION INSTANCE="smartconnect_0" PORT="aresetn"/>
             <CONNECTION INSTANCE="smartconnect_5" PORT="aresetn"/>
             <CONNECTION INSTANCE="smartconnect_4" PORT="aresetn"/>
             <CONNECTION INSTANCE="smartconnect_3" PORT="aresetn"/>
             <CONNECTION INSTANCE="smartconnect_2" PORT="aresetn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_0_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_1_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_2_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axis_a_3_rstn"/>
+            <CONNECTION INSTANCE="mvm_accelerator_0" PORT="s_axi_b_rstn"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" LEFT="0" NAME="peripheral_reset" POLARITY="ACTIVE_HIGH" RIGHT="0" SIGIS="rst"/>
