@@ -66,10 +66,9 @@ def get_dmas(overlay):
         raise RuntimeError(f"Check overlay. Found {len(dmas)} DMAs with NUM_CHANNELS={NUM_CHANNELS}")
     return dmas
 
-def create_workers(overlay, matrix, results):
+def create_workers(dmas, matrix, results):
     if DEBUG: print("Creating threads")
 
-    dmas = get_dmas(overlay)
     rows_per_channel = [
         list(range(start, start + ROWS_PER_CHANNEL))
         for start in range(0, I, ROWS_PER_CHANNEL)
@@ -87,13 +86,10 @@ def create_workers(overlay, matrix, results):
 
 def worker(ch, dma, row_indices, matrix, result_buf):
     if DEBUG: print(f"[WORKER {ch}] Starting up...")
-
-    dma.recvchannel.transfer(result_buf)
     for count,row_idx in enumerate(row_indices):
         dma.sendchannel.transfer(matrix[row_idx])
         dma.sendchannel.wait()
         if DEBUG > 1: print(f"[WORKER {ch}] Sent row {row_idx} (count={count})")
-    dma.recvchannel.wait()
 
 # ==============================================================================
 #  MAIN
@@ -124,14 +120,23 @@ if __name__ == "__main__":
                 if a_file.readinto(view) != N * 8:
                     raise RuntimeError(f"Failed to read full row {i}")
 
-        threads = create_workers(overlay, matrix, results) # Create worker threads
-        write_vec(overlay, b) # Write vector to BRAM with CDMA
+        dmas = get_dmas(overlay)
+        threads = create_workers(dmas, matrix, results)
+        write_vec(overlay, b) # Write vector to BRAM
 
         # Execute
         print("Starting computation...")
         t0 = time.perf_counter()
+
+        for ch in range(NUM_CHANNELS):
+            dmas[ch].recvchannel.transfer(results[ch])
+
         for t in threads: t.start()
         for t in threads: t.join()
+
+        for ch in range(NUM_CHANNELS):
+            dmas[ch].recvchannel.wait()
+
         t1 = time.perf_counter()
         print(f"Finished. Total time: {t1 - t0:.6f}s")
 

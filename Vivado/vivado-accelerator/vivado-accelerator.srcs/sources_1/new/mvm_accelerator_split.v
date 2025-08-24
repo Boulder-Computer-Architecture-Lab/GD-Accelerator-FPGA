@@ -19,8 +19,7 @@ module mvm_accelerator_split #(
     parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + $clog2(NUM_CHANNELS)
-)(
+    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + $clog2(NUM_CHANNELS))(
     // Fast clock
     input wire s_clk,
     input wire s_rstn,
@@ -139,79 +138,150 @@ module mvm_accelerator_split #(
     //                  PARTITION ACCESS LOGIC
     // =============================================================
 
-    reg  [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_idx [NUM_CHANNELS-1:0];
-    
-    reg  partition_in_use [NUM_RAM_PARTITIONS-1:0];
-    reg  partition_grant  [NUM_RAM_PARTITIONS-1:0];
-    wire partition_done   [NUM_RAM_PARTITIONS-1:0];
+    localparam PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS+1);
+    localparam ROWS_PER_CHANNEL_WIDTH = $clog2(ROWS_PER_CHANNEL+1);
 
-    reg  channel_active   [NUM_CHANNELS-1:0];
-    reg  start            [NUM_CHANNELS-1:0];
-    reg  between_rows     [NUM_CHANNELS-1:0];
-    reg  init_activate    [NUM_CHANNELS-1:0];
+    reg                         ch_start  [NUM_CHANNELS-1:0];
+    reg                         ch_init   [NUM_CHANNELS-1:0];
+    reg  [PARTITIONS_WIDTH-1:0] ch_pidx   [NUM_CHANNELS-1:0];
+    reg                         ch_active [NUM_CHANNELS-1:0];
+    wire                        ch_pdone  [NUM_CHANNELS-1:0];
+
+    reg  [ROWS_PER_CHANNEL_WIDTH-1:0] ch_num_rows_fetched [NUM_CHANNELS-1:0];
+    wire                              ch_all_rows_fetched [NUM_CHANNELS-1:0];
+
+    reg  part_in_use [NUM_RAM_PARTITIONS-1:0];
+    reg  part_grant  [NUM_RAM_PARTITIONS-1:0];
+    wire part_valid  [NUM_RAM_PARTITIONS-1:0];
+
+    wire allow_prefetch [NUM_CHANNELS-1:0];
     
-    integer p, q;
+    integer p, q, r;
+
+    genvar ch;
+    generate
+        for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) 
+            assign ch_all_rows_fetched[ch] = (ch_num_rows_fetched[ch] == ROWS_PER_CHANNEL);
+    endgenerate
     
+    // Per channel signals
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                start[p]           <= 1'b0;
-                partition_idx[p]   <= 0;
-                partition_grant[p] <= 1'b0;
-                channel_active[p]  <= 1'b0;
-                between_rows[p]    <= 1'b1;
-                init_activate[p]   <= (p == 0);
+                ch_start[p]  <= 1'b0;
+                ch_active[p] <= 1'b0;
+                ch_init[p]   <= (p == 0);
+                ch_pidx[p]   <= {PARTITIONS_WIDTH{1'b0}};
+                ch_num_rows_fetched[p] <= {ROWS_PER_CHANNEL_WIDTH{1'b0}};
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                // Initial activate (for filling the pipeline)
-                if (p > 0 && !init_activate[p] && partition_done[p-1])
-                    init_activate[p] <= 1'b1;
-
-                // Start signal
-                if (!start[p]) begin
-                    start[p] <= partition_grant[p] && init_activate[p] && !channel_active[p];
+                if (!ch_start[p]) begin
+                    ch_start[p] <= part_grant[ch_pidx[p]] 
+                                    &&  ch_init[p] 
+                                    && !ch_active[p] 
+                                    &&  allow_prefetch[p]
+                                    && !ch_all_rows_fetched[p];
                 end else begin
-                    start[p] <= 1'b0;
-                    channel_active[p] <= 1'b1;
-                end
-                
-                // Grant partition
-                if (!between_rows[p] && !partition_in_use[partition_idx[p]])
-                    partition_grant[p] <= 1'b1;
-            
-                // Partition done
-                if (partition_done[p]) begin
-                    partition_grant[p] <= 1'b0;
-                    channel_active[p] <= 1'b0;
-                    partition_idx[p] <= (partition_idx[p] + 1) % NUM_RAM_PARTITIONS;
+                    ch_start[p] <= 1'b0;
+                    ch_active[p] <= 1'b1;
                 end
 
-                // Between rows
-                if (s_axis_a_tready[p] && s_axis_a_tvalid[p] && s_axis_a_tlast[p])
-                    between_rows[p] <= 1'b1;
-                else if (between_rows[p] && s_axis_a_tready[p] && s_axis_a_tvalid[p])
-                    between_rows[p] <= 1'b0;
+                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
+                    ch_init[p] <= 1'b1; // For filling pipeline
+
+                if (ch_pdone[p]) begin
+                    ch_active[p] <= 1'b0;
+                    if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
+                        ch_pidx[p] <= {PARTITIONS_WIDTH{1'b0}};
+                        if (!ch_all_rows_fetched[p])
+                            ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
+                    end else begin
+                        ch_pidx[p] <= ch_pidx[p] + 1;
+                    end
+                end
+            end
+        end
+    end
+
+    // Per partition signals
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
+            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+                part_grant[q] <= 1'b0;
+            end
+        end else begin
+            for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
+                if (!ch_all_rows_fetched[q] && !ch_active[q]) begin
+                    if (part_valid[ch_pidx[q]] && !part_in_use[ch_pidx[q]] && !part_grant[ch_pidx[q]])
+                        part_grant[ch_pidx[q]] <= 1'b1;
+                end
+            end
+
+            for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
+                if (ch_start[q] && part_grant[ch_pidx[q]])
+                    part_grant[ch_pidx[q]] <= 1'b0;
             end
         end
     end
     
-    // Partition in use
     always @* begin
-        for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
-            partition_in_use[q] = 1'b0;
-        end
-        for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
-            if (partition_grant[q])
-                partition_in_use[partition_idx[q]] = 1'b1;
+        for (r = 0; r < NUM_RAM_PARTITIONS; r = r + 1) 
+            part_in_use[r] = 1'b0;
+        
+        for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+            if (ch_active[r])
+                part_in_use[ch_pidx[r]] = 1'b1;
         end
     end
+
+    // =============================================================
+    //                 TRACK PARTITION VALID 
+    // =============================================================
+    
+    localparam WORDS_PER_BURST = 256;
+    localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam BURSTS_PER_PARTITION = WORDS_PER_PARTITION / WORDS_PER_BURST; // must divide evenly
+    localparam TOTAL_BURSTS = NUM_RAM_PARTITIONS * BURSTS_PER_PARTITION;
+    localparam BURST_COUNT_WIDTH = $clog2(TOTAL_BURSTS+1);
+
+    reg  [BURST_COUNT_WIDTH-1:0] burst_count;
+
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
+            burst_count <= 0;
+        end else if (s_axi_b_bvalid && s_axi_b_bready) begin
+            burst_count <= burst_count + 1;
+        end
+    end
+
+    genvar pvalid;
+    generate
+        for (pvalid = 0; pvalid < NUM_RAM_PARTITIONS; pvalid = pvalid + 1) begin : gen_pvalid
+            assign part_valid[pvalid] = (burst_count >= (pvalid+1) * BURSTS_PER_PARTITION);
+        end
+    endgenerate
+
+    // =============================================================
+    //                  MVM_CHANNEL FIFO_A GATING
+    // =============================================================
+
+    wire activate_fifo       [NUM_CHANNELS-1:0];
+    wire first_part_consumed [NUM_CHANNELS-1:0];
+
+    assign activate_fifo[0] = 1'b1;
+
+    genvar i;
+    generate
+        for (i = 1; i < NUM_CHANNELS; i = i + 1) begin : activate_fifos
+            assign activate_fifo[i] = first_part_consumed[i-1];
+        end
+    endgenerate
     
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================
-    
-    genvar ch;
+
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin: channel_gen
         
@@ -220,15 +290,19 @@ module mvm_accelerator_split #(
               .ADDR_WIDTH(ADDR_WIDTH),
               .STRB_WIDTH(STRB_WIDTH),
               .ID_WIDTH(ID_WIDTH),
+              .TAG(ch[7:0]),
+
               .ELEMENT_WIDTH(ELEMENT_WIDTH),
               .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
               .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
               .WORDS_PER_ROW(WORDS_PER_ROW),
+              .NUM_ROWS(NUM_ROWS),
+
               .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
               .NUM_CHANNELS(NUM_CHANNELS),
               .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-              .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
-              .TAG(ch[7:0])
+              .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
+
             ) channel_inst (
               .s_clk(s_clk), .m_clk(m_clk),
               .s_rstn(s_rstn), .m_rstn(m_rstn),
@@ -260,11 +334,13 @@ module mvm_accelerator_split #(
               .m_axi_rvalid  (m_axi_rvalid[ch]),
               .m_axi_rready  (m_axi_rready[ch]),
               
-              .start(start[ch]),
-              .init_activate(init_activate[ch]),
-              .channel_active(channel_active[ch]),
-              .partition_index(partition_idx[ch]),
-              .partition_done(partition_done[ch])
+              .start(ch_start[ch]),
+              .partition_done(ch_pdone[ch]),
+              .partition_index(ch_pidx[ch]),
+
+              .first_part_consumed(first_part_consumed[ch]),
+              .activate_fifo(activate_fifo[ch]),
+              .allow_prefetch(allow_prefetch[ch])
             );
         end
     endgenerate
@@ -273,16 +349,14 @@ module mvm_accelerator_split #(
     //                          AXI RAM
     // =============================================================
     
-    localparam WORDS_PER_RAM_INST    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam ELEMENTS_PER_RAM_INST = WORDS_PER_RAM_INST * ELEMENTS_PER_WORD;
-    localparam BYTES_PER_RAM_INST    = WORDS_PER_RAM_INST * STRB_WIDTH;
+    localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
+    localparam BYTES_PER_PARTITION    = WORDS_PER_PARTITION * STRB_WIDTH;
     
-    localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_RAM_INST);
+    localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_PARTITION);
     localparam RAM_SEL_WIDTH         = $clog2(NUM_RAM_PARTITIONS);
-
     localparam ARQOS                 = 4'b0000;
     
-    wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_RAM_INST;
+    wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_PARTITION;
     
     wire                        ram_awready  [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_wready   [NUM_RAM_PARTITIONS-1:0];
@@ -317,11 +391,11 @@ module mvm_accelerator_split #(
     generate
         for (k = 0; k < NUM_RAM_PARTITIONS; k = k + 1) begin : ram_gen
             
-            wire [ADDR_WIDTH-1:0] partition_base_addr = AXI_RAM_BASE_ADDR + k * BYTES_PER_RAM_INST;
+            wire [ADDR_WIDTH-1:0] partition_base_addr = AXI_RAM_BASE_ADDR + k * BYTES_PER_PARTITION;
             wire [AXI_RAM_ADDR_WIDTH-1:0] local_awaddr = s_axi_b_awaddr - partition_base_addr;
             
             wire [ADDR_WIDTH-1:0] ar_rel_addr_k = ram_m_axi_araddr[k] - AXI_RAM_BASE_ADDR;
-            wire [RAM_SEL_WIDTH-1:0] ar_ram_sel_k = ar_rel_addr_k / BYTES_PER_RAM_INST;
+            wire [RAM_SEL_WIDTH-1:0] ar_ram_sel_k = ar_rel_addr_k / BYTES_PER_PARTITION;
             
             wire awvalid_sel = s_axi_b_awvalid && (ram_sel == k);
             wire wvalid_sel  = s_axi_b_wvalid  && (ram_sel == k);
@@ -329,7 +403,7 @@ module mvm_accelerator_split #(
             wire arvalid_sel = ram_m_axi_arvalid[k] && (ar_ram_sel_k == k);
         
             axi_ram #(
-                .NUM_WORDS(WORDS_PER_RAM_INST),
+                .NUM_WORDS(WORDS_PER_PARTITION),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
                 .ID_WIDTH(AXI_RAM_ID_WIDTH)
@@ -397,18 +471,17 @@ module mvm_accelerator_split #(
         end
     endfunction
     
-    localparam DMA_BURST_LEN = 256;
-    localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = WORDS_PER_RAM_INST / DMA_BURST_LEN;
-    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = $clog2(BYTES_PER_RAM_INST);
-    
     localparam S_ID_WIDTH = ID_WIDTH;
     localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
+
+    localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = BURSTS_PER_PARTITION;
+    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = AXI_RAM_ADDR_WIDTH;
     
     localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
     localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_ACCEPT  = {NUM_CHANNELS{32'd4}};
     localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ISSUE = {NUM_RAM_PARTITIONS{RAM_MAX_BURSTS}};
     
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_RAM_INST);
+    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_PARTITION);
     localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
     localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
 

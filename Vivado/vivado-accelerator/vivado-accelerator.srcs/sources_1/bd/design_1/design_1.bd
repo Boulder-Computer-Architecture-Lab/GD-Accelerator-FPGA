@@ -2390,14 +2390,62 @@
           "PCW_DCI_PERIPHERAL_FREQMHZ": {
             "value": "10.159"
           },
+          "PCW_DDR_HPRLPR_QUEUE_PARTITION": {
+            "value": "HPR(0)/LPR(32)"
+          },
+          "PCW_DDR_HPR_TO_CRITICAL_PRIORITY_LEVEL": {
+            "value": "2"
+          },
+          "PCW_DDR_LPR_TO_CRITICAL_PRIORITY_LEVEL": {
+            "value": "16"
+          },
           "PCW_DDR_PERIPHERAL_CLKSRC": {
             "value": "DDR PLL"
+          },
+          "PCW_DDR_PORT0_HPR_ENABLE": {
+            "value": "0"
+          },
+          "PCW_DDR_PORT1_HPR_ENABLE": {
+            "value": "0"
+          },
+          "PCW_DDR_PORT2_HPR_ENABLE": {
+            "value": "1"
+          },
+          "PCW_DDR_PORT3_HPR_ENABLE": {
+            "value": "1"
+          },
+          "PCW_DDR_PRIORITY_READPORT_0": {
+            "value": "Low"
+          },
+          "PCW_DDR_PRIORITY_READPORT_1": {
+            "value": "Low"
+          },
+          "PCW_DDR_PRIORITY_READPORT_2": {
+            "value": "High"
+          },
+          "PCW_DDR_PRIORITY_READPORT_3": {
+            "value": "High"
+          },
+          "PCW_DDR_PRIORITY_WRITEPORT_0": {
+            "value": "Medium"
+          },
+          "PCW_DDR_PRIORITY_WRITEPORT_1": {
+            "value": "Low"
+          },
+          "PCW_DDR_PRIORITY_WRITEPORT_2": {
+            "value": "Low"
+          },
+          "PCW_DDR_PRIORITY_WRITEPORT_3": {
+            "value": "Low"
           },
           "PCW_DDR_RAM_BASEADDR": {
             "value": "0x00100000"
           },
           "PCW_DDR_RAM_HIGHADDR": {
             "value": "0x1FFFFFFF"
+          },
+          "PCW_DDR_WRITE_TO_CRITICAL_PRIORITY_LEVEL": {
+            "value": "16"
           },
           "PCW_DM_WIDTH": {
             "value": "4"
@@ -3591,7 +3639,7 @@
             "value": "525.000000"
           },
           "PCW_UIPARAM_DDR_ADV_ENABLE": {
-            "value": "0"
+            "value": "1"
           },
           "PCW_UIPARAM_DDR_AL": {
             "value": "0"

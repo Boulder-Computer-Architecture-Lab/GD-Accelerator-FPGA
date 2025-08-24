@@ -22,7 +22,7 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int ELEMENTS_PER_ROW = 8192;
-    parameter int NUM_ROWS         = 8;
+    parameter int NUM_ROWS         = 64;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
@@ -35,7 +35,7 @@ module tb_mvm_accelerator;
     
     reg s_clk = 0, m_clk = 0;
     reg s_rstn = 1, m_rstn = 1;
-
+    
     reg start = 0;
     
     // Inputs
@@ -82,7 +82,7 @@ module tb_mvm_accelerator;
     );
         integer k, idx;
         begin
-            int inst = glob_inst;
+            automatic int inst = glob_inst;
 
             // Write address
             s_axi_b_awaddr[inst]  = addr;

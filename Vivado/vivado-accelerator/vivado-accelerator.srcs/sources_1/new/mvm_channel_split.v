@@ -57,21 +57,31 @@ module mvm_channel_split #(
     input  wire                  m_axi_rlast,
     input  wire                  m_axi_rvalid,
     output wire                  m_axi_rready,
+
+    output wire allow_prefetch,
     
     // Partition arbitration
     input  wire start,
-    input  wire init_activate,
-    input  wire channel_active,
+    output reg  partition_done,
     input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
-    output wire partition_done
+
+    // Gating for fifo_in
+    output reg  first_part_consumed,
+    input  wire activate_fifo
 );
-    
+
     // ========================================
     //               BUFFERS
     // ========================================
     
-    localparam INPUT_FIFO_DEPTH = 512;
+    localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
+    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
+
+    localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
+    localparam INPUT_FIFO_A_DEPTH = 512;
     localparam OUTPUT_FIFO_DEPTH = 64;
+    localparam SKID = 2;
         
     // ------------- Input Buffers ------------
         
@@ -97,14 +107,14 @@ module mvm_channel_split #(
     wire                  pipe_a_tlast;
 
     assign fifo_a_s_axis_tdata = gate_a_tdata;
-    assign fifo_a_s_axis_tvalid = init_activate && gate_a_tvalid;
-    assign gate_a_tready = init_activate && fifo_a_s_axis_tready;
+    assign fifo_a_s_axis_tvalid = activate_fifo && gate_a_tvalid;
+    assign gate_a_tready = activate_fifo && fifo_a_s_axis_tready;
     assign fifo_a_s_axis_tlast = gate_a_tlast;
-    
+
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
-        .REG_TYPE(2)
+        .REG_TYPE(SKID)
     ) a_gate (
         .clk(s_clk), .rstn(s_rstn),
         .s_axis_tdata (s_axis_a_tdata),
@@ -118,7 +128,7 @@ module mvm_channel_split #(
     );
 
     axis_fifo #(
-        .DEPTH(INPUT_FIFO_DEPTH),
+        .DEPTH(INPUT_FIFO_A_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0),
         .LAST_ENABLE(1),
@@ -168,7 +178,7 @@ module mvm_channel_split #(
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
-        .REG_TYPE(2)
+        .REG_TYPE(SKID)
     ) a_skid (
         .clk(s_clk), .rstn(s_rstn),
         .s_axis_tdata (fifo_a_m_axis_tdata),
@@ -212,10 +222,12 @@ module mvm_channel_split #(
     assign gate_b_tready = fifo_b_s_axis_tready;
     assign fifo_b_s_axis_tlast = gate_b_tlast;
     
+    assign fifo_b_full = !fifo_b_s_axis_tready;
+    
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
-        .REG_TYPE(2)
+        .REG_TYPE(SKID)
     ) b_gate (
         .clk(s_clk), .rstn(s_rstn),
         .s_axis_tdata (s_axis_b_tdata),
@@ -229,7 +241,7 @@ module mvm_channel_split #(
     );
 
     axis_fifo #(
-        .DEPTH(INPUT_FIFO_DEPTH),
+        .DEPTH(INPUT_FIFO_B_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0),
         .LAST_ENABLE(1),
@@ -279,7 +291,7 @@ module mvm_channel_split #(
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
-        .REG_TYPE(2)
+        .REG_TYPE(SKID)
     ) b_skid (
         .clk(s_clk), .rstn(s_rstn),
         .s_axis_tdata (fifo_b_m_axis_tdata),
@@ -355,13 +367,62 @@ module mvm_channel_split #(
     );
 
     // ========================================
+    //                COUNTERS
+    // ========================================
+    
+    reg [PARTITION_WIDTH-1:0] word_count_a;
+    reg [PARTITION_WIDTH-1:0] word_count_b;
+
+    reg partition_count_a;
+    reg partition_count_b;
+    
+    always @(posedge s_clk) begin
+        if (!s_rstn) begin
+            word_count_a <= 0;
+            word_count_b <= 0;
+            partition_count_a <= 1'b0;
+            partition_count_b <= 1'b0;
+            first_part_consumed <= 1'b0;
+            partition_done <= 1'b0;
+        end else begin
+            partition_done <= 1'b0;
+
+            // A counter
+            if (fifo_a_s_axis_tvalid && gate_a_tready) begin
+                if (word_count_a == 0) 
+                    partition_count_a <= ~partition_count_a;
+
+                if (word_count_a == WORDS_PER_PARTITION-1) begin
+                    word_count_a <= 0;
+                    if (!first_part_consumed)
+                        first_part_consumed <= 1'b1;
+                end else begin
+                    word_count_a <= word_count_a + 1;
+                end
+            end 
+
+            // B counter
+            if (fifo_b_s_axis_tvalid && gate_b_tready) begin
+                if (word_count_b == 0) 
+                    partition_count_b <= ~partition_count_b;
+
+                if (word_count_b == WORDS_PER_PARTITION-1) begin
+                    word_count_b <= 0;
+                    partition_done <= 1'b1;
+                end else begin
+                    word_count_b <= word_count_b + 1;
+                end
+            end
+        end
+    end
+
+    // Only allow one prefetched partition
+    assign allow_prefetch = (partition_count_b == partition_count_a);
+
+    // ========================================
     //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)
     // ========================================
     
-    localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
-    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
-
     localparam DMA_BURST_LEN = 256;
     localparam DMA_LEN_WIDTH = 20;
     localparam DMA_TAG_WIDTH = 8;
@@ -381,8 +442,6 @@ module mvm_channel_split #(
     wire [3:0] dma_status_error;
     wire       dma_status_valid;
     
-    assign partition_done = dma_status_valid && (dma_status_error == 0) && (dma_status_tag == TAG);
-            
     always @(posedge s_clk) begin
         if (!s_rstn)
             dma_desc_valid <= 1'b0;
