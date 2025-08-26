@@ -14,7 +14,7 @@ from cdma_driver import CDMA
 #  CONFIG
 # ==============================================================================
 
-DEBUG = 2
+DEBUG = 0
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 BIT       = PROJ_DIR + "design_1.bit"
@@ -26,7 +26,7 @@ BRAM_BASE = 0x80000000
 N = 8192 # elements per row (fixed in hardware)
 I = 1024 # number of rows (fixed in hardware)
 
-NUM_CHANNELS = 4 
+NUM_CHANNELS = 1 
 
 assert N % NUM_CHANNELS == 0
 assert I % NUM_CHANNELS == 0
@@ -66,10 +66,9 @@ def get_dmas(overlay):
         raise RuntimeError(f"Check overlay. Found {len(dmas)} DMAs with NUM_CHANNELS={NUM_CHANNELS}")
     return dmas
 
-def create_workers(overlay, matrix, results):
+def create_workers(dmas, matrix, results):
     if DEBUG: print("Creating threads")
 
-    dmas = get_dmas(overlay)
     rows_per_channel = [
         list(range(start, start + ROWS_PER_CHANNEL))
         for start in range(0, I, ROWS_PER_CHANNEL)
@@ -87,20 +86,21 @@ def create_workers(overlay, matrix, results):
 
 def worker(ch, dma, row_indices, matrix, result_buf):
     if DEBUG: print(f"[WORKER {ch}] Starting up...")
-
-    dma.recvchannel.transfer(result_buf)
     for count,row_idx in enumerate(row_indices):
         dma.sendchannel.transfer(matrix[row_idx])
         dma.sendchannel.wait()
         if DEBUG > 1: print(f"[WORKER {ch}] Sent row {row_idx} (count={count})")
-    dma.recvchannel.wait()
 
 # ==============================================================================
 #  MAIN
 # ==============================================================================
 
 if __name__ == "__main__":
-    if DEBUG: print(f"Parameters: N={N}, I={I}, NUM_CHANNELS={NUM_CHANNELS}")
+    if DEBUG: 
+        print(f"Parameters: ")
+        print(f"    N={N}, I={I}, NUM_CHANNELS={NUM_CHANNELS}")
+        print(f"    WORDS_PER_PARTITION={WORDS_PER_PARTITION}, ROWS_PER_CHANNEL={ROWS_PER_CHANNEL}")
+
     matrix = b = results = None
 
     try:
@@ -124,16 +124,25 @@ if __name__ == "__main__":
                 if a_file.readinto(view) != N * 8:
                     raise RuntimeError(f"Failed to read full row {i}")
 
-        threads = create_workers(overlay, matrix, results) # Create worker threads
-        write_vec(overlay, b) # Write vector to BRAM with CDMA
+        dmas = get_dmas(overlay)
+        threads = create_workers(dmas, matrix, results)
+        write_vec(overlay, b) # Write vector to BRAM
 
         # Execute
         print("Starting computation...")
         t0 = time.perf_counter()
+
+        for ch in range(NUM_CHANNELS):
+            dmas[ch].recvchannel.transfer(results[ch])
+
         for t in threads: t.start()
         for t in threads: t.join()
+
+        for ch in range(NUM_CHANNELS):
+            dmas[ch].recvchannel.wait()
+
         t1 = time.perf_counter()
-        print(f"Finished. Total time: {t1 - t0:.6f}s")
+        print(f"Finished.")
 
         # Print results
         if DEBUG > 1:
@@ -143,6 +152,8 @@ if __name__ == "__main__":
                     actual = results[i][j]
                     expected = float(np.dot(matrix[row_idx], b.flatten()))
                     print(f"Row {row_idx}: actual={actual:.32f} | expected={expected:.32f}")
+
+        print(f"Total time: {t1 - t0:.6f}s")
 
     finally:
         for buf in [matrix, b] + (results or []):

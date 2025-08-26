@@ -63,7 +63,7 @@ module mvm_channel_split #(
     // Partition arbitration
     input  wire start,
     output reg  partition_done,
-    input  wire [$clog2(NUM_RAM_PARTITIONS)-1:0] partition_index,
+    input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
 
     // Gating for fifo_in
     output reg  first_part_consumed,
@@ -221,9 +221,7 @@ module mvm_channel_split #(
     assign fifo_b_s_axis_tvalid = gate_b_tvalid;
     assign gate_b_tready = fifo_b_s_axis_tready;
     assign fifo_b_s_axis_tlast = gate_b_tlast;
-    
-    assign fifo_b_full = !fifo_b_s_axis_tready;
-    
+        
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),

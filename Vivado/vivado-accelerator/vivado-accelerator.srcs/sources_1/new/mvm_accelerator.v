@@ -21,7 +21,7 @@ module mvm_accelerator #(
     parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + 4 + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_ID_WIDTH = (NUM_CHANNELS > 1) ? ID_WIDTH + $clog2(NUM_CHANNELS) : ID_WIDTH
 )(
 
     // Note: per port clock signals are for vivado to auto-infer 

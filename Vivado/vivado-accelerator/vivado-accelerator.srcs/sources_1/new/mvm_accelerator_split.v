@@ -19,7 +19,8 @@ module mvm_accelerator_split #(
     parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
     parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH   = ID_WIDTH + $clog2(NUM_CHANNELS))(
+    parameter AXI_RAM_ID_WIDTH = (NUM_CHANNELS > 1) ? ID_WIDTH + $clog2(NUM_CHANNELS) : ID_WIDTH
+)(
     // Fast clock
     input wire s_clk,
     input wire s_rstn,
@@ -138,14 +139,14 @@ module mvm_accelerator_split #(
     //                  PARTITION ACCESS LOGIC
     // =============================================================
 
-    localparam PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS+1);
+    localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS+1);
     localparam ROWS_PER_CHANNEL_WIDTH = $clog2(ROWS_PER_CHANNEL+1);
 
-    reg                         ch_start  [NUM_CHANNELS-1:0];
-    reg                         ch_init   [NUM_CHANNELS-1:0];
-    reg  [PARTITIONS_WIDTH-1:0] ch_pidx   [NUM_CHANNELS-1:0];
-    reg                         ch_active [NUM_CHANNELS-1:0];
-    wire                        ch_pdone  [NUM_CHANNELS-1:0];
+    reg                             ch_start  [NUM_CHANNELS-1:0];
+    reg                             ch_init   [NUM_CHANNELS-1:0];
+    reg  [NUM_PARTITIONS_WIDTH-1:0] ch_pidx   [NUM_CHANNELS-1:0];
+    reg                             ch_active [NUM_CHANNELS-1:0];
+    wire                            ch_pdone  [NUM_CHANNELS-1:0];
 
     reg  [ROWS_PER_CHANNEL_WIDTH-1:0] ch_num_rows_fetched [NUM_CHANNELS-1:0];
     wire                              ch_all_rows_fetched [NUM_CHANNELS-1:0];
@@ -160,8 +161,9 @@ module mvm_accelerator_split #(
 
     genvar ch;
     generate
-        for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) 
+        for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin : assign_fetched
             assign ch_all_rows_fetched[ch] = (ch_num_rows_fetched[ch] == ROWS_PER_CHANNEL);
+        end
     endgenerate
     
     // Per channel signals
@@ -171,7 +173,7 @@ module mvm_accelerator_split #(
                 ch_start[p]  <= 1'b0;
                 ch_active[p] <= 1'b0;
                 ch_init[p]   <= (p == 0);
-                ch_pidx[p]   <= {PARTITIONS_WIDTH{1'b0}};
+                ch_pidx[p]   <= {NUM_PARTITIONS_WIDTH{1'b0}};
                 ch_num_rows_fetched[p] <= {ROWS_PER_CHANNEL_WIDTH{1'b0}};
             end
         end else begin
@@ -180,7 +182,7 @@ module mvm_accelerator_split #(
                     ch_start[p] <= part_grant[ch_pidx[p]] 
                                     &&  ch_init[p] 
                                     && !ch_active[p] 
-                                    &&  allow_prefetch[p]
+                                    && (allow_prefetch[p] || NUM_RAM_PARTITIONS == 1)
                                     && !ch_all_rows_fetched[p];
                 end else begin
                     ch_start[p] <= 1'b0;
@@ -193,7 +195,7 @@ module mvm_accelerator_split #(
                 if (ch_pdone[p]) begin
                     ch_active[p] <= 1'b0;
                     if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
-                        ch_pidx[p] <= {PARTITIONS_WIDTH{1'b0}};
+                        ch_pidx[p] <= {NUM_PARTITIONS_WIDTH{1'b0}};
                         if (!ch_all_rows_fetched[p])
                             ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
                     end else begin
@@ -283,7 +285,7 @@ module mvm_accelerator_split #(
     // =============================================================
 
     generate
-        for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin: channel_gen
+        for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin : channel_gen
         
             mvm_channel_split #(
               .DATA_WIDTH(DATA_WIDTH),
@@ -353,7 +355,7 @@ module mvm_accelerator_split #(
     localparam BYTES_PER_PARTITION    = WORDS_PER_PARTITION * STRB_WIDTH;
     
     localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_PARTITION);
-    localparam RAM_SEL_WIDTH         = $clog2(NUM_RAM_PARTITIONS);
+    localparam RAM_SEL_WIDTH         = NUM_PARTITIONS_WIDTH;
     localparam ARQOS                 = 4'b0000;
     
     wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_PARTITION;
@@ -471,54 +473,76 @@ module mvm_accelerator_split #(
         end
     endfunction
     
-    localparam S_ID_WIDTH = ID_WIDTH;
-    localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
-
-    localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = BURSTS_PER_PARTITION;
-    localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = AXI_RAM_ADDR_WIDTH;
-    
-    localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
-    localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_ACCEPT  = {NUM_CHANNELS{32'd4}};
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ISSUE = {NUM_RAM_PARTITIONS{RAM_MAX_BURSTS}};
-    
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_PARTITION);
-    localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
-    localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
-
-    axi_crossbar_rd #(
-        .S_COUNT(NUM_CHANNELS),
-        .M_COUNT(NUM_RAM_PARTITIONS),
-        .DATA_WIDTH(DATA_WIDTH),
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .S_ID_WIDTH(S_ID_WIDTH),
-        .M_ID_WIDTH(M_ID_WIDTH),
-    
-        .ARUSER_ENABLE(0),
-        .RUSER_ENABLE(0),
-        .ARUSER_WIDTH(1),
-        .RUSER_WIDTH(1),
-    
-        .S_THREADS(S_THREADS),
-        .S_ACCEPT(S_ACCEPT),
-        .M_ISSUE(M_ISSUE),
-    
-        .M_REGIONS(1),
-        .M_BASE_ADDR(M_BASE_ADDR),
-        .M_ADDR_WIDTH(M_ADDR_WIDTH),
-        .M_CONNECT(M_CONNECT),
-        .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
-    
-        .S_AR_REG_TYPE({NUM_CHANNELS{2'd2}}),
-        .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
-        .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
-        .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}})
-    ) axi_crossbar_inst (
-        .clk(s_clk),
-        .rstn(s_rstn),
-        `include "split_interconnect_channels.vh"
-        .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
-        .s_axi_aruser({NUM_RAM_PARTITIONS{1'b0}}),
-        .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
-    );
+    generate
+        if (NUM_CHANNELS > 1 || NUM_RAM_PARTITIONS > 1) begin
+            localparam S_ID_WIDTH = ID_WIDTH;
+            localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
+        
+            localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = BURSTS_PER_PARTITION;
+            localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = AXI_RAM_ADDR_WIDTH;
+            
+            localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
+            localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_ACCEPT  = {NUM_CHANNELS{32'd4}};
+            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ISSUE = {NUM_RAM_PARTITIONS{RAM_MAX_BURSTS}};
+            
+            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_PARTITION);
+            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
+            localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
+        
+            axi_crossbar_rd #(
+                .S_COUNT(NUM_CHANNELS),
+                .M_COUNT(NUM_RAM_PARTITIONS),
+                .DATA_WIDTH(DATA_WIDTH),
+                .ADDR_WIDTH(ADDR_WIDTH),
+                .S_ID_WIDTH(S_ID_WIDTH),
+                .M_ID_WIDTH(M_ID_WIDTH),
+            
+                .ARUSER_ENABLE(0),
+                .RUSER_ENABLE(0),
+                .ARUSER_WIDTH(1),
+                .RUSER_WIDTH(1),
+            
+                .S_THREADS(S_THREADS),
+                .S_ACCEPT(S_ACCEPT),
+                .M_ISSUE(M_ISSUE),
+            
+                .M_REGIONS(1),
+                .M_BASE_ADDR(M_BASE_ADDR),
+                .M_ADDR_WIDTH(M_ADDR_WIDTH),
+                .M_CONNECT(M_CONNECT),
+                .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
+            
+                .S_AR_REG_TYPE({NUM_CHANNELS{2'd2}}),
+                .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
+                .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
+                .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}})
+            ) axi_crossbar_inst (
+                .clk(s_clk),
+                .rstn(s_rstn),
+                `include "split_interconnect_channels.vh"
+                .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
+                .s_axi_aruser({NUM_RAM_PARTITIONS{1'b0}}),
+                .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
+            );
+        end else if (NUM_CHANNELS == 1 && NUM_RAM_PARTITIONS == 1) begin
+            assign ram_m_axi_arid   [0] = m_axi_arid   [0];
+            assign ram_m_axi_araddr [0] = m_axi_araddr [0];
+            assign ram_m_axi_arlen  [0] = m_axi_arlen  [0];
+            assign ram_m_axi_arsize [0] = m_axi_arsize [0];
+            assign ram_m_axi_arburst[0] = m_axi_arburst[0];
+            assign ram_m_axi_arlock [0] = m_axi_arlock [0];
+            assign ram_m_axi_arcache[0] = m_axi_arcache[0];
+            assign ram_m_axi_arprot [0] = m_axi_arprot [0];
+            assign ram_m_axi_arvalid[0] = m_axi_arvalid[0];
+            assign m_axi_arready    [0] = ram_m_axi_arready[0];
+            
+            assign m_axi_rid        [0] = ram_m_axi_rid   [0];
+            assign m_axi_rdata      [0] = ram_m_axi_rdata [0];
+            assign m_axi_rresp      [0] = ram_m_axi_rresp [0];
+            assign m_axi_rlast      [0] = ram_m_axi_rlast [0];
+            assign m_axi_rvalid     [0] = ram_m_axi_rvalid[0];
+            assign ram_m_axi_rready [0] = m_axi_rready    [0];
+        end
+    endgenerate
 
 endmodule

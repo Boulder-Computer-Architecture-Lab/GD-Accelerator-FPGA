@@ -3,7 +3,7 @@
 module tb_mvm_accelerator;
 
     `include "axi_a_channel_bindings.svh"
-    `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
+    `define GET_CHANNELS `CHANNELS_1 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
                                      // Note: Also run ./Vivado/scripts/update_channels.py when this 
                                      // is changed to update all the relevant header files
 
@@ -17,12 +17,12 @@ module tb_mvm_accelerator;
     parameter ELEMENT_WIDTH = 64;
     
     parameter int NUM_ACCEL_INST     = 1;
-    parameter int CHANNELS_PER_INST  = 4;
+    parameter int CHANNELS_PER_INST  = 1;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int ELEMENTS_PER_ROW = 8192;
-    parameter int NUM_ROWS         = 64;
+    parameter int NUM_ROWS         = 2;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
@@ -31,7 +31,7 @@ module tb_mvm_accelerator;
     localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
     
     localparam MAX_BURST_LEN = 256;
-    localparam AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS);
+    localparam AXI_RAM_ID_WIDTH = (CHANNELS_PER_INST > 1) ? ID_WIDTH + $clog2(NUM_CHANNELS) : ID_WIDTH;
     
     reg s_clk = 0, m_clk = 0;
     reg s_rstn = 1, m_rstn = 1;
