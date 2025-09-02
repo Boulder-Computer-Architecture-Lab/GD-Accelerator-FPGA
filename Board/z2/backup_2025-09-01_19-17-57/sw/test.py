@@ -9,12 +9,13 @@ import time, re, threading
 import numpy as np
 
 from cdma_driver import CDMA
+from monitor_driver import APM
 
 # ==============================================================================
 #  CONFIG
 # ==============================================================================
 
-DEBUG = 1
+DEBUG = 0
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 BIT       = PROJ_DIR + "design_1.bit"
@@ -22,11 +23,14 @@ MTRX_PATH = "../trmult_reduced.bin"
 
 # The following values are fixed in hardware:
 
+APM_CORE_HZ = 200000000 # 200 MHz
+
+APM_BASE  = 0x40040000 
 CDMA_BASE = 0xA0000000 
 BRAM_BASE = 0x80000000 
 
 NUM_ROWS = 1024
-NUM_CHANNELS = 1 
+NUM_CHANNELS = 2
 ROWS_PER_CHANNEL = NUM_ROWS // NUM_CHANNELS
 
 WORD_WIDTH = 64
@@ -167,17 +171,23 @@ if __name__ == "__main__":
                 view = memoryview(matrix[i]).cast("B")
                 if a_file.readinto(view) != BYTES_PER_ROW:
                     raise RuntimeError(f"Failed to read full row {i}.")
-                if DEBUG > 1: print(f"matrix[{i}]: {matrix[i]}")
+                if DEBUG > 2: print(f"matrix[{i}]: {matrix[i]}")
 
         # Write vector to BRAM
         t0_vec = time.perf_counter()
         write_vec(overlay, vector) 
         t1_vec = time.perf_counter()
 
+        # Arm performance monitor
+        apm = APM(APM_BASE, APM_CORE_HZ)
+        apm.reset()
+        apm.program_two_axis_slots(0, 1)
+
         # Execute
         threads = create_workers(dmas, matrix)
 
         print("Starting computation...")
+        apm.start()
         t0_comp = time.perf_counter()
 
         for ch in range(NUM_CHANNELS):
@@ -190,6 +200,7 @@ if __name__ == "__main__":
             dmas[ch].recvchannel.wait()
 
         t1_comp = time.perf_counter()
+        apm.snapshot()
         print(f"Finished.")
 
         # Print results
@@ -200,12 +211,14 @@ if __name__ == "__main__":
                     actual = results[i][j]
                     expected = float(np.dot(matrix[row_idx], vector.flatten()))
                     print(f"Row {row_idx}: Actual={actual:.32f} | Expected={expected:.32f}")
+
         print(f"Overhead time: {t1_vec - t0_vec:.6f}s")
         print(f"Compute time:  {t1_comp - t0_comp:.6f}s")
+        [apm.read_slot(i) for i in range(NUM_CHANNELS)]
 
     finally:
-        for buf in [matrix, vector] + (results or []):
-            try:
-                if buf is not None: buf.freebuffer()
-            except: pass
+        if results is not None:
+            for r in results: r.freebuffer()
+        for buf in [matrix, vector]:
+            if buf is not None: buf.freebuffer()
 

@@ -1,14 +1,14 @@
 {
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
-    "xci_name": "design_1_smartconnect_1_0",
-    "cell_name": "smartconnect_1",
+    "xci_name": "design_1_smartconnect_1_1",
+    "cell_name": "smartconnect_4",
     "component_reference": "xilinx.com:ip:smartconnect:1.0",
     "ip_revision": "21",
-    "gen_directory": "../../../../../../z2-accelerator.gen/sources_1/bd/design_1/ip/design_1_smartconnect_1_0",
+    "gen_directory": "../../../../../../z2-accelerator.gen/sources_1/bd/design_1/ip/design_1_smartconnect_1_1",
     "parameters": {
       "component_parameters": {
-        "Component_Name": [ { "value": "design_1_smartconnect_1_0", "resolve_type": "user", "usage": "all" } ],
+        "Component_Name": [ { "value": "design_1_smartconnect_1_1", "resolve_type": "user", "usage": "all" } ],
         "NUM_MI": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "NUM_SI": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "NUM_CLKS": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -16,7 +16,7 @@
         "ADVANCED_PROPERTIES": [ { "value": "0", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
-        "TLM_COMPONENT_NAME": [ { "value": "design_1_smartconnect_1_0", "resolve_type": "generated", "usage": "simulation.tlm" } ],
+        "TLM_COMPONENT_NAME": [ { "value": "design_1_smartconnect_1_1", "resolve_type": "generated", "usage": "simulation.tlm" } ],
         "HAS_RESET": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "simulation.tlm" } ]
       },
       "project_parameters": {
@@ -36,7 +36,7 @@
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
         "IPREVISION": [ { "value": "21" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../../../z2-accelerator.gen/sources_1/bd/design_1/ip/design_1_smartconnect_1_0" } ],
+        "OUTPUTDIR": [ { "value": "../../../../../../z2-accelerator.gen/sources_1/bd/design_1/ip/design_1_smartconnect_1_1" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "../../ipshared" } ],
         "SWVERSION": [ { "value": "2023.2" } ],

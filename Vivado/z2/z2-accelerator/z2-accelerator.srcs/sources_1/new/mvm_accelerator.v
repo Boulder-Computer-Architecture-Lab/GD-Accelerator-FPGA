@@ -1,27 +1,19 @@
 `timescale 1ns / 1ps
 
 module mvm_accelerator #(
-    parameter ARCH_TYPE = 0,
+    parameter ARCH_TYPE         = 0,
+    parameter AXI_RAM_BASE_ADDR = 32'h8000_0000,
     
-    parameter DATA_WIDTH         = 128,
-    parameter ADDR_WIDTH         = 32,
-    parameter STRB_WIDTH         = DATA_WIDTH / 8,
-    parameter ID_WIDTH           = 8,
-    
-    parameter ELEMENT_WIDTH      = 64,
-    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
-    
-    parameter ELEMENTS_PER_ROW = 17048,
-    parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
-    parameter NUM_ROWS = 17048,
-    
-    parameter NUM_CHANNELS       = 4,
-    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
-    
-    parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS,
-    
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS)
+    parameter DATA_WIDTH        = 128,
+    parameter ADDR_WIDTH        = 32,
+    parameter ID_WIDTH          = 8,
+
+    parameter ELEMENT_WIDTH     = 64,
+    parameter ELEMENTS_PER_ROW  = 17048,
+    parameter NUM_ROWS          = 17048,
+    parameter NUM_CHANNELS      = 4,
+
+    parameter AXI_RAM_ID_WIDTH  = ID_WIDTH + $clog2(NUM_CHANNELS)
 )(
 
     // Note: per port clock signals are for vivado to auto-infer 
@@ -104,7 +96,7 @@ module mvm_accelerator #(
     output wire                        s_axi_b_awready,
     
     input  wire [DATA_WIDTH-1:0]       s_axi_b_wdata,
-    input  wire [STRB_WIDTH-1:0]       s_axi_b_wstrb,
+    input  wire [(DATA_WIDTH/8)-1:0]   s_axi_b_wstrb,
     input  wire                        s_axi_b_wlast,
     input  wire                        s_axi_b_wvalid,
     output wire                        s_axi_b_wready,
@@ -115,6 +107,12 @@ module mvm_accelerator #(
     input  wire                        s_axi_b_bready
 );
 
+    localparam STRB_WIDTH         = DATA_WIDTH / 8;
+    localparam ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH; // MUST BE A POWER OF 2!
+    localparam WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
+    localparam ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS;
+    localparam NUM_RAM_PARTITIONS = NUM_CHANNELS;
+    
     generate
         if (ARCH_TYPE == 0) begin
             mvm_accelerator_split #(

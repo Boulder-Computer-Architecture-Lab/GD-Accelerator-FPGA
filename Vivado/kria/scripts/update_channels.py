@@ -3,7 +3,7 @@
 import os
 
 CWD = os.getcwd()
-SOURCES_PATH = os.path.join(CWD, "../kria-accelerator/vivado-accelerator.srcs/sources_1/new")
+SOURCES_PATH = os.path.join(CWD, "../kria-accelerator/kria-accelerator.srcs/sources_1/new")
 BIND_CHANNELS_PATH = os.path.join(SOURCES_PATH, "bind_channels.vh")
 SPLIT_INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "split_interconnect_channels.vh")
 

@@ -9,12 +9,13 @@ import time, re, threading
 import numpy as np
 
 from cdma_driver import CDMA
+from monitor_driver import APM
 
 # ==============================================================================
 #  CONFIG
 # ==============================================================================
 
-DEBUG = 1
+DEBUG = 0
 
 PROJ_DIR  = "/home/xilinx/mvm-project/hw/"
 BIT       = PROJ_DIR + "design_1.bit"
@@ -22,11 +23,14 @@ MTRX_PATH = "../trmult_reduced.bin"
 
 # The following values are fixed in hardware:
 
+APM_CORE_HZ = 200_000_000
+
+APM_BASE  = 0x40040000 
 CDMA_BASE = 0xA0000000 
 BRAM_BASE = 0x80000000 
 
 NUM_ROWS = 1024
-NUM_CHANNELS = 1 
+NUM_CHANNELS = 2
 ROWS_PER_CHANNEL = NUM_ROWS // NUM_CHANNELS
 
 WORD_WIDTH = 64
@@ -174,10 +178,16 @@ if __name__ == "__main__":
         write_vec(overlay, vector) 
         t1_vec = time.perf_counter()
 
+        # Arm performance monitor
+        apm = APM(APM_BASE, APM_CORE_HZ)
+        apm.reset()
+        apm.program_two_axis_slots(slot_a=0, slot_b=1)
+
         # Execute
         threads = create_workers(dmas, matrix)
 
         print("Starting computation...")
+        apm.start()
         t0_comp = time.perf_counter()
 
         for ch in range(NUM_CHANNELS):
@@ -190,7 +200,13 @@ if __name__ == "__main__":
             dmas[ch].recvchannel.wait()
 
         t1_comp = time.perf_counter()
+        apm.snapshot()
         print(f"Finished.")
+
+        # Get performance stats
+        slots = []
+        for i in range(NUM_CHANNELS):
+            slots.append(apm.read_slot(i))
 
         # Print results
         if DEBUG:
@@ -200,12 +216,18 @@ if __name__ == "__main__":
                     actual = results[i][j]
                     expected = float(np.dot(matrix[row_idx], vector.flatten()))
                     print(f"Row {row_idx}: Actual={actual:.32f} | Expected={expected:.32f}")
+
+        for i,s in enumerate(slots):
+            if s["bytes"] == 0:
+                s["bytes"] = s["active_cycles"] * BYTES_PER_WORD
+            s["seconds"] = (s["total_cycles"] / APM_CORE_HZ) if s["total_cycles"] else 0.0
+            s["bandwidth_Bps"] = (s["bytes"] / s["seconds"]) if s["seconds"] else 0.0
+            print(f"DMA{i}/MM2S", s)
+
         print(f"Overhead time: {t1_vec - t0_vec:.6f}s")
         print(f"Compute time:  {t1_comp - t0_comp:.6f}s")
 
     finally:
-        for buf in [matrix, vector] + (results or []):
-            try:
-                if buf is not None: buf.freebuffer()
-            except: pass
+        for buf in [matrix, vector, [r for r in results]]:
+            if buf is not None: buf.freebuffer()
 
