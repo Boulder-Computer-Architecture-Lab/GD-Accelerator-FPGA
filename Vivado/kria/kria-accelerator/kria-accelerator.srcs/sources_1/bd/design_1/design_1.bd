@@ -1362,6 +1362,9 @@
           },
           "c_s_axis_s2mm_tdata_width": {
             "value": "64"
+          },
+          "c_sg_length_width": {
+            "value": "18"
           }
         },
         "interface_ports": {
@@ -1758,26 +1761,11 @@
           "ELEMENTS_PER_ROW": {
             "value": "8192"
           },
-          "ELEMENTS_PER_WORD": {
-            "value": "1"
-          },
           "NUM_CHANNELS": {
-            "value": "1"
-          },
-          "NUM_RAM_PARTITIONS": {
             "value": "1"
           },
           "NUM_ROWS": {
             "value": "1024"
-          },
-          "ROWS_PER_CHANNEL": {
-            "value": "1024"
-          },
-          "STRB_WIDTH": {
-            "value": "8"
-          },
-          "WORDS_PER_ROW": {
-            "value": "8192"
           }
         },
         "reference_info": {
@@ -3391,10 +3379,6 @@
       "rst_ps8_0_99M1_peripheral_aresetn": {
         "ports": [
           "rst_ps8_0_99M1/peripheral_aresetn",
-          "mvm_accelerator_0/m_axis_0_rstn",
-          "mvm_accelerator_0/m_axis_1_rstn",
-          "mvm_accelerator_0/m_axis_2_rstn",
-          "mvm_accelerator_0/m_axis_3_rstn",
           "util_vector_logic_0/Op2",
           "ps8_0_axi_periph/ARESETN",
           "ps8_0_axi_periph/S00_ARESETN",
@@ -3403,20 +3387,24 @@
           "ps8_0_axi_periph1/S00_ARESETN",
           "ps8_0_axi_periph1/ARESETN",
           "smartconnect_0/aresetn",
-          "axi_cdma_0/s_axi_lite_aresetn"
+          "axi_cdma_0/s_axi_lite_aresetn",
+          "mvm_accelerator_0/m_axis_0_rstn",
+          "mvm_accelerator_0/m_axis_1_rstn",
+          "mvm_accelerator_0/m_axis_2_rstn",
+          "mvm_accelerator_0/m_axis_3_rstn"
         ]
       },
       "rst_ps8_0_99M_peripheral_aresetn": {
         "ports": [
           "rst_ps8_0_99M/peripheral_aresetn",
+          "axi_smc/aresetn",
+          "util_vector_logic_0/Op1",
+          "axi_smc1/aresetn",
           "mvm_accelerator_0/s_axis_a_0_rstn",
           "mvm_accelerator_0/s_axis_a_1_rstn",
           "mvm_accelerator_0/s_axis_a_2_rstn",
           "mvm_accelerator_0/s_axis_a_3_rstn",
-          "mvm_accelerator_0/s_axi_b_rstn",
-          "axi_smc/aresetn",
-          "util_vector_logic_0/Op1",
-          "axi_smc1/aresetn"
+          "mvm_accelerator_0/s_axi_b_rstn"
         ]
       },
       "util_vector_logic_0_Res": {
@@ -3431,24 +3419,20 @@
           "rst_ps8_0_99M/slowest_sync_clk",
           "axi_dma_0/m_axi_mm2s_aclk",
           "axi_smc/aclk",
+          "axi_cdma_0/m_axi_aclk",
+          "axi_smc1/aclk",
+          "zynq_ultra_ps_e_0/saxihp0_fpd_aclk",
           "mvm_accelerator_0/s_axis_a_0_clk",
           "mvm_accelerator_0/s_axis_a_1_clk",
           "mvm_accelerator_0/s_axis_a_2_clk",
           "mvm_accelerator_0/s_axis_a_3_clk",
-          "mvm_accelerator_0/s_axi_b_clk",
-          "axi_cdma_0/m_axi_aclk",
-          "axi_smc1/aclk",
-          "zynq_ultra_ps_e_0/saxihp0_fpd_aclk"
+          "mvm_accelerator_0/s_axi_b_clk"
         ]
       },
       "zynq_ultra_ps_e_0_pl_clk1": {
         "ports": [
           "zynq_ultra_ps_e_0/pl_clk1",
           "rst_ps8_0_99M1/slowest_sync_clk",
-          "mvm_accelerator_0/m_axis_0_clk",
-          "mvm_accelerator_0/m_axis_1_clk",
-          "mvm_accelerator_0/m_axis_2_clk",
-          "mvm_accelerator_0/m_axis_3_clk",
           "axi_dma_0/m_axi_s2mm_aclk",
           "ps8_0_axi_periph/ACLK",
           "ps8_0_axi_periph/S00_ACLK",
@@ -3461,7 +3445,11 @@
           "axi_cdma_0/s_axi_lite_aclk",
           "zynq_ultra_ps_e_0/maxihpm0_fpd_aclk",
           "zynq_ultra_ps_e_0/maxihpm1_fpd_aclk",
-          "zynq_ultra_ps_e_0/saxihpc0_fpd_aclk"
+          "zynq_ultra_ps_e_0/saxihpc0_fpd_aclk",
+          "mvm_accelerator_0/m_axis_0_clk",
+          "mvm_accelerator_0/m_axis_1_clk",
+          "mvm_accelerator_0/m_axis_2_clk",
+          "mvm_accelerator_0/m_axis_3_clk"
         ]
       },
       "zynq_ultra_ps_e_0_pl_resetn0": {

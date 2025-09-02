@@ -105,10 +105,6 @@ module mvm_accelerator_split #(
     wire                  s_axis_a_tready [NUM_CHANNELS-1:0];
     wire                  s_axis_a_tlast  [NUM_CHANNELS-1:0];
     
-    wire [DATA_WIDTH-1:0] s_axis_b_tdata  [NUM_CHANNELS-1:0];
-    wire                  s_axis_b_tvalid [NUM_CHANNELS-1:0];
-    wire                  s_axis_b_tready [NUM_CHANNELS-1:0];
-    
     // Output stream arrays
     wire [ELEMENT_WIDTH-1:0] m_axis_tdata  [NUM_CHANNELS-1:0];
     wire                     m_axis_tvalid [NUM_CHANNELS-1:0];
@@ -351,12 +347,9 @@ module mvm_accelerator_split #(
     //                          AXI RAM
     // =============================================================
     
-    localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
-    localparam BYTES_PER_PARTITION    = WORDS_PER_PARTITION * STRB_WIDTH;
-    
+    localparam BYTES_PER_PARTITION   = WORDS_PER_PARTITION * STRB_WIDTH;
     localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_PARTITION);
     localparam RAM_SEL_WIDTH         = NUM_PARTITIONS_WIDTH;
-    localparam ARQOS                 = 4'b0000;
     
     wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_PARTITION;
     

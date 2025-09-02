@@ -9,10 +9,10 @@ module tb_mvm_accelerator;
 
     parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
 
-    parameter DATA_WIDTH = 128;
-    parameter ADDR_WIDTH = 32;
-    parameter ID_WIDTH   = 8;
-    parameter STRB_WIDTH = DATA_WIDTH/8;
+    parameter int DATA_WIDTH = 64;
+    parameter int ADDR_WIDTH = 32;
+    parameter int ID_WIDTH   = 8;
+    parameter int STRB_WIDTH = DATA_WIDTH/8;
     
     parameter ELEMENT_WIDTH = 64;
     
@@ -28,7 +28,6 @@ module tb_mvm_accelerator;
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
     localparam WORDS_PER_PARTITION    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam ELEMENTS_PER_PARTITION = WORDS_PER_PARTITION * ELEMENTS_PER_WORD;
     
     localparam MAX_BURST_LEN = 256;
     localparam AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS);
@@ -149,14 +148,11 @@ module tb_mvm_accelerator;
                 .ARCH_TYPE(ARCH_TYPE),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),
-                .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
+                .ELEMENT_WIDTH(ELEMENT_WIDTH),
                 .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
-                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
                 .AXI_RAM_BASE_ADDR(32'h8000_0000 + 32'h1000_0000*inst),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
@@ -202,7 +198,7 @@ module tb_mvm_accelerator;
         repeat (16) @(posedge m_clk); 
         s_rstn = 1; m_rstn = 1;
         
-        repeat (3) @(posedge s_clk);
+        repeat (4) @(posedge s_clk);
     
         for (int i = 0; i < NUM_CHANNELS; i++) begin
             inputs_sent[i] = 0;
@@ -266,8 +262,6 @@ module tb_mvm_accelerator;
         for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
             initial begin
                 wait(start);
-                
-                repeat (5*ch) @(posedge s_clk); // don't start all channels on the same cycle (more realistic)
                 
                 for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
                     expected[ch][j] = 0;
