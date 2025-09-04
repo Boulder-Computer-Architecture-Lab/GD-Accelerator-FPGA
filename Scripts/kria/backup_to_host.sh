@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Local base directory
 basedir="$(pwd)"
@@ -11,15 +12,23 @@ destdir="$backup_root/backup_$timestamp"
 # Remote board location
 targetdev="ubuntu@192.168.195.196"
 remotedir="/home/ubuntu/mvm-accelerator"
+notebookdir="/root/jupyter_notebooks/mvm-accelerator"
 
 # Create destination directory
 mkdir -p "$destdir"
 
-# Use rsync to copy all files except the excluded one
+# Use rsync to get all files (except matrix)
 rsync -avz \
 	--exclude="trmult_reduced.bin" \
 	--exclude="*.un~" \
-    -e ssh "$targetdev:$remotedir/" "$destdir/"
+    -e ssh \
+    "$targetdev:$remotedir/" \
+    "$destdir/"
+
+# Get root owned notebook
+#ssh -t "$targetdev" \
+#  "sudo tar -C '$notebookdir' -cf - ." \
+#| tar -C "$destdir/notebooks" -xpf -
 
 # Keep only the 2 most recent backups, delete older ones
 find "$backup_root" -maxdepth 1 -type d -name 'backup_*' \
