@@ -99,37 +99,77 @@ module mvm_accelerator_split #(
     //                      PACK CHANNELS
     // =============================================================
     
+    localparam MAX_CH = 4;
+    
     // Input stream arrays
-    wire [DATA_WIDTH-1:0] s_axis_a_tdata  [NUM_CHANNELS-1:0];
-    wire                  s_axis_a_tvalid [NUM_CHANNELS-1:0];
-    wire                  s_axis_a_tready [NUM_CHANNELS-1:0];
-    wire                  s_axis_a_tlast  [NUM_CHANNELS-1:0];
+    wire [DATA_WIDTH-1:0] s_axis_a_tdata  [MAX_CH-1:0];
+    wire                  s_axis_a_tvalid [MAX_CH-1:0];
+    wire                  s_axis_a_tready [MAX_CH-1:0];
+    wire                  s_axis_a_tlast  [MAX_CH-1:0];
     
     // Output stream arrays
-    wire [ELEMENT_WIDTH-1:0] m_axis_tdata  [NUM_CHANNELS-1:0];
-    wire                     m_axis_tvalid [NUM_CHANNELS-1:0];
-    wire                     m_axis_tready [NUM_CHANNELS-1:0];
-    wire                     m_axis_tlast  [NUM_CHANNELS-1:0];
+    wire [ELEMENT_WIDTH-1:0] m_axis_tdata  [MAX_CH-1:0];
+    wire                     m_axis_tvalid [MAX_CH-1:0];
+    wire                     m_axis_tready [MAX_CH-1:0];
+    wire                     m_axis_tlast  [MAX_CH-1:0];
     
-    wire [ID_WIDTH-1:0]         m_axi_arid     [NUM_CHANNELS-1:0];
-    wire [ADDR_WIDTH-1:0]       m_axi_araddr   [NUM_CHANNELS-1:0];
-    wire [7:0]                  m_axi_arlen    [NUM_CHANNELS-1:0];
-    wire [2:0]                  m_axi_arsize   [NUM_CHANNELS-1:0];
-    wire [1:0]                  m_axi_arburst  [NUM_CHANNELS-1:0];
-    wire                        m_axi_arlock   [NUM_CHANNELS-1:0];
-    wire [3:0]                  m_axi_arcache  [NUM_CHANNELS-1:0];
-    wire [2:0]                  m_axi_arprot   [NUM_CHANNELS-1:0];
-    wire                        m_axi_arvalid  [NUM_CHANNELS-1:0];
-    wire                        m_axi_arready  [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]         m_axi_arid     [MAX_CH-1:0];
+    wire [ADDR_WIDTH-1:0]       m_axi_araddr   [MAX_CH-1:0];
+    wire [7:0]                  m_axi_arlen    [MAX_CH-1:0];
+    wire [2:0]                  m_axi_arsize   [MAX_CH-1:0];
+    wire [1:0]                  m_axi_arburst  [MAX_CH-1:0];
+    wire                        m_axi_arlock   [MAX_CH-1:0];
+    wire [3:0]                  m_axi_arcache  [MAX_CH-1:0];
+    wire [2:0]                  m_axi_arprot   [MAX_CH-1:0];
+    wire                        m_axi_arvalid  [MAX_CH-1:0];
+    wire                        m_axi_arready  [MAX_CH-1:0];
     
-    wire [ID_WIDTH-1:0]         m_axi_rid      [NUM_CHANNELS-1:0];
-    wire [DATA_WIDTH-1:0]       m_axi_rdata    [NUM_CHANNELS-1:0];
-    wire [1:0]                  m_axi_rresp    [NUM_CHANNELS-1:0];
-    wire                        m_axi_rlast    [NUM_CHANNELS-1:0];
-    wire                        m_axi_rvalid   [NUM_CHANNELS-1:0];
-    wire                        m_axi_rready   [NUM_CHANNELS-1:0];
+    wire [ID_WIDTH-1:0]         m_axi_rid      [MAX_CH-1:0];
+    wire [DATA_WIDTH-1:0]       m_axi_rdata    [MAX_CH-1:0];
+    wire [1:0]                  m_axi_rresp    [MAX_CH-1:0];
+    wire                        m_axi_rlast    [MAX_CH-1:0];
+    wire                        m_axi_rvalid   [MAX_CH-1:0];
+    wire                        m_axi_rready   [MAX_CH-1:0];
 
-    `include "bind_channels.vh"
+    assign s_axis_a_tdata[0]  = s_axis_a_0_tdata;
+    assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
+    assign s_axis_a_0_tready  = s_axis_a_tready[0];
+    assign s_axis_a_tlast[0]  = s_axis_a_0_tlast;
+    
+    assign m_axis_0_tdata   = m_axis_tdata[0];
+    assign m_axis_0_tvalid  = m_axis_tvalid[0];
+    assign m_axis_tready[0] = m_axis_0_tready;
+    assign m_axis_0_tlast   = m_axis_tlast[0];
+    
+    assign s_axis_a_tdata[1]  = s_axis_a_1_tdata;
+    assign s_axis_a_tvalid[1] = s_axis_a_1_tvalid;
+    assign s_axis_a_1_tready  = s_axis_a_tready[1];
+    assign s_axis_a_tlast[1]  = s_axis_a_1_tlast;
+    
+    assign m_axis_1_tdata   = m_axis_tdata[1];
+    assign m_axis_1_tvalid  = m_axis_tvalid[1];
+    assign m_axis_tready[1] = m_axis_1_tready;
+    assign m_axis_1_tlast   = m_axis_tlast[1];
+    
+    assign s_axis_a_tdata[2]  = s_axis_a_2_tdata;
+    assign s_axis_a_tvalid[2] = s_axis_a_2_tvalid;
+    assign s_axis_a_2_tready  = s_axis_a_tready[2];
+    assign s_axis_a_tlast[2]  = s_axis_a_2_tlast;
+    
+    assign m_axis_2_tdata   = m_axis_tdata[2];
+    assign m_axis_2_tvalid  = m_axis_tvalid[2];
+    assign m_axis_tready[2] = m_axis_2_tready;
+    assign m_axis_2_tlast   = m_axis_tlast[2];
+    
+    assign s_axis_a_tdata[3]  = s_axis_a_3_tdata;
+    assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
+    assign s_axis_a_3_tready  = s_axis_a_tready[3];
+    assign s_axis_a_tlast[3]  = s_axis_a_3_tlast;
+    
+    assign m_axis_3_tdata   = m_axis_tdata[3];
+    assign m_axis_3_tvalid  = m_axis_tvalid[3];
+    assign m_axis_tready[3] = m_axis_3_tready;
+    assign m_axis_3_tlast   = m_axis_tlast[3];
         
     // =============================================================
     //                  PARTITION ACCESS LOGIC

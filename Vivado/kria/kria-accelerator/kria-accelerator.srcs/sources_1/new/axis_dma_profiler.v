@@ -113,6 +113,19 @@ module axis_dma_profiler #(
     reg  [63:0]       byte_cnt  [0:MAX_CH-1];
     reg  [31:0]       pkt_cnt   [0:MAX_CH-1];
 
+    reg        armed      [0:MAX_CH-1];  // seen tlast, waiting for next packet start
+    reg [63:0] idle_cnt   [0:MAX_CH-1];
+    reg [63:0] gap_last   [0:MAX_CH-1];
+    reg [63:0] gap_total  [0:MAX_CH-1];
+    reg [63:0] gap_min    [0:MAX_CH-1];
+    reg [63:0] gap_max    [0:MAX_CH-1];
+    reg [31:0] gap_count  [0:MAX_CH-1];
+    reg        gap_valid  [0:MAX_CH-1];
+
+    reg [63:0] busy_total [0:MAX_CH-1];
+
+    reg seen_hs;
+
     genvar ch;
     generate
         for (ch = 0; ch < MAX_CH; ch = ch + 1) begin : g_prof
@@ -132,6 +145,19 @@ module axis_dma_profiler #(
                     beat_cnt[ch]    <= 64'd0;
                     byte_cnt[ch]    <= 64'd0;
                     pkt_cnt[ch]     <= 32'd0;
+
+                    armed[ch]     <= 1'b0;
+                    idle_cnt[ch]  <= 64'd0;
+                    gap_last[ch]  <= 64'd0;
+                    gap_total[ch] <= 64'd0;
+                    gap_min[ch]   <= 64'hFFFF_FFFF_FFFF_FFFF;
+                    gap_max[ch]   <= 64'd0;
+                    gap_count[ch] <= 32'd0;
+                    gap_valid[ch] <= 1'b0;
+
+                    busy_total[ch] <= 64'd0;
+
+                    seen_hs <= 1'b0;
                 end else if (!active) begin
                     // keep pass-through, just zero the stats
                     running[ch]     <= 1'b0;
@@ -140,13 +166,40 @@ module axis_dma_profiler #(
                     beat_cnt[ch]    <= 64'd0;
                     byte_cnt[ch]    <= 64'd0;
                     pkt_cnt[ch]     <= 32'd0;
+                    
+                    armed[ch]       <= 1'b0;
+                    idle_cnt[ch]    <= 64'd0;
+                    gap_last[ch]    <= 64'd0;
+                    gap_total[ch]   <= 64'd0;
+                    gap_min[ch]     <= 64'd0;
+                    gap_max[ch]     <= 64'd0;
+                    gap_count[ch]   <= 32'd0;
+                    gap_valid[ch]   <= 1'b0;
+                    busy_total[ch]  <= 64'd0;
                 end else begin
+                    if (seen_hs && !running[ch] && armed[ch])
+                        idle_cnt[ch] <= idle_cnt[ch] + 1;
+
                     if (!running[ch] && hs) begin
+                        if (!seen_hs) seen_hs <= 1'b1;
+
                         running[ch]     <= 1'b1;
                         have_result[ch] <= 1'b0;
-                        cycle_cnt[ch]   <= 64'd1;          // include first cycle
-                        beat_cnt[ch]    <= 64'd1;          // include first beat
+                        cycle_cnt[ch]   <= 64'd1; // include first cycle
+                        beat_cnt[ch]    <= 64'd1; // include first beat
                         byte_cnt[ch]    <= BYTES_THIS;
+
+                        if (armed[ch]) begin
+                            gap_last[ch] <= idle_cnt[ch];
+                            gap_total[ch] <= gap_total[ch] + idle_cnt[ch];
+                            gap_count[ch] <= gap_count[ch] + 1;
+                            // min/max with valid gate
+                            if (!gap_valid[ch] || idle_cnt[ch] < gap_min[ch]) gap_min[ch] <= idle_cnt[ch];
+                            if (!gap_valid[ch] || idle_cnt[ch] > gap_max[ch]) gap_max[ch] <= idle_cnt[ch];
+                            gap_valid[ch] <= 1'b1;
+                        end
+                        armed[ch]    <= 1'b0;
+                        idle_cnt[ch] <= 64'd0;
                     end else if (running[ch]) begin
                         cycle_cnt[ch] <= cycle_cnt[ch] + 1;
                         if (hs) begin
@@ -156,6 +209,11 @@ module axis_dma_profiler #(
                                 running[ch]     <= 1'b0;
                                 have_result[ch] <= 1'b1;
                                 pkt_cnt[ch]     <= pkt_cnt[ch] + 1;
+
+                                armed[ch]    <= 1'b1;
+                                idle_cnt[ch] <= 64'd0;
+
+                                busy_total[ch] <= busy_total[ch] + cycle_cnt[ch];
                             end
                         end
                     end
@@ -228,21 +286,12 @@ module axis_dma_profiler #(
     wire                       reg_rd_en;
     reg  [AXIL_DATA_WIDTH-1:0] reg_rd_data;
 
-    axil_reg_if #(
+    axil_reg_if_rd #(
         .ADDR_WIDTH(AXIL_ADDR_WIDTH),
         .DATA_WIDTH(AXIL_DATA_WIDTH)
     ) axil_rd_i (
         .clk           (axis_clk),
         .rstn          (axis_aresetn),
-        .s_axil_awaddr (m_axil_awaddr),
-        .s_axil_awvalid(m_axil_awvalid),
-        .s_axil_awready(m_axil_awready),
-        .s_axil_wdata  (m_axil_wdata),
-        .s_axil_wvalid (m_axil_wvalid),
-        .s_axil_wready (m_axil_wready),
-        .s_axil_bresp  (m_axil_bresp),
-        .s_axil_bvalid (m_axil_bvalid),
-        .s_axil_bready (m_axil_bready),
         .s_axil_araddr (m_axil_araddr),
         .s_axil_arvalid(m_axil_arvalid),
         .s_axil_arready(m_axil_arready),
@@ -281,6 +330,16 @@ module axis_dma_profiler #(
     wire [63:0] bytes_mux  = get64(ch_sel, byte_cnt [0], byte_cnt [1], byte_cnt [2], byte_cnt [3]);
     wire [31:0] pkts_mux   = get32(ch_sel, pkt_cnt  [0], pkt_cnt  [1], pkt_cnt  [2], pkt_cnt  [3]);
 
+    wire [63:0] gap_last_mux  = get64(ch_sel, gap_last [0], gap_last [1], gap_last [2], gap_last [3]);
+    wire [63:0] gap_total_mux = get64(ch_sel, gap_total[0], gap_total[1], gap_total[2], gap_total[3]);
+    wire [63:0] gap_min_mux   = get64(ch_sel, gap_min  [0], gap_min  [1], gap_min  [2], gap_min  [3]);
+    wire [63:0] gap_max_mux   = get64(ch_sel, gap_max  [0], gap_max  [1], gap_max  [2], gap_max  [3]);
+    wire [31:0] gap_count_mux = get32(ch_sel, gap_count[0], gap_count[1], gap_count[2], gap_count[3]);
+    wire        gap_valid_mux = get1(ch_sel, gap_valid[0], gap_valid[1], gap_valid[2], gap_valid[3]);
+    wire        armed_mux     = get1(ch_sel, armed    [0], armed    [1], armed    [2], armed    [3]);
+
+    wire [63:0] busy_total_mux = get64(ch_sel, busy_total[0], busy_total[1], busy_total[2], busy_total[3]);
+
     always @* begin
         case (word_off)
             6'h00: reg_rd_data = {30'd0, running[ch_sel], have_result[ch_sel]}; // STATUS
@@ -291,6 +350,21 @@ module axis_dma_profiler #(
             6'h05: reg_rd_data = bytes_mux[31:0];
             6'h06: reg_rd_data = bytes_mux[63:32];
             6'h07: reg_rd_data = pkts_mux;
+
+            6'h08: reg_rd_data = gap_last_mux [31:0];
+            6'h09: reg_rd_data = gap_last_mux [63:32];
+            6'h0A: reg_rd_data = gap_total_mux[31:0];
+            6'h0B: reg_rd_data = gap_total_mux[63:32];
+            6'h0C: reg_rd_data = gap_min_mux  [31:0];
+            6'h0D: reg_rd_data = gap_min_mux  [63:32];
+            6'h0E: reg_rd_data = gap_max_mux  [31:0];
+            6'h0F: reg_rd_data = gap_max_mux  [63:32];
+            6'h10: reg_rd_data = gap_count_mux;
+            6'h11: reg_rd_data = {30'd0, armed[ch_sel], gap_valid[ch_sel]};
+
+            6'h12: reg_rd_data = busy_total_mux[31:0];
+            6'h13: reg_rd_data = busy_total_mux[63:32];
+
             default: reg_rd_data = {AXIL_DATA_WIDTH{1'b0}};
         endcase
     end
