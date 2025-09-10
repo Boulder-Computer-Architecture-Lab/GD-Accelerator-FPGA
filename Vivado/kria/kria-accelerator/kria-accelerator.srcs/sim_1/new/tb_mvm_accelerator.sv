@@ -3,26 +3,26 @@
 module tb_mvm_accelerator;
 
     `include "axi_a_channel_bindings.svh"
-    `define GET_CHANNELS `CHANNELS_1 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
+    `define GET_CHANNELS `CHANNELS_2 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
                                      // Note: Also run ./Vivado/scripts/update_channels.py when this 
                                      // is changed to update all the relevant header files
 
     parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
 
     parameter int DATA_WIDTH = 64;
-    parameter int ADDR_WIDTH = 32;
+    parameter int ADDR_WIDTH = 64;
     parameter int ID_WIDTH   = 8;
     parameter int STRB_WIDTH = DATA_WIDTH/8;
     
-    parameter ELEMENT_WIDTH = 64;
+    parameter int ELEMENT_WIDTH = 64;
     
     parameter int NUM_ACCEL_INST     = 1;
-    parameter int CHANNELS_PER_INST  = 1;
+    parameter int CHANNELS_PER_INST  = 2;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
-    parameter int ELEMENTS_PER_ROW = 8192;
-    parameter int NUM_ROWS         = 2;
+    parameter int ELEMENTS_PER_ROW = 16384;
+    parameter int NUM_ROWS         = 4;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
@@ -138,6 +138,9 @@ module tb_mvm_accelerator;
             $display("[AXI WRITE] Instance %0d: Burst write complete\n", inst);
         end
     endtask
+    
+    localparam [ADDR_WIDTH-1:0] BASE_ADDR = { {(ADDR_WIDTH-32){1'b0}}, 32'h8000_0000 };
+    localparam [ADDR_WIDTH-1:0] STRIDE    = { {(ADDR_WIDTH-32){1'b0}}, 32'h1000_0000 };
 
     // Instantiate DUT
     generate
@@ -153,7 +156,7 @@ module tb_mvm_accelerator;
                 .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
-                .AXI_RAM_BASE_ADDR(32'h8000_0000 + 32'h1000_0000*inst),
+                .AXI_RAM_BASE_ADDR(BASE_ADDR + STRIDE * inst),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
             ) dut (
                 .s_axis_a_0_clk(s_clk), .m_axis_0_clk(m_clk),
@@ -175,8 +178,8 @@ module tb_mvm_accelerator;
     endgenerate
         
     // Clock generation
-    always #2.5 s_clk = ~s_clk;   // (FCLK0: 200 MHz)
-    always #5   m_clk = ~m_clk;   // (FCLK1: 100 MHz)
+    always #1.667 s_clk = ~s_clk; // (pclk0: 300 MHz)
+    always #1.667 m_clk = ~m_clk; // (pclk0: 300 MHz)
     
     real a_values [NUM_CHANNELS][ELEMENTS_PER_ROW];
     real b_values [ELEMENTS_PER_ROW];
@@ -186,7 +189,8 @@ module tb_mvm_accelerator;
 
     real expected [NUM_CHANNELS-1:0][ROWS_PER_CHANNEL-1:0];    
     
-    integer base_addr, base_offset;
+    logic [ADDR_WIDTH-1:0] base_addr; 
+    logic [ADDR_WIDTH-1:0] base_offset;
     integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
     integer final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
 
@@ -209,7 +213,7 @@ module tb_mvm_accelerator;
             for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
                 a_values[i][j] = (j+1) / ((i+1) * 1000.0);
                 b_values[j] = (j+1) / 10000.0;
-                $display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, $realtobits(a_values[i][j]), a_values[i][j]);
+                //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, $realtobits(a_values[i][j]), a_values[i][j]);
             end
         end
         
@@ -217,15 +221,15 @@ module tb_mvm_accelerator;
             bram[w] = '0;
             for (int j = 0; j < ELEMENTS_PER_WORD; j++) begin
                 bram[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(b_values[w * ELEMENTS_PER_WORD + j]);
-                $display("bram[%0d][%0d] = %h (real = %f)", 
-                         w, j, bram[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], b_values[w * ELEMENTS_PER_WORD + j]);
+                //$display("bram[%0d][%0d] = %h (real = %f)", 
+                //         w, j, bram[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], b_values[w * ELEMENTS_PER_WORD + j]);
             end
         end
         
         // Write vector to dut.axi_ram
         for (int i = 0; i < NUM_ACCEL_INST; i++) begin
-            base_addr = 32'h8000_0000 + 32'h1000_0000 * i;
-        
+            base_addr = BASE_ADDR + STRIDE * i;
+                      
             for (int j = 0; j < NUM_RAM_PARTITIONS; j++) begin
                 repeat (10) @(posedge s_clk);
                                 

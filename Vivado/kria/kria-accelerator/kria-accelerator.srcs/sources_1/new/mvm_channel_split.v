@@ -2,7 +2,7 @@
 
 module mvm_channel_split #(
     parameter DATA_WIDTH         = 128,
-    parameter ADDR_WIDTH         = 32,
+    parameter ADDR_WIDTH         = 64,
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
     parameter ID_WIDTH           = 8,
     parameter TAG                = 0,
@@ -79,7 +79,7 @@ module mvm_channel_split #(
     localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
 
     localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
-    localparam INPUT_FIFO_A_DEPTH = 512;
+    localparam INPUT_FIFO_A_DEPTH = WORDS_PER_PARTITION;
     localparam OUTPUT_FIFO_DEPTH = 64;
     localparam SKID = 2;
         

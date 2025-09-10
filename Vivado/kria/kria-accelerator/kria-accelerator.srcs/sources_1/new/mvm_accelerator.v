@@ -5,7 +5,7 @@ module mvm_accelerator #(
     parameter AXI_RAM_BASE_ADDR = 32'h8000_0000,
     
     parameter DATA_WIDTH        = 128,
-    parameter ADDR_WIDTH        = 32,
+    parameter ADDR_WIDTH        = 64,
     parameter ID_WIDTH          = 8,
 
     parameter ELEMENT_WIDTH     = 64,

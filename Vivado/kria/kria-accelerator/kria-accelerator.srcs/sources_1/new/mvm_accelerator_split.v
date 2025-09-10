@@ -2,7 +2,7 @@
 
 module mvm_accelerator_split #(
     parameter DATA_WIDTH         = 128,
-    parameter ADDR_WIDTH         = 32,
+    parameter ADDR_WIDTH         = 64,
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
     parameter ID_WIDTH           = 8,
     
@@ -496,55 +496,37 @@ module mvm_accelerator_split #(
     //              AXI CROSSBAR (BETWEEN DMAs AND RAM)
     // =============================================================
 
-    function [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
+    function automatic [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
         input [ADDR_WIDTH-1:0] base;
         input [ADDR_WIDTH-1:0] stride;
         integer i;
         begin
             for (i = 0; i < NUM_RAM_PARTITIONS; i = i + 1) begin
-                gen_m_base_addr[(i+1)*ADDR_WIDTH-1 -: ADDR_WIDTH] = base + (i * stride);
+                gen_m_base_addr[i*ADDR_WIDTH +: ADDR_WIDTH] = base + ( ( {ADDR_WIDTH{1'b0}} | stride ) * i );
             end
         end
     endfunction
     
     generate
         if (NUM_CHANNELS > 1 || NUM_RAM_PARTITIONS > 1) begin
-            localparam S_ID_WIDTH = ID_WIDTH;
-            localparam M_ID_WIDTH = AXI_RAM_ID_WIDTH; 
-        
-            localparam [ADDR_WIDTH-1:0] RAM_MAX_BURSTS = BURSTS_PER_PARTITION;
-            localparam [ADDR_WIDTH-1:0] REGION_ADDR_WIDTH = AXI_RAM_ADDR_WIDTH;
-            
-            localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_THREADS = {NUM_CHANNELS{32'd1}};
-            localparam [NUM_CHANNELS*ADDR_WIDTH-1:0] S_ACCEPT  = {NUM_CHANNELS{32'd4}};
-            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ISSUE = {NUM_RAM_PARTITIONS{RAM_MAX_BURSTS}};
-            
-            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, BYTES_PER_PARTITION);
-            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{REGION_ADDR_WIDTH}};
-            localparam [NUM_CHANNELS*NUM_RAM_PARTITIONS-1:0] M_CONNECT = {NUM_RAM_PARTITIONS{{NUM_CHANNELS{1'b1}}}};
+            localparam [ADDR_WIDTH-1:0] REGION_STRIDE = (1 << AXI_RAM_ADDR_WIDTH); // must be power of 2
+            localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, REGION_STRIDE);
+            localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{AXI_RAM_ADDR_WIDTH}};
         
             axi_crossbar_rd #(
                 .S_COUNT(NUM_CHANNELS),
                 .M_COUNT(NUM_RAM_PARTITIONS),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),
-                .S_ID_WIDTH(S_ID_WIDTH),
-                .M_ID_WIDTH(M_ID_WIDTH),
+                .S_ID_WIDTH(ID_WIDTH),
             
                 .ARUSER_ENABLE(0),
                 .RUSER_ENABLE(0),
                 .ARUSER_WIDTH(1),
                 .RUSER_WIDTH(1),
             
-                .S_THREADS(S_THREADS),
-                .S_ACCEPT(S_ACCEPT),
-                .M_ISSUE(M_ISSUE),
-            
-                .M_REGIONS(1),
                 .M_BASE_ADDR(M_BASE_ADDR),
                 .M_ADDR_WIDTH(M_ADDR_WIDTH),
-                .M_CONNECT(M_CONNECT),
-                .M_SECURE({NUM_RAM_PARTITIONS{1'b0}}),
             
                 .S_AR_REG_TYPE({NUM_CHANNELS{2'd2}}),
                 .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
@@ -554,8 +536,8 @@ module mvm_accelerator_split #(
                 .clk(s_clk),
                 .rstn(s_rstn),
                 `include "split_interconnect_channels.vh"
-                .s_axi_arqos({NUM_CHANNELS{{NUM_RAM_PARTITIONS{1'b0}}}}),
-                .s_axi_aruser({NUM_RAM_PARTITIONS{1'b0}}),
+                .s_axi_arqos({NUM_CHANNELS{4'b0}}),
+                .s_axi_aruser({NUM_CHANNELS{1'b0}}),
                 .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
             );
         end else if (NUM_CHANNELS == 1 && NUM_RAM_PARTITIONS == 1) begin

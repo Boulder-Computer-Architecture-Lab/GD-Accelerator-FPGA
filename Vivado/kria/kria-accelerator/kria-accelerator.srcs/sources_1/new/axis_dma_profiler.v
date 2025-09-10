@@ -2,6 +2,8 @@
 
 module axis_dma_profiler #(
     parameter integer NUM_DMAS        = 4, 
+    parameter integer USE_CDC         = 0,
+
     parameter integer AXIL_ADDR_WIDTH = 12,
     parameter integer AXIL_DATA_WIDTH = 32,
 
@@ -124,7 +126,7 @@ module axis_dma_profiler #(
 
     reg [63:0] busy_total [0:MAX_CH-1];
 
-    reg seen_hs;
+    reg seen_hs [0:MAX_CH-1];
 
     genvar ch;
     generate
@@ -138,50 +140,29 @@ module axis_dma_profiler #(
                 (ch==2) ? DATA_BYTES2[15:0] : DATA_BYTES3[15:0];
 
             always @(posedge axis_clk) begin
-                if (!axis_aresetn) begin
+                if (!axis_aresetn || !active) begin
+                    seen_hs[ch]     <= 1'b0;
                     running[ch]     <= 1'b0;
                     have_result[ch] <= 1'b0;
                     cycle_cnt[ch]   <= 64'd0;
                     beat_cnt[ch]    <= 64'd0;
                     byte_cnt[ch]    <= 64'd0;
                     pkt_cnt[ch]     <= 32'd0;
-
-                    armed[ch]     <= 1'b0;
-                    idle_cnt[ch]  <= 64'd0;
-                    gap_last[ch]  <= 64'd0;
-                    gap_total[ch] <= 64'd0;
-                    gap_min[ch]   <= 64'hFFFF_FFFF_FFFF_FFFF;
-                    gap_max[ch]   <= 64'd0;
-                    gap_count[ch] <= 32'd0;
-                    gap_valid[ch] <= 1'b0;
-
-                    busy_total[ch] <= 64'd0;
-
-                    seen_hs <= 1'b0;
-                end else if (!active) begin
-                    // keep pass-through, just zero the stats
-                    running[ch]     <= 1'b0;
-                    have_result[ch] <= 1'b0;
-                    cycle_cnt[ch]   <= 64'd0;
-                    beat_cnt[ch]    <= 64'd0;
-                    byte_cnt[ch]    <= 64'd0;
-                    pkt_cnt[ch]     <= 32'd0;
-                    
                     armed[ch]       <= 1'b0;
                     idle_cnt[ch]    <= 64'd0;
                     gap_last[ch]    <= 64'd0;
                     gap_total[ch]   <= 64'd0;
-                    gap_min[ch]     <= 64'd0;
+                    gap_min[ch]     <= 64'hFFFF_FFFF_FFFF_FFFF;
                     gap_max[ch]     <= 64'd0;
                     gap_count[ch]   <= 32'd0;
                     gap_valid[ch]   <= 1'b0;
                     busy_total[ch]  <= 64'd0;
                 end else begin
-                    if (seen_hs && !running[ch] && armed[ch])
+                    if (seen_hs[ch] && !running[ch] && armed[ch])
                         idle_cnt[ch] <= idle_cnt[ch] + 1;
 
                     if (!running[ch] && hs) begin
-                        if (!seen_hs) seen_hs <= 1'b1;
+                        if (!seen_hs[ch]) seen_hs[ch] <= 1'b1;
 
                         running[ch]     <= 1'b1;
                         have_result[ch] <= 1'b0;
@@ -239,48 +220,69 @@ module axis_dma_profiler #(
     wire                       m_axil_rvalid;
     wire                       m_axil_rready;
 
-    axil_cdc #(
-        .DATA_WIDTH (AXIL_DATA_WIDTH),
-        .ADDR_WIDTH (AXIL_ADDR_WIDTH)
-    ) axil_cdc_i (
-        .s_clk          (s_axil_aclk),
-        .s_rstn         (s_axil_aresetn),
-        .s_axil_awaddr  (s_axil_awaddr),
-        .s_axil_awvalid (s_axil_awvalid),
-        .s_axil_awready (s_axil_awready),
-        .s_axil_wdata   (s_axil_wdata),
-        .s_axil_wvalid  (s_axil_wvalid),
-        .s_axil_wready  (s_axil_wready),
-        .s_axil_bresp   (s_axil_bresp),
-        .s_axil_bvalid  (s_axil_bvalid),
-        .s_axil_bready  (s_axil_bready),
-        .s_axil_araddr  (s_axil_araddr),
-        .s_axil_arvalid (s_axil_arvalid),
-        .s_axil_arready (s_axil_arready),
-        .s_axil_rdata   (s_axil_rdata),
-        .s_axil_rresp   (s_axil_rresp),
-        .s_axil_rvalid  (s_axil_rvalid),
-        .s_axil_rready  (s_axil_rready),
+    generate
+        if (USE_CDC) begin
+            axil_cdc #(
+                .DATA_WIDTH (AXIL_DATA_WIDTH),
+                .ADDR_WIDTH (AXIL_ADDR_WIDTH)
+            ) axil_cdc_i (
+                .s_clk          (s_axil_aclk),
+                .s_rstn         (s_axil_aresetn),
+                .s_axil_awaddr  (s_axil_awaddr),
+                .s_axil_awvalid (s_axil_awvalid),
+                .s_axil_awready (s_axil_awready),
+                .s_axil_wdata   (s_axil_wdata),
+                .s_axil_wvalid  (s_axil_wvalid),
+                .s_axil_wready  (s_axil_wready),
+                .s_axil_bresp   (s_axil_bresp),
+                .s_axil_bvalid  (s_axil_bvalid),
+                .s_axil_bready  (s_axil_bready),
+                .s_axil_araddr  (s_axil_araddr),
+                .s_axil_arvalid (s_axil_arvalid),
+                .s_axil_arready (s_axil_arready),
+                .s_axil_rdata   (s_axil_rdata),
+                .s_axil_rresp   (s_axil_rresp),
+                .s_axil_rvalid  (s_axil_rvalid),
+                .s_axil_rready  (s_axil_rready),
 
-        .m_clk          (axis_clk),
-        .m_rstn         (axis_aresetn),
-        .m_axil_awaddr  (m_axil_awaddr),
-        .m_axil_awvalid (m_axil_awvalid),
-        .m_axil_awready (m_axil_awready),
-        .m_axil_wdata   (m_axil_wdata),
-        .m_axil_wvalid  (m_axil_wvalid),
-        .m_axil_wready  (m_axil_wready),
-        .m_axil_bresp   (m_axil_bresp),
-        .m_axil_bvalid  (m_axil_bvalid),
-        .m_axil_bready  (m_axil_bready),
-        .m_axil_araddr  (m_axil_araddr),
-        .m_axil_arvalid (m_axil_arvalid),
-        .m_axil_arready (m_axil_arready),
-        .m_axil_rdata   (m_axil_rdata),
-        .m_axil_rresp   (m_axil_rresp),
-        .m_axil_rvalid  (m_axil_rvalid),
-        .m_axil_rready  (m_axil_rready)
-    );
+                .m_clk          (axis_clk),
+                .m_rstn         (axis_aresetn),
+                .m_axil_awaddr  (m_axil_awaddr),
+                .m_axil_awvalid (m_axil_awvalid),
+                .m_axil_awready (m_axil_awready),
+                .m_axil_wdata   (m_axil_wdata),
+                .m_axil_wvalid  (m_axil_wvalid),
+                .m_axil_wready  (m_axil_wready),
+                .m_axil_bresp   (m_axil_bresp),
+                .m_axil_bvalid  (m_axil_bvalid),
+                .m_axil_bready  (m_axil_bready),
+                .m_axil_araddr  (m_axil_araddr),
+                .m_axil_arvalid (m_axil_arvalid),
+                .m_axil_arready (m_axil_arready),
+                .m_axil_rdata   (m_axil_rdata),
+                .m_axil_rresp   (m_axil_rresp),
+                .m_axil_rvalid  (m_axil_rvalid),
+                .m_axil_rready  (m_axil_rready)
+            );
+        end else begin
+            assign m_axil_awaddr = s_axil_awaddr;
+            assign m_axil_awvalid = s_axil_awvalid;
+            assign s_axil_awready = m_axil_awready;
+            assign m_axil_wdata = s_axil_wdata;
+            assign m_axil_wvalid = s_axil_wvalid;
+            assign s_axil_wready = m_axil_wready;
+            assign s_axil_bresp = m_axil_bresp;
+            assign s_axil_bvalid = m_axil_bvalid;
+            assign m_axil_bready = s_axil_bready;
+            assign m_axil_araddr = s_axil_araddr;
+            assign m_axil_arvalid = s_axil_arvalid;
+            assign s_axil_arready = m_axil_arready;
+            assign s_axil_rdata = m_axil_rdata;
+            assign s_axil_rresp = m_axil_rresp;
+            assign s_axil_rvalid = m_axil_rvalid;
+            assign m_axil_rready = s_axil_rready;
+        end
+    endgenerate
 
     wire [AXIL_ADDR_WIDTH-1:0] reg_rd_addr;
     wire                       reg_rd_en;
@@ -335,8 +337,6 @@ module axis_dma_profiler #(
     wire [63:0] gap_min_mux   = get64(ch_sel, gap_min  [0], gap_min  [1], gap_min  [2], gap_min  [3]);
     wire [63:0] gap_max_mux   = get64(ch_sel, gap_max  [0], gap_max  [1], gap_max  [2], gap_max  [3]);
     wire [31:0] gap_count_mux = get32(ch_sel, gap_count[0], gap_count[1], gap_count[2], gap_count[3]);
-    wire        gap_valid_mux = get1(ch_sel, gap_valid[0], gap_valid[1], gap_valid[2], gap_valid[3]);
-    wire        armed_mux     = get1(ch_sel, armed    [0], armed    [1], armed    [2], armed    [3]);
 
     wire [63:0] busy_total_mux = get64(ch_sel, busy_total[0], busy_total[1], busy_total[2], busy_total[3]);
 
