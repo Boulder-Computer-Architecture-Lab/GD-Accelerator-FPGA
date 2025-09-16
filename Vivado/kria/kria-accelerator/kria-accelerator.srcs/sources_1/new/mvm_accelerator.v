@@ -2,7 +2,7 @@
 
 module mvm_accelerator #(
     parameter ARCH_TYPE         = 0,
-    parameter AXI_RAM_BASE_ADDR = 32'h8000_0000,
+    parameter AXI_RAM_BASE_ADDR = 64'h8000_0000,
     
     parameter DATA_WIDTH        = 128,
     parameter ADDR_WIDTH        = 64,

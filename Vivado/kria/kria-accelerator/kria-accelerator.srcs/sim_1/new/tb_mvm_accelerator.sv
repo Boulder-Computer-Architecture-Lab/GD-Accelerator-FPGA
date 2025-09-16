@@ -257,6 +257,8 @@ module tb_mvm_accelerator;
             end
         end
         
+        repeat(2048) @(posedge s_clk);
+        
         $display("Initialization complete\n");
         start = 1;
     end

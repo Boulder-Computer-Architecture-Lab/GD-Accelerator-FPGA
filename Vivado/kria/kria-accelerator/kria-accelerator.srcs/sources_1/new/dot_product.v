@@ -22,7 +22,7 @@ module dot_product #(
     output reg  [DATA_WIDTH-1:0]  m_axis_tdata,
     output reg                    m_axis_tvalid,
     input  wire                   m_axis_tready,
-    output wire                   m_axis_tlast
+    output reg                    m_axis_tlast
 );
   
     // ========================================
@@ -115,8 +115,6 @@ module dot_product #(
         end
     end
     
-    assign m_axis_tlast = last_out && handshake_out; 
-    
     // ========================================
     // Forward output
     
@@ -124,16 +122,19 @@ module dot_product #(
         if (!rstn) begin
             m_axis_tdata  <= 64'd0;
             m_axis_tvalid <= 1'b0;
+            m_axis_tlast  <= 1'b0;
         end else begin
             if (acc_axis_result_tvalid && acc_axis_result_tready) begin
                 if (acc_axis_result_tlast) begin
                     m_axis_tdata  <= acc_axis_result_tdata;
                     m_axis_tvalid <= 1'b1;
+                    m_axis_tlast  <= last_out;
                 end
             end
     
             if (m_axis_tvalid && m_axis_tready) begin
                 m_axis_tvalid <= 1'b0;
+                m_axis_tlast  <= 1'b0;
             end
         end
     end

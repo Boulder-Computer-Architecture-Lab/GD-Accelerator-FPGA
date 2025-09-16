@@ -14,7 +14,7 @@ module mvm_channel_split #(
     parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
     parameter NUM_ROWS = 17048,
 
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
     parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
     
@@ -309,6 +309,7 @@ module mvm_channel_split #(
     wire                     fifo_out_s_axis_tready;
     wire                     fifo_out_s_axis_tlast;
         
+    /*
     axis_async_fifo #(
         .DEPTH(OUTPUT_FIFO_DEPTH),
         .DATA_WIDTH(ELEMENT_WIDTH),
@@ -363,33 +364,72 @@ module mvm_channel_split #(
         .m_status_bad_frame(),
         .m_status_good_frame()    
     );
+    */
+    axis_fifo #(
+        .DEPTH(OUTPUT_FIFO_DEPTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(1),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) axis_async_fifo_out (
+        .clk(s_clk),
+        .rstn(s_rstn),
+    
+        .s_axis_tdata(fifo_out_s_axis_tdata),
+        .s_axis_tkeep(),
+        .s_axis_tvalid(fifo_out_s_axis_tvalid),
+        .s_axis_tready(fifo_out_s_axis_tready),
+        .s_axis_tlast(fifo_out_s_axis_tlast),
+        .s_axis_tid(8'b0),
+        .s_axis_tdest(8'b0),
+        .s_axis_tuser(1'b0),
+    
+        .m_axis_tdata(m_axis_tdata),
+        .m_axis_tkeep(),
+        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tready(m_axis_tready),
+        .m_axis_tlast(m_axis_tlast),
+        .m_axis_tid(),
+        .m_axis_tdest(),
+        .m_axis_tuser(),
+    
+        .pause_req(1'b0),
+        .pause_ack(),
+    
+        .status_depth(),
+        .status_depth_commit(),
+        .status_overflow(),
+        .status_bad_frame(),
+        .status_good_frame()
+    );
 
     // ========================================
-    //                COUNTERS
+    //             PARTITION DONE
     // ========================================
     
     reg [PARTITION_WIDTH-1:0] word_count_a;
     reg [PARTITION_WIDTH-1:0] word_count_b;
-
-    reg partition_count_a;
-    reg partition_count_b;
     
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             word_count_a <= 0;
             word_count_b <= 0;
-            partition_count_a <= 1'b0;
-            partition_count_b <= 1'b0;
             first_part_consumed <= 1'b0;
             partition_done <= 1'b0;
         end else begin
-            partition_done <= 1'b0;
 
             // A counter
             if (fifo_a_s_axis_tvalid && gate_a_tready) begin
-                if (word_count_a == 0) 
-                    partition_count_a <= ~partition_count_a;
-
                 if (word_count_a == WORDS_PER_PARTITION-1) begin
                     word_count_a <= 0;
                     if (!first_part_consumed)
@@ -400,10 +440,8 @@ module mvm_channel_split #(
             end 
 
             // B counter
+            partition_done <= 1'b0;
             if (fifo_b_s_axis_tvalid && gate_b_tready) begin
-                if (word_count_b == 0) 
-                    partition_count_b <= ~partition_count_b;
-
                 if (word_count_b == WORDS_PER_PARTITION-1) begin
                     word_count_b <= 0;
                     partition_done <= 1'b1;
@@ -414,8 +452,7 @@ module mvm_channel_split #(
         end
     end
 
-    // Only allow one prefetched partition
-    assign allow_prefetch = (partition_count_b == partition_count_a);
+    assign allow_prefetch = fifo_b_s_axis_tready;
 
     // ========================================
     //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)

@@ -7,7 +7,8 @@
       "name": "design_1",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2023.2"
+      "tool_version": "2023.2",
+      "validated": "true"
     },
     "design_tree": {
       "zynq_ultra_ps_e_0": "",
@@ -1387,7 +1388,7 @@
             "value": "256"
           },
           "c_s2mm_burst_size": {
-            "value": "8"
+            "value": "4"
           },
           "c_s_axis_s2mm_tdata_width": {
             "value": "64"
@@ -3691,7 +3692,7 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
             "parameters": {
               "MAX_BURST_LENGTH": {
-                "value": "4"
+                "value": "2"
               },
               "NUM_READ_OUTSTANDING": {
                 "value": "2"
@@ -3726,7 +3727,7 @@
         "inst_hier_path": "axis_dma_profiler_0",
         "parameters": {
           "NUM_DMAS": {
-            "value": "2"
+            "value": "4"
           }
         },
         "reference_info": {
@@ -3771,6 +3772,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -3830,6 +3839,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -3889,6 +3906,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -3948,6 +3973,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -4007,6 +4040,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -4066,6 +4107,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -4125,6 +4174,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -4184,6 +4241,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -4219,6 +4284,10 @@
               "PROTOCOL": {
                 "value": "AXI4LITE",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
               },
               "ID_WIDTH": {
                 "value": "0",
@@ -4303,6 +4372,10 @@
               "MAX_BURST_LENGTH": {
                 "value": "1",
                 "value_src": "auto"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "memory_map_ref": "s_axil",
@@ -4398,6 +4471,14 @@
               "ASSOCIATED_RESET": {
                 "value": "axis_aresetn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -4422,6 +4503,14 @@
               "ASSOCIATED_RESET": {
                 "value": "s_axil_aresetn",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "299997009",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "design_1_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -4472,7 +4561,7 @@
             "value": "256"
           },
           "c_s2mm_burst_size": {
-            "value": "8"
+            "value": "4"
           },
           "c_s_axis_s2mm_tdata_width": {
             "value": "64"
@@ -4654,7 +4743,7 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
             "parameters": {
               "MAX_BURST_LENGTH": {
-                "value": "4"
+                "value": "2"
               },
               "NUM_READ_OUTSTANDING": {
                 "value": "2"
@@ -4767,6 +4856,18 @@
           "mvm_accelerator_0/s_axis_a_1"
         ]
       },
+      "axis_dma_profiler_0_m2_axis": {
+        "interface_ports": [
+          "axis_dma_profiler_0/m2_axis",
+          "axi_dma_0/S_AXIS_S2MM"
+        ]
+      },
+      "axis_dma_profiler_0_m3_axis": {
+        "interface_ports": [
+          "axis_dma_profiler_0/m3_axis",
+          "axi_dma_1/S_AXIS_S2MM"
+        ]
+      },
       "axis_dma_profiler_0_m_axis": {
         "interface_ports": [
           "axis_dma_profiler_0/m0_axis",
@@ -4776,13 +4877,13 @@
       "mvm_accelerator_0_m_axis_0": {
         "interface_ports": [
           "mvm_accelerator_0/m_axis_0",
-          "axi_dma_0/S_AXIS_S2MM"
+          "axis_dma_profiler_0/s2_axis"
         ]
       },
       "mvm_accelerator_0_m_axis_1": {
         "interface_ports": [
-          "axi_dma_1/S_AXIS_S2MM",
-          "mvm_accelerator_0/m_axis_1"
+          "mvm_accelerator_0/m_axis_1",
+          "axis_dma_profiler_0/s3_axis"
         ]
       },
       "ps8_0_axi_periph1_M00_AXI": {
@@ -4854,6 +4955,8 @@
           "smartconnect_1/aresetn",
           "axi_dma_1/axi_resetn",
           "ps8_0_axi_periph1/M01_ARESETN",
+          "axis_dma_profiler_0/axis_aresetn",
+          "axis_dma_profiler_0/s_axil_aresetn",
           "mvm_accelerator_0/s_axis_a_0_rstn",
           "mvm_accelerator_0/s_axis_a_1_rstn",
           "mvm_accelerator_0/s_axis_a_2_rstn",
@@ -4862,9 +4965,7 @@
           "mvm_accelerator_0/m_axis_1_rstn",
           "mvm_accelerator_0/m_axis_2_rstn",
           "mvm_accelerator_0/m_axis_3_rstn",
-          "mvm_accelerator_0/s_axi_b_rstn",
-          "axis_dma_profiler_0/axis_aresetn",
-          "axis_dma_profiler_0/s_axil_aresetn"
+          "mvm_accelerator_0/s_axi_b_rstn"
         ]
       },
       "zynq_ultra_ps_e_0_pl_clk0": {
@@ -4900,6 +5001,8 @@
           "axi_dma_1/m_axi_sg_aclk",
           "axi_dma_1/s_axi_lite_aclk",
           "ps8_0_axi_periph1/M01_ACLK",
+          "axis_dma_profiler_0/axis_clk",
+          "axis_dma_profiler_0/s_axil_aclk",
           "mvm_accelerator_0/s_axis_a_0_clk",
           "mvm_accelerator_0/s_axis_a_1_clk",
           "mvm_accelerator_0/s_axis_a_2_clk",
@@ -4908,9 +5011,7 @@
           "mvm_accelerator_0/m_axis_1_clk",
           "mvm_accelerator_0/m_axis_2_clk",
           "mvm_accelerator_0/m_axis_3_clk",
-          "mvm_accelerator_0/s_axi_b_clk",
-          "axis_dma_profiler_0/axis_clk",
-          "axis_dma_profiler_0/s_axil_aclk"
+          "mvm_accelerator_0/s_axi_b_clk"
         ]
       },
       "zynq_ultra_ps_e_0_pl_resetn0": {

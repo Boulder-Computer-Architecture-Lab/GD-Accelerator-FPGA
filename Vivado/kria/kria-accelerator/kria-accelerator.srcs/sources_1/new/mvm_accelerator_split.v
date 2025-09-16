@@ -18,7 +18,7 @@ module mvm_accelerator_split #(
     
     parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
-    parameter AXI_RAM_BASE_ADDR  = 32'h8000_0000,
+    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
     parameter AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS)
 )(
     // Fast clock
@@ -191,7 +191,7 @@ module mvm_accelerator_split #(
     reg  part_grant  [NUM_RAM_PARTITIONS-1:0];
     wire part_valid  [NUM_RAM_PARTITIONS-1:0];
 
-    wire allow_prefetch [NUM_CHANNELS-1:0];
+    wire ch_allow_prefetch [NUM_CHANNELS-1:0];
     
     integer p, q, r;
 
@@ -218,22 +218,21 @@ module mvm_accelerator_split #(
                     ch_start[p] <= part_grant[ch_pidx[p]] 
                                     &&  ch_init[p] 
                                     && !ch_active[p] 
-                                    && (allow_prefetch[p] || NUM_RAM_PARTITIONS == 1)
+                                    &&  ch_allow_prefetch[p]
                                     && !ch_all_rows_fetched[p];
                 end else begin
                     ch_start[p] <= 1'b0;
                     ch_active[p] <= 1'b1;
                 end
 
-                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
+                if (!ch_init[p] && ch_pdone[p-1])
                     ch_init[p] <= 1'b1; // For filling pipeline
 
                 if (ch_pdone[p]) begin
                     ch_active[p] <= 1'b0;
                     if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
                         ch_pidx[p] <= {NUM_PARTITIONS_WIDTH{1'b0}};
-                        if (!ch_all_rows_fetched[p])
-                            ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
+                        ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
                     end else begin
                         ch_pidx[p] <= ch_pidx[p] + 1;
                     end
@@ -378,7 +377,7 @@ module mvm_accelerator_split #(
 
               .first_part_consumed(first_part_consumed[ch]),
               .activate_fifo(activate_fifo[ch]),
-              .allow_prefetch(allow_prefetch[ch])
+              .allow_prefetch(ch_allow_prefetch[ch])
             );
         end
     endgenerate
