@@ -7,9 +7,9 @@ module tb_mvm_accelerator;
                                      // Note: Also run ./Vivado/scripts/update_channels.py when this 
                                      // is changed to update all the relevant header files
 
-    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
+    parameter ARCH_TYPE = 1; // Select accelerator type (0=split, 1=bcast)
 
-    parameter int DATA_WIDTH = 64;
+    parameter int DATA_WIDTH = 128;
     parameter int ADDR_WIDTH = 64;
     parameter int ID_WIDTH   = 8;
     parameter int STRB_WIDTH = DATA_WIDTH/8;

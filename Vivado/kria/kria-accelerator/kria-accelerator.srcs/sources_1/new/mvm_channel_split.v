@@ -432,8 +432,7 @@ module mvm_channel_split #(
             if (fifo_a_s_axis_tvalid && gate_a_tready) begin
                 if (word_count_a == WORDS_PER_PARTITION-1) begin
                     word_count_a <= 0;
-                    if (!first_part_consumed)
-                        first_part_consumed <= 1'b1;
+                    first_part_consumed <= 1'b1;
                 end else begin
                     word_count_a <= word_count_a + 1;
                 end
@@ -492,14 +491,9 @@ module mvm_channel_split #(
         .AXI_STRB_WIDTH(STRB_WIDTH),
         .AXI_ID_WIDTH(ID_WIDTH),
         .AXI_MAX_BURST_LEN(DMA_BURST_LEN),
-        .AXIS_DATA_WIDTH(DATA_WIDTH),
-        .AXIS_KEEP_ENABLE(1),
-        .AXIS_LAST_ENABLE(1),
         .AXIS_USER_ENABLE(0),
         .LEN_WIDTH(DMA_LEN_WIDTH),
-        .TAG_WIDTH(DMA_TAG_WIDTH),
-        .ENABLE_SG(0),
-        .ENABLE_UNALIGNED(1)
+        .TAG_WIDTH(DMA_TAG_WIDTH)
     ) dma (
         .clk(s_clk),
         .rstn(s_rstn),

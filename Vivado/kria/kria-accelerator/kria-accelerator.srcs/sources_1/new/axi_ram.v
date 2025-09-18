@@ -43,6 +43,8 @@ module axi_ram #
     parameter ID_WIDTH = 8,
     // Extra pipeline register on output
     parameter PIPELINE_OUTPUT = 0,
+    // 0=BRAM, 1=URAM
+    parameter RAM_TYPE = 0,
     // Number of words in mem
     parameter NUM_WORDS = 17048
 )
@@ -146,7 +148,8 @@ reg [DATA_WIDTH-1:0] s_axi_rdata_pipe_reg = {DATA_WIDTH{1'b0}};
 reg s_axi_rlast_pipe_reg = 1'b0;
 reg s_axi_rvalid_pipe_reg = 1'b0;
 
-(* RAM_STYLE="BLOCK" *) reg [DATA_WIDTH-1:0] mem[NUM_WORDS-1:0];
+(* ram_style = (RAM_TYPE == 0) ? "block" : "ultra" *)
+reg [DATA_WIDTH-1:0] mem [0:NUM_WORDS-1];
 
 wire [VALID_ADDR_WIDTH-1:0] s_axi_awaddr_valid = s_axi_awaddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);
 wire [VALID_ADDR_WIDTH-1:0] s_axi_araddr_valid = s_axi_araddr >> (ADDR_WIDTH - VALID_ADDR_WIDTH);

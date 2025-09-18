@@ -206,11 +206,11 @@ module mvm_accelerator_split #(
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
+                ch_pidx[p]   <= 0;
                 ch_start[p]  <= 1'b0;
                 ch_active[p] <= 1'b0;
                 ch_init[p]   <= (p == 0);
-                ch_pidx[p]   <= {NUM_PARTITIONS_WIDTH{1'b0}};
-                ch_num_rows_fetched[p] <= {ROWS_PER_CHANNEL_WIDTH{1'b0}};
+                ch_num_rows_fetched[p] <= 0;
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
@@ -231,7 +231,7 @@ module mvm_accelerator_split #(
                 if (ch_pdone[p]) begin
                     ch_active[p] <= 1'b0;
                     if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
-                        ch_pidx[p] <= {NUM_PARTITIONS_WIDTH{1'b0}};
+                        ch_pidx[p] <= 0;
                         ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
                     end else begin
                         ch_pidx[p] <= ch_pidx[p] + 1;
@@ -441,6 +441,7 @@ module mvm_accelerator_split #(
                 .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
                 .STRB_WIDTH(STRB_WIDTH),
                 .ID_WIDTH(AXI_RAM_ID_WIDTH),
+                .RAM_TYPE(0), // BRAM
                 .NUM_WORDS(WORDS_PER_PARTITION)
             ) axi_ram_inst (
                 .clk(s_clk),
