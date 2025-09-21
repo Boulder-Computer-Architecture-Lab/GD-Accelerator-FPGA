@@ -5,6 +5,7 @@ import os
 CWD = os.getcwd()
 SOURCES_PATH = os.path.join(CWD, "../kria-accelerator/kria-accelerator.srcs/sources_1/new")
 SPLIT_INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "split_interconnect_channels.vh")
+BROADCAST_CHANNELS_PATH = os.path.join(SOURCES_PATH, "broadcast_channels.vh")
 
 def generate_split_ic_channels(num_channels):
     s_axi_signals = [
@@ -21,11 +22,23 @@ def generate_split_ic_channels(num_channels):
     for sig in s_axi_signals:
         ports = ", ".join([f"m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
         lines.append(f".s_axi_{sig:<8} ({{{ports}}}),")
-    lines.append("")  # spacer
+    lines.append("")
     for sig in m_axi_signals:
         ports = ", ".join([f"ram_m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
         lines.append(f".m_axi_{sig:<8} ({{{ports}}}),")
     return "\n".join(lines)
+
+def generate_bcast_channels(num_channels):
+    m_axis_signals = ["tdata ", "tvalid", "tready", "tlast "]
+    lines = []
+
+    for sig in m_axis_signals:
+        lines.append(f".m_axis_{sig}  ({{")
+        lines.append(", ".join([f"s_axis_b_{sig}[{i}]" for i in reversed(range(num_channels))]))
+        comma = "," if sig != m_axis_signals[-1] else ""
+        lines.append(f"}}){comma}\n")
+
+    return ''.join(lines)
 
 if __name__ == "__main__":
     try:
@@ -37,6 +50,11 @@ if __name__ == "__main__":
         with open(SPLIT_INTERCONNECT_CHANNELS_PATH, "w") as f:
             f.write(content)
         print(f"Generated bindings for {num_channels} channels at:\n{SPLIT_INTERCONNECT_CHANNELS_PATH}")
+
+        content = generate_bcast_channels(num_channels)
+        with open(BROADCAST_CHANNELS_PATH, "w") as f:
+            f.write(content)
+        print(f"Generated bindings for {num_channels} channels at:\n{BROADCAST_CHANNELS_PATH}")
 
     except ValueError:
         print("Error: please enter a valid integer for NUM_CHANNELS.")

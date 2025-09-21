@@ -13,7 +13,7 @@ module mvm_accelerator #(
     parameter NUM_ROWS          = 17048,
     parameter NUM_CHANNELS      = 4,
 
-    parameter AXI_RAM_ID_WIDTH  = ID_WIDTH + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_ID_WIDTH  = (ARCH_TYPE) ? (ID_WIDTH) : ID_WIDTH + $clog2(NUM_CHANNELS)
 )(
 
     // Input streams
@@ -102,13 +102,15 @@ module mvm_accelerator #(
 );
 
     localparam STRB_WIDTH         = DATA_WIDTH / 8;
-    localparam ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH; // MUST BE A POWER OF 2!
+    localparam ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH; // must be a power of 2
     localparam WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
     localparam ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS;
-    localparam NUM_RAM_PARTITIONS = NUM_CHANNELS;
     
     generate
         if (ARCH_TYPE == 0) begin
+
+            localparam NUM_RAM_PARTITIONS = NUM_CHANNELS;
+
             mvm_accelerator_split #(
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),
@@ -205,7 +207,6 @@ module mvm_accelerator #(
                 .WORDS_PER_ROW(WORDS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(NUM_CHANNELS),
-                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
                 .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
                 .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
                 .AXI_RAM_ID_WIDTH(AXI_RAM_ID_WIDTH)
