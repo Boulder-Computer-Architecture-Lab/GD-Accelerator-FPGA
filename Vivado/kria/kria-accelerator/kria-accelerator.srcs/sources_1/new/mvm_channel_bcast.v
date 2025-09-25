@@ -14,7 +14,10 @@ module mvm_channel_bcast #(
     parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
     parameter NUM_ROWS = 17048,
 
-    parameter NUM_CHANNELS       = 4,    
+    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
+    parameter NUM_CHANNELS       = 4,
+    parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
+    
     parameter ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS
 )(
     // Fast clock
@@ -30,26 +33,53 @@ module mvm_channel_bcast #(
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
     input  wire                  s_axis_a_tlast,
-
-    // Input stream B
-    input  wire [DATA_WIDTH-1:0] s_axis_b_tdata,
-    input  wire                  s_axis_b_tvalid,
-    output wire                  s_axis_b_tready,
-    input  wire                  s_axis_b_tlast,
     
     // Output result stream
     output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
     output wire                     m_axis_tvalid,
     input  wire                     m_axis_tready,
-    output wire                     m_axis_tlast
+    output wire                     m_axis_tlast,
+    
+    // AXI master read interface (to crossbar)
+    output wire [ID_WIDTH-1:0]   m_axi_arid,
+    output wire [ADDR_WIDTH-1:0] m_axi_araddr,
+    output wire [7:0]            m_axi_arlen,
+    output wire [2:0]            m_axi_arsize,
+    output wire [1:0]            m_axi_arburst,
+    output wire                  m_axi_arlock,
+    output wire [3:0]            m_axi_arcache,
+    output wire [2:0]            m_axi_arprot,
+    output wire                  m_axi_arvalid,
+    input  wire                  m_axi_arready,
+    input  wire [ID_WIDTH-1:0]   m_axi_rid,
+    input  wire [DATA_WIDTH-1:0] m_axi_rdata,
+    input  wire [1:0]            m_axi_rresp,
+    input  wire                  m_axi_rlast,
+    input  wire                  m_axi_rvalid,
+    output wire                  m_axi_rready,
+
+    output wire allow_prefetch,
+    
+    // Partition arbitration
+    input  wire start,
+    output reg  partition_done,
+    input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
+
+    // Gating for fifo_in
+    output reg  first_part_consumed,
+    input  wire activate_fifo
 );
 
     // ========================================
     //               BUFFERS
     // ========================================
+    
+    localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
+    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
 
-    localparam INPUT_FIFO_B_DEPTH = 2048;
-    localparam INPUT_FIFO_A_DEPTH = 2048;
+    localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
+    localparam INPUT_FIFO_A_DEPTH = WORDS_PER_PARTITION;
     localparam OUTPUT_FIFO_DEPTH = 64;
     localparam SKID = 2;
         
@@ -77,8 +107,8 @@ module mvm_channel_bcast #(
     wire                  pipe_a_tlast;
 
     assign fifo_a_s_axis_tdata = gate_a_tdata;
-    assign fifo_a_s_axis_tvalid = gate_a_tvalid;
-    assign gate_a_tready = fifo_a_s_axis_tready;
+    assign fifo_a_s_axis_tvalid = activate_fifo && gate_a_tvalid;
+    assign gate_a_tready = activate_fifo && fifo_a_s_axis_tready;
     assign fifo_a_s_axis_tlast = gate_a_tlast;
 
     axis_register #(
@@ -162,6 +192,11 @@ module mvm_channel_bcast #(
     );
 
     // B
+    wire [DATA_WIDTH-1:0] s_axis_b_tdata;
+    wire                  s_axis_b_tvalid;
+    wire                  s_axis_b_tready;
+    wire                  s_axis_b_tlast;
+
     wire [DATA_WIDTH-1:0] gate_b_tdata;
     wire                  gate_b_tvalid;
     wire                  gate_b_tready;
@@ -274,7 +309,8 @@ module mvm_channel_bcast #(
     wire                     fifo_out_s_axis_tready;
     wire                     fifo_out_s_axis_tlast;
         
-    axis_fifo #(
+    /*
+    axis_async_fifo #(
         .DEPTH(OUTPUT_FIFO_DEPTH),
         .DATA_WIDTH(ELEMENT_WIDTH),
         .KEEP_ENABLE(0),
@@ -290,7 +326,62 @@ module mvm_channel_bcast #(
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
         .PAUSE_ENABLE(0)
-    ) axis_data_fifo_out (
+    ) axis_async_fifo_out (
+        .s_clk(s_clk), .m_clk(m_clk),
+        .s_rstn(s_rstn), .m_rstn(m_rstn),
+    
+        .s_axis_tdata(fifo_out_s_axis_tdata),
+        .s_axis_tkeep(),
+        .s_axis_tvalid(fifo_out_s_axis_tvalid),
+        .s_axis_tready(fifo_out_s_axis_tready),
+        .s_axis_tlast(fifo_out_s_axis_tlast),
+        .s_axis_tid(8'b0),
+        .s_axis_tdest(8'b0),
+        .s_axis_tuser(1'b0),
+    
+        .m_axis_tdata(m_axis_tdata),
+        .m_axis_tkeep(),
+        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tready(m_axis_tready),
+        .m_axis_tlast(m_axis_tlast),
+        .m_axis_tid(),
+        .m_axis_tdest(),
+        .m_axis_tuser(),
+    
+        .s_pause_req(1'b0),
+        .s_pause_ack(),
+        .m_pause_req(1'b0),
+        .m_pause_ack(),
+            
+        .s_status_depth(),
+        .s_status_depth_commit(),
+        .s_status_overflow(),
+        .s_status_bad_frame(),
+        .s_status_good_frame(),
+        .m_status_depth(),
+        .m_status_depth_commit(),
+        .m_status_overflow(),
+        .m_status_bad_frame(),
+        .m_status_good_frame()    
+    );
+    */
+    axis_fifo #(
+        .DEPTH(OUTPUT_FIFO_DEPTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(1),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) axis_async_fifo_out (
         .clk(s_clk),
         .rstn(s_rstn),
     
@@ -323,41 +414,36 @@ module mvm_channel_bcast #(
     );
 
     // ========================================
-    //                COUNTERS
+    //             PARTITION DONE
     // ========================================
     
-    localparam ROW_WIDTH = $clog2(WORDS_PER_ROW+1);
-    localparam NUM_ROWS_WIDTH = $clog2(ROWS_PER_CHANNEL+1);
-    
-    reg [ROW_WIDTH-1:0] word_count_a;
-    reg [ROW_WIDTH-1:0] word_count_b;
-
-    reg [NUM_ROWS_WIDTH-1:0] row_count_a;
-    reg [NUM_ROWS_WIDTH-1:0] row_count_b;
+    reg [PARTITION_WIDTH-1:0] word_count_a;
+    reg [PARTITION_WIDTH-1:0] word_count_b;
     
     always @(posedge s_clk) begin
         if (!s_rstn) begin
             word_count_a <= 0;
             word_count_b <= 0;
-            row_count_a  <= 0;
-            row_count_b  <= 0;
+            first_part_consumed <= 1'b0;
+            partition_done <= 1'b0;
         end else begin
 
             // A counter
             if (fifo_a_s_axis_tvalid && gate_a_tready) begin
-                if (word_count_a == WORDS_PER_ROW-1) begin
+                if (word_count_a == WORDS_PER_PARTITION-1) begin
                     word_count_a <= 0;
-                    row_count_a <= row_count_a + 1;
+                    first_part_consumed <= 1'b1;
                 end else begin
                     word_count_a <= word_count_a + 1;
                 end
             end 
 
             // B counter
+            partition_done <= 1'b0;
             if (fifo_b_s_axis_tvalid && gate_b_tready) begin
-                if (word_count_b == WORDS_PER_ROW-1) begin
+                if (word_count_b == WORDS_PER_PARTITION-1) begin
                     word_count_b <= 0;
-                    row_count_b <= row_count_b + 1;
+                    partition_done <= 1'b1;
                 end else begin
                     word_count_b <= word_count_b + 1;
                 end
@@ -365,6 +451,95 @@ module mvm_channel_bcast #(
         end
     end
 
+    assign allow_prefetch = fifo_b_s_axis_tready;
+
+    // ========================================
+    //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)
+    // ========================================
+    
+    localparam DMA_LEN_WIDTH = $clog2(BYTES_PER_PARTITION+1);
+    localparam DMA_BURST_LEN = 256;
+    localparam DMA_TAG_WIDTH = 8;
+            
+    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_PARTITION);
+    wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
+
+    reg  dma_desc_valid;
+    wire dma_desc_ready;
+    
+    wire [7:0] dma_desc_tag  = TAG;
+    wire [7:0] dma_desc_id   = TAG;
+    wire [7:0] dma_desc_dest = 8'd0;
+    wire       dma_desc_user = 1'b0;
+        
+    wire [7:0] dma_status_tag;
+    wire [3:0] dma_status_error;
+    wire       dma_status_valid;
+    
+    always @(posedge s_clk) begin
+        if (!s_rstn)
+            dma_desc_valid <= 1'b0;
+        else if (!dma_desc_valid)
+            dma_desc_valid <= start;
+        else if (dma_desc_ready)
+            dma_desc_valid <= 1'b0;
+    end
+        
+    axi_dma_rd #(
+        .AXI_DATA_WIDTH(DATA_WIDTH),
+        .AXI_ADDR_WIDTH(ADDR_WIDTH),
+        .AXI_STRB_WIDTH(STRB_WIDTH),
+        .AXI_ID_WIDTH(ID_WIDTH),
+        .AXI_MAX_BURST_LEN(DMA_BURST_LEN),
+        .AXIS_USER_ENABLE(0),
+        .LEN_WIDTH(DMA_LEN_WIDTH),
+        .TAG_WIDTH(DMA_TAG_WIDTH)
+    ) dma (
+        .clk(s_clk),
+        .rstn(s_rstn),
+    
+        .s_axis_read_desc_addr(dma_desc_addr),
+        .s_axis_read_desc_len(dma_desc_len),
+        .s_axis_read_desc_tag(dma_desc_tag),
+        .s_axis_read_desc_id(dma_desc_id),
+        .s_axis_read_desc_dest(dma_desc_dest),
+        .s_axis_read_desc_user(dma_desc_user),
+        .s_axis_read_desc_valid(dma_desc_valid),
+        .s_axis_read_desc_ready(dma_desc_ready),
+    
+        .m_axis_read_desc_status_tag(dma_status_tag),
+        .m_axis_read_desc_status_error(dma_status_error),
+        .m_axis_read_desc_status_valid(dma_status_valid),
+    
+        .m_axis_read_data_tdata(s_axis_b_tdata),
+        .m_axis_read_data_tkeep(),
+        .m_axis_read_data_tvalid(s_axis_b_tvalid),
+        .m_axis_read_data_tready(s_axis_b_tready),
+        .m_axis_read_data_tlast(s_axis_b_tlast),
+        .m_axis_read_data_tid(),
+        .m_axis_read_data_tdest(),
+        .m_axis_read_data_tuser(),
+    
+        .m_axi_arid(m_axi_arid),
+        .m_axi_araddr(m_axi_araddr),
+        .m_axi_arlen(m_axi_arlen),
+        .m_axi_arsize(m_axi_arsize),
+        .m_axi_arburst(m_axi_arburst),
+        .m_axi_arlock(m_axi_arlock),
+        .m_axi_arcache(m_axi_arcache),
+        .m_axi_arprot(m_axi_arprot),
+        .m_axi_arvalid(m_axi_arvalid),
+        .m_axi_arready(m_axi_arready),
+        .m_axi_rid(m_axi_rid),
+        .m_axi_rdata(m_axi_rdata),
+        .m_axi_rresp(m_axi_rresp),
+        .m_axi_rlast(m_axi_rlast),
+        .m_axi_rvalid(m_axi_rvalid),
+        .m_axi_rready(m_axi_rready),
+    
+        .enable(1'b1)
+    );
+    
     // ========================================
     //     COMPUTE LOGIC (MACS + ADDER TREE)
     // ========================================
