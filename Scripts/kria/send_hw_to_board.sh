@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# Default design name
-design_name="${1:-design_1}"
+# Default impl name
+impl_name="${1:-impl_1}"
 
 # Paths and names
 targetdev="ubuntu@192.168.195.196"
 projname="kria-accelerator"
+design_name="design_1"
 
 basedir="$(pwd)"
 projdir="$basedir/../../Vivado/kria/$projname"
@@ -16,7 +17,7 @@ targetdir="/home/ubuntu/mvm-accelerator/hw"
 ssh "$targetdev" "mkdir -p '$targetdir'"
 
 # Send .bit file and rename to match .hwh
-scp "$projdir/$projname.runs/impl_1/${design_name}_wrapper.bit" \
+scp "$projdir/$projname.runs/$impl_name/${design_name}_wrapper.bit" \
     "$targetdev:$targetdir/${design_name}.bit"
 
 # Send .hwh file (metadata)

@@ -4,27 +4,56 @@ import os
 
 CWD = os.getcwd()
 SOURCES_PATH = os.path.join(CWD, "../kria-accelerator/kria-accelerator.srcs/sources_1/new")
-SPLIT_INTERCONNECT_CHANNELS_PATH = os.path.join(SOURCES_PATH, "split_interconnect_channels.vh")
+XBAR_WR_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_wr_channels.vh")
+XBAR_RD_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_rd_channels.vh")
 
-def generate_split_ic_channels(num_channels):
-    s_axi_signals = [
-        "arid", "araddr", "arlen", "arsize", "arburst", "arlock",
-        "arcache", "arprot", "arvalid", "arready",
-        "rid", "rdata", "rresp", "rlast", "rvalid", "rready"
-    ]
-    m_axi_signals = [
-        "arid", "araddr", "arlen", "arsize", "arburst", "arlock",
-        "arcache", "arprot", "arvalid", "arready",
-        "rid", "rdata", "rresp", "rlast", "rvalid", "rready"
-    ]
+axi_wr_signals = [
+    # WRITE-ADDRESS
+    "awid", "awaddr", "awlen", "awsize", "awburst", "awlock",
+    "awcache", "awprot", "awvalid", "awready",
+    # WRITE-DATA
+    "wdata", "wstrb", "wlast", "wvalid", "wready",
+    # WRITE-RESPONSE
+    "bid", "bresp", "bvalid", "bready"
+]
+
+axi_rd_signals = [
+    # READ-ADDRESS
+    "arid", "araddr", "arlen", "arsize", "arburst", "arlock",
+    "arcache", "arprot", "arvalid", "arready",
+    # READ-DATA
+    "rid", "rdata", "rresp", "rlast", "rvalid", "rready"
+]
+
+def _vec_concat(base, n):
+    return "{%s}" % ", ".join(f"{base}[{i}]" for i in reversed(range(n)))
+
+def generate_xbar_wr_channels(num_partitions):
     lines = []
-    for sig in s_axi_signals:
-        ports = ", ".join([f"m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
-        lines.append(f".s_axi_{sig:<8} ({{{ports}}}),")
-    lines.append("")  # spacer
-    for sig in m_axi_signals:
-        ports = ", ".join([f"ram_m_axi_{sig}[{i}]" for i in reversed(range(num_channels))])
-        lines.append(f".m_axi_{sig:<8} ({{{ports}}}),")
+    for sig in axi_wr_signals:
+        lines.append(f".s_axi_{sig:<8} (s_axi_b_{sig}),")
+    lines.append("")
+
+    for sig in axi_wr_signals:
+        base = f"ram_m_axi_{sig}"
+        lines.append(f".m_axi_{sig:<8} ({_vec_concat(base, num_partitions)}),")
+    lines.append("")
+
+    return "\n".join(lines)
+
+def generate_xbar_rd_channels(num_channels):
+    lines = []
+
+    for sig in axi_rd_signals:
+        base = f"m_axi_{sig}"
+        lines.append(f".s_axi_{sig:<8} ({_vec_concat(base, num_channels)}),")
+    lines.append("")
+
+    for sig in axi_rd_signals:
+        base = f"ram_m_axi_{sig}"
+        lines.append(f".m_axi_{sig:<8} ({_vec_concat(base, num_channels)}),")
+    lines.append("")
+
     return "\n".join(lines)
 
 if __name__ == "__main__":
@@ -33,10 +62,13 @@ if __name__ == "__main__":
         while not 1 < num_channels < 5:
             num_channels = int(input("Enter the number of channels 2-4 to generate bindings for: "))
 
-        content = generate_split_ic_channels(num_channels)
-        with open(SPLIT_INTERCONNECT_CHANNELS_PATH, "w") as f:
-            f.write(content)
-        print(f"Generated bindings for {num_channels} channels at:\n{SPLIT_INTERCONNECT_CHANNELS_PATH}")
+        content = generate_xbar_wr_channels(num_channels)
+        with open(XBAR_WR_CHANNELS_PATH, "w") as f: f.write(content)
+        print(f"Generated bindings for {num_channels} channels at:\n{XBAR_WR_CHANNELS_PATH}")
+
+        content = generate_xbar_rd_channels(num_channels)
+        with open(XBAR_RD_CHANNELS_PATH, "w") as f: f.write(content)
+        print(f"Generated bindings for {num_channels} channels at:\n{XBAR_RD_CHANNELS_PATH}")
 
     except ValueError:
         print("Error: please enter a valid integer for NUM_CHANNELS.")

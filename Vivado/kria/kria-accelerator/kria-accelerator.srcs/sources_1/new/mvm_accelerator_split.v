@@ -7,7 +7,7 @@ module mvm_accelerator_split #(
     parameter ID_WIDTH           = 8,
     
     parameter ELEMENT_WIDTH      = 64,
-    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH,
     
     parameter ELEMENTS_PER_ROW   = 17048,
     parameter WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
@@ -18,16 +18,10 @@ module mvm_accelerator_split #(
     
     parameter ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS,
     
-    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
-    parameter AXI_RAM_ID_WIDTH = ID_WIDTH + $clog2(NUM_CHANNELS)
+    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000
 )(
-    // Fast clock
-    input wire s_clk,
-    input wire s_rstn,
-    
-    // Slow clocks
-    input wire m_clk,
-    input wire m_rstn,
+    input wire clk,
+    input wire rstn,
     
     // Input streams
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
@@ -72,27 +66,27 @@ module mvm_accelerator_split #(
     output wire                     m_axis_3_tlast,
 
     // S-AXI interface
-    input  wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_awid,
-    input  wire [ADDR_WIDTH-1:0]       s_axi_b_awaddr,
-    input  wire [7:0]                  s_axi_b_awlen,
-    input  wire [2:0]                  s_axi_b_awsize,
-    input  wire [1:0]                  s_axi_b_awburst,
-    input  wire                        s_axi_b_awlock,
-    input  wire [3:0]                  s_axi_b_awcache,
-    input  wire [2:0]                  s_axi_b_awprot,
-    input  wire                        s_axi_b_awvalid,
-    output wire                        s_axi_b_awready,
+    input  wire [ID_WIDTH-1:0]   s_axi_b_awid,
+    input  wire [ADDR_WIDTH-1:0] s_axi_b_awaddr,
+    input  wire [7:0]            s_axi_b_awlen,
+    input  wire [2:0]            s_axi_b_awsize,
+    input  wire [1:0]            s_axi_b_awburst,
+    input  wire                  s_axi_b_awlock,
+    input  wire [3:0]            s_axi_b_awcache,
+    input  wire [2:0]            s_axi_b_awprot,
+    input  wire                  s_axi_b_awvalid,
+    output wire                  s_axi_b_awready,
     
-    input  wire [DATA_WIDTH-1:0]       s_axi_b_wdata,
-    input  wire [STRB_WIDTH-1:0]       s_axi_b_wstrb,
-    input  wire                        s_axi_b_wlast,
-    input  wire                        s_axi_b_wvalid,
-    output wire                        s_axi_b_wready,
+    input  wire [DATA_WIDTH-1:0] s_axi_b_wdata,
+    input  wire [STRB_WIDTH-1:0] s_axi_b_wstrb,
+    input  wire                  s_axi_b_wlast,
+    input  wire                  s_axi_b_wvalid,
+    output wire                  s_axi_b_wready,
     
-    output wire [AXI_RAM_ID_WIDTH-1:0] s_axi_b_bid,
-    output wire [1:0]                  s_axi_b_bresp,
-    output wire                        s_axi_b_bvalid,
-    input  wire                        s_axi_b_bready
+    output wire [ID_WIDTH-1:0]   s_axi_b_bid,
+    output wire [1:0]            s_axi_b_bresp,
+    output wire                  s_axi_b_bvalid,
+    input  wire                  s_axi_b_bready
 );  
 
     // =============================================================
@@ -203,8 +197,8 @@ module mvm_accelerator_split #(
     endgenerate
     
     // Per channel signals
-    always @(posedge s_clk) begin
-        if (!s_rstn) begin
+    always @(posedge clk) begin
+        if (!rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 ch_pidx[p]   <= 0;
                 ch_start[p]  <= 1'b0;
@@ -225,7 +219,7 @@ module mvm_accelerator_split #(
                     ch_active[p] <= 1'b1;
                 end
 
-                if (!ch_init[p] && ch_pdone[p-1])
+                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
                     ch_init[p] <= 1'b1; // For filling pipeline
 
                 if (ch_pdone[p]) begin
@@ -242,21 +236,16 @@ module mvm_accelerator_split #(
     end
 
     // Per partition signals
-    always @(posedge s_clk) begin
-        if (!s_rstn) begin
-            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+    always @(posedge clk) begin
+        if (!rstn) begin
+            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1)
                 part_grant[q] <= 1'b0;
-            end
         end else begin
             for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
-                if (!ch_all_rows_fetched[q] && !ch_active[q]) begin
-                    if (part_valid[ch_pidx[q]] && !part_in_use[ch_pidx[q]] && !part_grant[ch_pidx[q]])
-                        part_grant[ch_pidx[q]] <= 1'b1;
-                end
-            end
+                if (!ch_all_rows_fetched[q] && !ch_active[q])
+                    part_grant[ch_pidx[q]] <= part_valid[ch_pidx[q]] && !part_in_use[ch_pidx[q]];
 
-            for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
-                if (ch_start[q] && part_grant[ch_pidx[q]])
+                if (ch_start[q])
                     part_grant[ch_pidx[q]] <= 1'b0;
             end
         end
@@ -273,7 +262,7 @@ module mvm_accelerator_split #(
     end
 
     // =============================================================
-    //                 TRACK PARTITION VALID 
+    //                   TRACK PARTITION VALID 
     // =============================================================
     
     localparam WORDS_PER_BURST = 256;
@@ -284,8 +273,8 @@ module mvm_accelerator_split #(
 
     reg  [BURST_COUNT_WIDTH-1:0] burst_count;
 
-    always @(posedge s_clk) begin
-        if (!s_rstn) begin
+    always @(negedge clk) begin
+        if (!rstn) begin
             burst_count <= 0;
         end else if (s_axi_b_bvalid && s_axi_b_bready) begin
             burst_count <= burst_count + 1;
@@ -341,8 +330,8 @@ module mvm_accelerator_split #(
               .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
 
             ) channel_inst (
-              .s_clk(s_clk), .m_clk(m_clk),
-              .s_rstn(s_rstn), .m_rstn(m_rstn),
+              .clk(clk),
+              .rstn(rstn),
                       
               .s_axis_a_tdata (s_axis_a_tdata[ch]),
               .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
@@ -383,20 +372,33 @@ module mvm_accelerator_split #(
     endgenerate
 
     // =============================================================
-    //                          AXI RAM
+    //                        AXI CROSSBARS
     // =============================================================
     
-    localparam BYTES_PER_PARTITION   = WORDS_PER_PARTITION * STRB_WIDTH;
-    localparam AXI_RAM_ADDR_WIDTH    = $clog2(BYTES_PER_PARTITION);
-    localparam RAM_SEL_WIDTH         = NUM_PARTITIONS_WIDTH;
+    localparam AXI_RAM_ADDR_WIDTH  = $clog2(WORDS_PER_PARTITION * STRB_WIDTH);
+    localparam AXI_RAM_ID_WIDTH    = ID_WIDTH + $clog2(NUM_CHANNELS);
     
-    wire [RAM_SEL_WIDTH-1:0] ram_sel = (s_axi_b_awaddr - AXI_RAM_BASE_ADDR) / BYTES_PER_PARTITION;
-    
-    wire                        ram_awready  [NUM_RAM_PARTITIONS-1:0];
-    wire                        ram_wready   [NUM_RAM_PARTITIONS-1:0];
-    wire [AXI_RAM_ID_WIDTH-1:0] ram_bid      [NUM_RAM_PARTITIONS-1:0];
-    wire [1:0]                  ram_bresp    [NUM_RAM_PARTITIONS-1:0];
-    wire                        ram_bvalid   [NUM_RAM_PARTITIONS-1:0];
+    wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_awid    [NUM_RAM_PARTITIONS-1:0];
+    wire [ADDR_WIDTH-1:0]       ram_m_axi_awaddr  [NUM_RAM_PARTITIONS-1:0];
+    wire [7:0]                  ram_m_axi_awlen   [NUM_RAM_PARTITIONS-1:0];
+    wire [2:0]                  ram_m_axi_awsize  [NUM_RAM_PARTITIONS-1:0];
+    wire [1:0]                  ram_m_axi_awburst [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_awlock  [NUM_RAM_PARTITIONS-1:0];
+    wire [3:0]                  ram_m_axi_awcache [NUM_RAM_PARTITIONS-1:0];
+    wire [2:0]                  ram_m_axi_awprot  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_awvalid [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_awready [NUM_RAM_PARTITIONS-1:0];
+
+    wire [DATA_WIDTH-1:0]       ram_m_axi_wdata   [NUM_RAM_PARTITIONS-1:0];
+    wire [STRB_WIDTH-1:0]       ram_m_axi_wstrb   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_wlast   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_wvalid  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_wready  [NUM_RAM_PARTITIONS-1:0];
+
+    wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_bid     [NUM_RAM_PARTITIONS-1:0];
+    wire [1:0]                  ram_m_axi_bresp   [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_bvalid  [NUM_RAM_PARTITIONS-1:0];
+    wire                        ram_m_axi_bready  [NUM_RAM_PARTITIONS-1:0];
     
     wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_arid    [NUM_RAM_PARTITIONS-1:0];
     wire [ADDR_WIDTH-1:0]       ram_m_axi_araddr  [NUM_RAM_PARTITIONS-1:0];
@@ -408,93 +410,13 @@ module mvm_accelerator_split #(
     wire [2:0]                  ram_m_axi_arprot  [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_arvalid [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_arready [NUM_RAM_PARTITIONS-1:0];
+
     wire [AXI_RAM_ID_WIDTH-1:0] ram_m_axi_rid     [NUM_RAM_PARTITIONS-1:0];
     wire [DATA_WIDTH-1:0]       ram_m_axi_rdata   [NUM_RAM_PARTITIONS-1:0];
     wire [1:0]                  ram_m_axi_rresp   [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_rlast   [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_rvalid  [NUM_RAM_PARTITIONS-1:0];
     wire                        ram_m_axi_rready  [NUM_RAM_PARTITIONS-1:0];
-    
-    assign s_axi_b_bvalid  = ram_bvalid[ram_sel];
-    assign s_axi_b_bid     = ram_bid[ram_sel];
-    assign s_axi_b_bresp   = ram_bresp[ram_sel];
-    assign s_axi_b_awready = ram_awready[ram_sel];
-    assign s_axi_b_wready  = ram_wready[ram_sel];
-    
-    genvar k;
-    generate
-        for (k = 0; k < NUM_RAM_PARTITIONS; k = k + 1) begin : ram_gen
-            
-            wire [ADDR_WIDTH-1:0] partition_base_addr = AXI_RAM_BASE_ADDR + k * BYTES_PER_PARTITION;
-            wire [AXI_RAM_ADDR_WIDTH-1:0] local_awaddr = s_axi_b_awaddr - partition_base_addr;
-            
-            wire [ADDR_WIDTH-1:0] ar_rel_addr_k = ram_m_axi_araddr[k] - AXI_RAM_BASE_ADDR;
-            wire [RAM_SEL_WIDTH-1:0] ar_ram_sel_k = ar_rel_addr_k / BYTES_PER_PARTITION;
-            
-            wire awvalid_sel = s_axi_b_awvalid && (ram_sel == k);
-            wire wvalid_sel  = s_axi_b_wvalid  && (ram_sel == k);
-            wire bready_sel  = s_axi_b_bready  && (ram_sel == k);
-            wire arvalid_sel = ram_m_axi_arvalid[k] && (ar_ram_sel_k == k);
-        
-            axi_ram #(
-                .DATA_WIDTH(DATA_WIDTH),
-                .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
-                .STRB_WIDTH(STRB_WIDTH),
-                .ID_WIDTH(AXI_RAM_ID_WIDTH),
-                .RAM_TYPE(0), // BRAM
-                .NUM_WORDS(WORDS_PER_PARTITION)
-            ) axi_ram_inst (
-                .clk(s_clk),
-                .rstn(s_rstn),
-        
-                // AXI Full Slave
-                .s_axi_awid(s_axi_b_awid),
-                .s_axi_awaddr(local_awaddr),
-                .s_axi_awlen(s_axi_b_awlen),
-                .s_axi_awsize(s_axi_b_awsize),
-                .s_axi_awburst(s_axi_b_awburst),
-                .s_axi_awlock(s_axi_b_awlock),
-                .s_axi_awcache(s_axi_b_awcache),
-                .s_axi_awprot(s_axi_b_awprot),
-                .s_axi_awvalid(awvalid_sel),
-                .s_axi_awready(ram_awready[k]),
-                
-                .s_axi_wdata(s_axi_b_wdata),
-                .s_axi_wstrb(s_axi_b_wstrb),
-                .s_axi_wlast(s_axi_b_wlast),
-                .s_axi_wvalid(wvalid_sel),
-                .s_axi_wready(ram_wready[k]),
-                
-                .s_axi_bid(ram_bid[k]),
-                .s_axi_bresp(ram_bresp[k]),
-                .s_axi_bvalid(ram_bvalid[k]),
-                .s_axi_bready(bready_sel),
-        
-                // AXI Master Read
-                .s_axi_arid(ram_m_axi_arid[k]),
-                .s_axi_araddr(ram_m_axi_araddr[k][AXI_RAM_ADDR_WIDTH-1:0]),
-                .s_axi_arlen(ram_m_axi_arlen[k]),
-                .s_axi_arsize(ram_m_axi_arsize[k]),
-                .s_axi_arburst(ram_m_axi_arburst[k]),
-                .s_axi_arlock(ram_m_axi_arlock[k]),
-                .s_axi_arcache(ram_m_axi_arcache[k]),
-                .s_axi_arprot(ram_m_axi_arprot[k]),
-                .s_axi_arvalid(arvalid_sel),
-                .s_axi_arready(ram_m_axi_arready[k]),
-            
-                .s_axi_rid(ram_m_axi_rid[k]),
-                .s_axi_rdata(ram_m_axi_rdata[k]),
-                .s_axi_rresp(ram_m_axi_rresp[k]),
-                .s_axi_rlast(ram_m_axi_rlast[k]),
-                .s_axi_rvalid(ram_m_axi_rvalid[k]),
-                .s_axi_rready(ram_m_axi_rready[k])
-            );
-        end
-    endgenerate
-    
-    // =============================================================
-    //              AXI CROSSBAR (BETWEEN DMAs AND RAM)
-    // =============================================================
 
     function automatic [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] gen_m_base_addr;
         input [ADDR_WIDTH-1:0] base;
@@ -509,22 +431,47 @@ module mvm_accelerator_split #(
     
     generate
         if (NUM_CHANNELS > 1 || NUM_RAM_PARTITIONS > 1) begin
-            localparam [ADDR_WIDTH-1:0] REGION_STRIDE = (1 << AXI_RAM_ADDR_WIDTH); // must be power of 2
+
+            localparam [ADDR_WIDTH-1:0] REGION_STRIDE = (1 << AXI_RAM_ADDR_WIDTH);
             localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, REGION_STRIDE);
             localparam [NUM_RAM_PARTITIONS*32-1:0] M_ADDR_WIDTH = {NUM_RAM_PARTITIONS{AXI_RAM_ADDR_WIDTH}};
         
+            axi_crossbar_wr #(
+                .S_COUNT(1),
+                .M_COUNT(NUM_RAM_PARTITIONS),
+                .DATA_WIDTH(DATA_WIDTH),
+                .ADDR_WIDTH(ADDR_WIDTH),
+                .S_ID_WIDTH(ID_WIDTH),
+                .M_ID_WIDTH(AXI_RAM_ID_WIDTH),
+
+                .M_BASE_ADDR(M_BASE_ADDR),
+                .M_ADDR_WIDTH(M_ADDR_WIDTH),
+            
+                .S_AW_REG_TYPE(2'd2),
+                .S_W_REG_TYPE(2'd2),
+                .S_B_REG_TYPE(2'd2),
+                .M_AW_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
+                .M_W_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
+                .M_B_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}})
+            ) xbar_wr_inst (
+                .clk(clk), 
+                .rstn(rstn),
+                `include "xbar_wr_channels.vh"
+                .s_axi_awqos(4'b0),
+                .s_axi_awuser(1'b0),
+                .s_axi_wuser(1'b0),
+                .m_axi_wuser(),
+                .m_axi_buser()
+            );
+
             axi_crossbar_rd #(
                 .S_COUNT(NUM_CHANNELS),
                 .M_COUNT(NUM_RAM_PARTITIONS),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .S_ID_WIDTH(ID_WIDTH),
-            
-                .ARUSER_ENABLE(0),
-                .RUSER_ENABLE(0),
-                .ARUSER_WIDTH(1),
-                .RUSER_WIDTH(1),
-            
+                .M_ID_WIDTH(AXI_RAM_ID_WIDTH),
+
                 .M_BASE_ADDR(M_BASE_ADDR),
                 .M_ADDR_WIDTH(M_ADDR_WIDTH),
             
@@ -532,33 +479,119 @@ module mvm_accelerator_split #(
                 .S_R_REG_TYPE({NUM_CHANNELS{2'd2}}),
                 .M_AR_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}}),
                 .M_R_REG_TYPE({NUM_RAM_PARTITIONS{2'd2}})
-            ) axi_crossbar_inst (
-                .clk(s_clk),
-                .rstn(s_rstn),
-                `include "split_interconnect_channels.vh"
+            ) xbar_rd_inst (
+                .clk(clk), 
+                .rstn(rstn),
+                `include "xbar_rd_channels.vh"
                 .s_axi_arqos({NUM_CHANNELS{4'b0}}),
                 .s_axi_aruser({NUM_CHANNELS{1'b0}}),
+                .s_axi_ruser(),
                 .m_axi_ruser({NUM_RAM_PARTITIONS{1'b0}})
             );
+
         end else if (NUM_CHANNELS == 1 && NUM_RAM_PARTITIONS == 1) begin
-            assign ram_m_axi_arid   [0] = m_axi_arid   [0];
-            assign ram_m_axi_araddr [0] = m_axi_araddr [0];
-            assign ram_m_axi_arlen  [0] = m_axi_arlen  [0];
-            assign ram_m_axi_arsize [0] = m_axi_arsize [0];
-            assign ram_m_axi_arburst[0] = m_axi_arburst[0];
-            assign ram_m_axi_arlock [0] = m_axi_arlock [0];
-            assign ram_m_axi_arcache[0] = m_axi_arcache[0];
-            assign ram_m_axi_arprot [0] = m_axi_arprot [0];
-            assign ram_m_axi_arvalid[0] = m_axi_arvalid[0];
-            assign m_axi_arready    [0] = ram_m_axi_arready[0];
+            assign ram_m_axi_awid    [0] = s_axi_b_awid;
+            assign ram_m_axi_awaddr  [0] = s_axi_b_awaddr;
+            assign ram_m_axi_awlen   [0] = s_axi_b_awlen;
+            assign ram_m_axi_awsize  [0] = s_axi_b_awsize;
+            assign ram_m_axi_awburst [0] = s_axi_b_awburst;
+            assign ram_m_axi_awlock  [0] = s_axi_b_awlock;
+            assign ram_m_axi_awcache [0] = s_axi_b_awcache;
+            assign ram_m_axi_awprot  [0] = s_axi_b_awprot;
+            assign ram_m_axi_awvalid [0] = s_axi_b_awvalid;
+            assign s_axi_b_awready       = ram_m_axi_awready [0];
+
+            assign ram_m_axi_wdata  [0] = s_axi_b_wdata;
+            assign ram_m_axi_wstrb  [0] = s_axi_b_wstrb;
+            assign ram_m_axi_wlast  [0] = s_axi_b_wlast;
+            assign ram_m_axi_wvalid [0] = s_axi_b_wvalid;
+            assign s_axi_b_wready       = ram_m_axi_wready [0];
+
+            assign s_axi_b_bid          = ram_m_axi_bid    [0];
+            assign s_axi_b_bresp        = ram_m_axi_bresp  [0];
+            assign s_axi_b_bvalid       = ram_m_axi_bvalid [0];
+            assign ram_m_axi_bready [0] = s_axi_b_bready;
+
+            assign ram_m_axi_arid    [0] = m_axi_arid        [0];
+            assign ram_m_axi_araddr  [0] = m_axi_araddr      [0];
+            assign ram_m_axi_arlen   [0] = m_axi_arlen       [0];
+            assign ram_m_axi_arsize  [0] = m_axi_arsize      [0];
+            assign ram_m_axi_arburst [0] = m_axi_arburst     [0];
+            assign ram_m_axi_arlock  [0] = m_axi_arlock      [0];
+            assign ram_m_axi_arcache [0] = m_axi_arcache     [0];
+            assign ram_m_axi_arprot  [0] = m_axi_arprot      [0];
+            assign ram_m_axi_arvalid [0] = m_axi_arvalid     [0];
+            assign m_axi_arready     [0] = ram_m_axi_arready [0];
             
-            assign m_axi_rid        [0] = ram_m_axi_rid   [0];
-            assign m_axi_rdata      [0] = ram_m_axi_rdata [0];
-            assign m_axi_rresp      [0] = ram_m_axi_rresp [0];
-            assign m_axi_rlast      [0] = ram_m_axi_rlast [0];
-            assign m_axi_rvalid     [0] = ram_m_axi_rvalid[0];
-            assign ram_m_axi_rready [0] = m_axi_rready    [0];
+            assign m_axi_rid        [0]  = ram_m_axi_rid    [0];
+            assign m_axi_rdata      [0]  = ram_m_axi_rdata  [0];
+            assign m_axi_rresp      [0]  = ram_m_axi_rresp  [0];
+            assign m_axi_rlast      [0]  = ram_m_axi_rlast  [0];
+            assign m_axi_rvalid     [0]  = ram_m_axi_rvalid [0];
+            assign ram_m_axi_rready [0]  = m_axi_rready     [0];
         end
     endgenerate
 
+    // =============================================================
+    //                          AXI RAM
+    // =============================================================
+    
+    genvar k;
+    generate
+        for (k = 0; k < NUM_RAM_PARTITIONS; k = k + 1) begin : ram_gen
+            
+            axi_ram #(
+                .DATA_WIDTH(DATA_WIDTH),
+                .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
+                .STRB_WIDTH(STRB_WIDTH),
+                .ID_WIDTH(AXI_RAM_ID_WIDTH),
+                .RAM_TYPE(0), // BRAM
+                .NUM_WORDS(WORDS_PER_PARTITION)
+            ) axi_ram_inst (
+                .clk(clk),
+                .rstn(rstn),
+        
+                .s_axi_awid(ram_m_axi_awid[k]),
+                .s_axi_awaddr(ram_m_axi_awaddr[k][AXI_RAM_ADDR_WIDTH-1:0]),
+                .s_axi_awlen(ram_m_axi_awlen[k]),
+                .s_axi_awsize(ram_m_axi_awsize[k]),
+                .s_axi_awburst(ram_m_axi_awburst[k]),
+                .s_axi_awlock(ram_m_axi_awlock[k]),
+                .s_axi_awcache(ram_m_axi_awcache[k]),
+                .s_axi_awprot(ram_m_axi_awprot[k]),
+                .s_axi_awvalid(ram_m_axi_awvalid[k]),
+                .s_axi_awready(ram_m_axi_awready[k]),
+                
+                .s_axi_wdata(ram_m_axi_wdata[k]),
+                .s_axi_wstrb(ram_m_axi_wstrb[k]),
+                .s_axi_wlast(ram_m_axi_wlast[k]),
+                .s_axi_wvalid(ram_m_axi_wvalid[k]),
+                .s_axi_wready(ram_m_axi_wready[k]),
+                
+                .s_axi_bid(ram_m_axi_bid[k]),
+                .s_axi_bresp(ram_m_axi_bresp[k]),
+                .s_axi_bvalid(ram_m_axi_bvalid[k]),
+                .s_axi_bready(ram_m_axi_bready[k]),
+        
+                .s_axi_arid(ram_m_axi_arid[k]),
+                .s_axi_araddr(ram_m_axi_araddr[k][AXI_RAM_ADDR_WIDTH-1:0]),
+                .s_axi_arlen(ram_m_axi_arlen[k]),
+                .s_axi_arsize(ram_m_axi_arsize[k]),
+                .s_axi_arburst(ram_m_axi_arburst[k]),
+                .s_axi_arlock(ram_m_axi_arlock[k]),
+                .s_axi_arcache(ram_m_axi_arcache[k]),
+                .s_axi_arprot(ram_m_axi_arprot[k]),
+                .s_axi_arvalid(ram_m_axi_arvalid[k]),
+                .s_axi_arready(ram_m_axi_arready[k]),
+            
+                .s_axi_rid(ram_m_axi_rid[k]),
+                .s_axi_rdata(ram_m_axi_rdata[k]),
+                .s_axi_rresp(ram_m_axi_rresp[k]),
+                .s_axi_rlast(ram_m_axi_rlast[k]),
+                .s_axi_rvalid(ram_m_axi_rvalid[k]),
+                .s_axi_rready(ram_m_axi_rready[k])
+            );
+        end
+    endgenerate
+    
 endmodule
