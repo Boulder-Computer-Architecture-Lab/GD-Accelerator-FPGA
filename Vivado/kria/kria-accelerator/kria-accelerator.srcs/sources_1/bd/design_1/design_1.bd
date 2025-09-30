@@ -2231,7 +2231,7 @@
             "value": "4"
           },
           "NUM_ROWS": {
-            "value": "1024"
+            "value": "16384"
           }
         },
         "reference_info": {
