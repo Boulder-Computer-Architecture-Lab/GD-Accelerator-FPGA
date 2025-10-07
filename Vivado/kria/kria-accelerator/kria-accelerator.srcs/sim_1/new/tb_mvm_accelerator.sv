@@ -22,7 +22,7 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int ELEMENTS_PER_ROW = 16384;
-    parameter int NUM_ROWS         = 8;
+    parameter int NUM_ROWS         = 16;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;

@@ -53,23 +53,24 @@ module mvm_channel_split #(
     input  wire                  m_axi_rlast,
     input  wire                  m_axi_rvalid,
     output wire                  m_axi_rready,
-
-    output wire allow_prefetch,
     
     // Partition arbitration
     input  wire start,
     output reg  partition_done,
     input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
+    output wire allow_prefetch,
 
-    // Gating for fifo_in
+    // Fifo gating
     output reg  first_part_consumed,
-    input  wire activate_fifo
+    input  wire activate_fifo,
+    input  wire channel_active
 );
 
     // ========================================
     //               BUFFERS
     // ========================================
     
+    localparam BYTES_PER_ROW = WORDS_PER_ROW * STRB_WIDTH;
     localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
     localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
@@ -216,10 +217,10 @@ module mvm_channel_split #(
     wire [$clog2(INPUT_FIFO_B_DEPTH):0] fifo_b_status_depth;
 
     assign fifo_b_s_axis_tdata = gate_b_tdata;
-    assign fifo_b_s_axis_tvalid = gate_b_tvalid;
-    assign gate_b_tready = fifo_b_s_axis_tready;
+    assign fifo_b_s_axis_tvalid = channel_active && gate_b_tvalid;
+    assign gate_b_tready = channel_active && fifo_b_s_axis_tready;
     assign fifo_b_s_axis_tlast = gate_b_tlast;
-        
+
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
@@ -377,53 +378,13 @@ module mvm_channel_split #(
     );
 
     // ========================================
-    //             PARTITION DONE
-    // ========================================
-    
-    reg [PARTITION_WIDTH-1:0] word_count_a;
-    reg [PARTITION_WIDTH-1:0] word_count_b;
-    
-    always @(posedge clk) begin
-        if (!rstn) begin
-            word_count_a <= 0;
-            word_count_b <= 0;
-            first_part_consumed <= 1'b0;
-            partition_done <= 1'b0;
-        end else begin
-
-            // A counter
-            if (fifo_a_s_axis_tvalid && gate_a_tready) begin
-                if (word_count_a == WORDS_PER_PARTITION-1) begin
-                    word_count_a <= 0;
-                    first_part_consumed <= 1'b1;
-                end else begin
-                    word_count_a <= word_count_a + 1;
-                end
-            end 
-
-            // B counter
-            partition_done <= 1'b0;
-            if (fifo_b_s_axis_tvalid && gate_b_tready) begin
-                if (word_count_b == WORDS_PER_PARTITION-1) begin
-                    word_count_b <= 0;
-                    partition_done <= 1'b1;
-                end else begin
-                    word_count_b <= word_count_b + 1;
-                end
-            end
-        end
-    end
-
-    assign allow_prefetch = (fifo_b_status_depth < INPUT_FIFO_B_DEPTH-5);
-
-    // ========================================
     //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)
     // ========================================
     
     localparam DMA_LEN_WIDTH = $clog2(BYTES_PER_PARTITION+1);
     localparam DMA_BURST_LEN = 256;
     localparam DMA_TAG_WIDTH = 8;
-            
+
     wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_PARTITION);
     wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
 
@@ -438,7 +399,7 @@ module mvm_channel_split #(
     wire [7:0] dma_status_tag;
     wire [3:0] dma_status_error;
     wire       dma_status_valid;
-    
+
     always @(posedge clk) begin
         if (!rstn)
             dma_desc_valid <= 1'b0;
@@ -502,6 +463,46 @@ module mvm_channel_split #(
     
         .enable(1'b1)
     );
+
+    // ========================================
+    //      PARTITION DONE AND PREFETCHING
+    // ========================================
+    
+    reg [PARTITION_WIDTH-1:0] word_count_a;
+    reg [PARTITION_WIDTH-1:0] word_count_b;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            word_count_a <= 0;
+            word_count_b <= 0;
+            first_part_consumed <= 1'b0;
+            partition_done <= 1'b0;
+        end else begin
+
+            // A counter
+            if (fifo_a_s_axis_tvalid && gate_a_tready) begin
+                if (word_count_a == WORDS_PER_PARTITION-1) begin
+                    word_count_a <= 0;
+                    first_part_consumed <= 1'b1;
+                end else begin
+                    word_count_a <= word_count_a + 1;
+                end
+            end 
+
+            // B counter
+            partition_done <= 1'b0;
+            if (fifo_b_s_axis_tvalid && gate_b_tready) begin
+                if (word_count_b == WORDS_PER_PARTITION-1) begin
+                    partition_done <= 1'b1;
+                    word_count_b <= 0;
+                end else begin
+                    word_count_b <= word_count_b + 1;
+                end
+            end
+        end
+    end
+
+    assign allow_prefetch = (fifo_b_status_depth < INPUT_FIFO_B_DEPTH-5);
     
     // ========================================
     //     COMPUTE LOGIC (MACS + ADDER TREE)

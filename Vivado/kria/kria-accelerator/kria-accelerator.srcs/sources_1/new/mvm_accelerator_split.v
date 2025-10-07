@@ -11,7 +11,7 @@ module mvm_accelerator_split #(
     
     parameter ELEMENTS_PER_ROW   = 17048,
     parameter WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
-    parameter NUM_ROWS           = 1024,
+    parameter NUM_ROWS           = 17048,
     
     parameter NUM_CHANNELS       = 4,
     parameter NUM_RAM_PARTITIONS = NUM_CHANNELS,
@@ -208,6 +208,9 @@ module mvm_accelerator_split #(
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
+                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
+                    ch_init[p] <= 1'b1;
+
                 if (!ch_start[p]) begin
                     ch_start[p] <= part_grant[ch_pidx[p]] 
                                     &&  ch_init[p] 
@@ -218,9 +221,6 @@ module mvm_accelerator_split #(
                     ch_start[p] <= 1'b0;
                     ch_active[p] <= 1'b1;
                 end
-
-                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
-                    ch_init[p] <= 1'b1; // For filling pipeline
 
                 if (ch_pdone[p]) begin
                     ch_active[p] <= 1'b0;
@@ -363,10 +363,11 @@ module mvm_accelerator_split #(
               .start(ch_start[ch]),
               .partition_done(ch_pdone[ch]),
               .partition_index(ch_pidx[ch]),
+              .allow_prefetch(ch_allow_prefetch[ch]),
 
               .first_part_consumed(first_part_consumed[ch]),
               .activate_fifo(activate_fifo[ch]),
-              .allow_prefetch(ch_allow_prefetch[ch])
+              .channel_active(ch_active[ch])
             );
         end
     endgenerate
