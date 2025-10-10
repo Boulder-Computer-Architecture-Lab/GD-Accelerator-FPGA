@@ -8,11 +8,11 @@ module mvm_channel_split #(
     parameter TAG                = 0,
 
     parameter ELEMENT_WIDTH      = 64,
-    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH,
+    parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH, // MUST BE A POWER OF 2!
     
-    parameter ELEMENTS_PER_ROW = 16384,
+    parameter ELEMENTS_PER_ROW = 17048,
     parameter WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
-    parameter NUM_ROWS = 16384,
+    parameter NUM_ROWS = 17048,
 
     parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
     parameter NUM_CHANNELS       = 4,
@@ -30,20 +30,34 @@ module mvm_channel_split #(
     output wire                  s_axis_a_tready,
     input  wire                  s_axis_a_tlast,
     
-    // Input stream B
-    input  wire [DATA_WIDTH-1:0] s_axis_b_tdata,
-    input  wire                  s_axis_b_tvalid,
-    output wire                  s_axis_b_tready,
-    input  wire                  s_axis_b_tlast,
-    
     // Output result stream
     output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
     output wire                     m_axis_tvalid,
     input  wire                     m_axis_tready,
     output wire                     m_axis_tlast,
     
+    // AXI master read interface (to crossbar)
+    output wire [ID_WIDTH-1:0]   m_axi_arid,
+    output wire [ADDR_WIDTH-1:0] m_axi_araddr,
+    output wire [7:0]            m_axi_arlen,
+    output wire [2:0]            m_axi_arsize,
+    output wire [1:0]            m_axi_arburst,
+    output wire                  m_axi_arlock,
+    output wire [3:0]            m_axi_arcache,
+    output wire [2:0]            m_axi_arprot,
+    output wire                  m_axi_arvalid,
+    input  wire                  m_axi_arready,
+    input  wire [ID_WIDTH-1:0]   m_axi_rid,
+    input  wire [DATA_WIDTH-1:0] m_axi_rdata,
+    input  wire [1:0]            m_axi_rresp,
+    input  wire                  m_axi_rlast,
+    input  wire                  m_axi_rvalid,
+    output wire                  m_axi_rready,
+    
     // Partition arbitration
+    input  wire start,
     output reg  partition_done,
+    input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
     output wire allow_prefetch,
 
     // Fifo gating
@@ -175,6 +189,11 @@ module mvm_channel_split #(
     );
 
     // B
+    wire [DATA_WIDTH-1:0] s_axis_b_tdata;
+    wire                  s_axis_b_tvalid;
+    wire                  s_axis_b_tready;
+    wire                  s_axis_b_tlast;
+
     wire [DATA_WIDTH-1:0] gate_b_tdata;
     wire                  gate_b_tvalid;
     wire                  gate_b_tready;
@@ -356,6 +375,93 @@ module mvm_channel_split #(
         .status_overflow(),
         .status_bad_frame(),
         .status_good_frame()
+    );
+
+    // ========================================
+    //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)
+    // ========================================
+    
+    localparam DMA_LEN_WIDTH = $clog2(BYTES_PER_PARTITION+1);
+    localparam DMA_BURST_LEN = 256;
+    localparam DMA_TAG_WIDTH = 8;
+
+    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_PARTITION);
+    wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
+
+    reg  dma_desc_valid;
+    wire dma_desc_ready;
+    
+    wire [7:0] dma_desc_tag  = TAG;
+    wire [7:0] dma_desc_id   = TAG;
+    wire [7:0] dma_desc_dest = 8'd0;
+    wire       dma_desc_user = 1'b0;
+        
+    wire [7:0] dma_status_tag;
+    wire [3:0] dma_status_error;
+    wire       dma_status_valid;
+
+    always @(posedge clk) begin
+        if (!rstn)
+            dma_desc_valid <= 1'b0;
+        else if (!dma_desc_valid)
+            dma_desc_valid <= start;
+        else if (dma_desc_ready)
+            dma_desc_valid <= 1'b0;
+    end
+        
+    axi_dma_rd #(
+        .AXI_DATA_WIDTH(DATA_WIDTH),
+        .AXI_ADDR_WIDTH(ADDR_WIDTH),
+        .AXI_STRB_WIDTH(STRB_WIDTH),
+        .AXI_ID_WIDTH(ID_WIDTH),
+        .AXI_MAX_BURST_LEN(DMA_BURST_LEN),
+        .AXIS_USER_ENABLE(0),
+        .LEN_WIDTH(DMA_LEN_WIDTH),
+        .TAG_WIDTH(DMA_TAG_WIDTH)
+    ) dma (
+        .clk(clk),
+        .rstn(rstn),
+    
+        .s_axis_read_desc_addr(dma_desc_addr),
+        .s_axis_read_desc_len(dma_desc_len),
+        .s_axis_read_desc_tag(dma_desc_tag),
+        .s_axis_read_desc_id(dma_desc_id),
+        .s_axis_read_desc_dest(dma_desc_dest),
+        .s_axis_read_desc_user(dma_desc_user),
+        .s_axis_read_desc_valid(dma_desc_valid),
+        .s_axis_read_desc_ready(dma_desc_ready),
+    
+        .m_axis_read_desc_status_tag(dma_status_tag),
+        .m_axis_read_desc_status_error(dma_status_error),
+        .m_axis_read_desc_status_valid(dma_status_valid),
+    
+        .m_axis_read_data_tdata(s_axis_b_tdata),
+        .m_axis_read_data_tkeep(),
+        .m_axis_read_data_tvalid(s_axis_b_tvalid),
+        .m_axis_read_data_tready(s_axis_b_tready),
+        .m_axis_read_data_tlast(s_axis_b_tlast),
+        .m_axis_read_data_tid(),
+        .m_axis_read_data_tdest(),
+        .m_axis_read_data_tuser(),
+    
+        .m_axi_arid(m_axi_arid),
+        .m_axi_araddr(m_axi_araddr),
+        .m_axi_arlen(m_axi_arlen),
+        .m_axi_arsize(m_axi_arsize),
+        .m_axi_arburst(m_axi_arburst),
+        .m_axi_arlock(m_axi_arlock),
+        .m_axi_arcache(m_axi_arcache),
+        .m_axi_arprot(m_axi_arprot),
+        .m_axi_arvalid(m_axi_arvalid),
+        .m_axi_arready(m_axi_arready),
+        .m_axi_rid(m_axi_rid),
+        .m_axi_rdata(m_axi_rdata),
+        .m_axi_rresp(m_axi_rresp),
+        .m_axi_rlast(m_axi_rlast),
+        .m_axi_rvalid(m_axi_rvalid),
+        .m_axi_rready(m_axi_rready),
+    
+        .enable(1'b1)
     );
 
     // ========================================
