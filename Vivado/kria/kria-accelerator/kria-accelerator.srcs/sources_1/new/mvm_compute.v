@@ -2,7 +2,8 @@
 
 module mvm_compute #(
     parameter DATA_WIDTH         = 128,
-    parameter ELEMENT_WIDTH      = 64,
+    parameter ELEMENT_WIDTH      = 16,
+    parameter RESULT_WIDTH       = 64,
     parameter ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH,
     parameter ELEMENTS_PER_ROW   = 17048,
     parameter WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD,
@@ -21,10 +22,10 @@ module mvm_compute #(
     output wire                  s_axis_b_tready,
 
     // AXIS output
-    output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
-    output wire                     m_axis_tvalid,
-    input  wire                     m_axis_tready,
-    output wire                     m_axis_tlast
+    output wire [RESULT_WIDTH-1:0] m_axis_tdata,
+    output wire                    m_axis_tvalid,
+    input  wire                    m_axis_tready,
+    output wire                    m_axis_tlast
 );
 
     // ========================================
@@ -39,26 +40,27 @@ module mvm_compute #(
             assign s_axis_a_tready = &s_axis_a_tready_vec;
             assign s_axis_b_tready = &s_axis_b_tready_vec;
         
-            wire [ELEMENT_WIDTH-1:0] partial_sum   [ELEMENTS_PER_WORD-1:0];
-            wire                     partial_valid [ELEMENTS_PER_WORD-1:0];
-            wire                     partial_ready [ELEMENTS_PER_WORD-1:0];
-            wire                     partial_last  [ELEMENTS_PER_WORD-1:0];
+            wire [RESULT_WIDTH-1:0] partial_sum   [ELEMENTS_PER_WORD-1:0];
+            wire                    partial_valid [ELEMENTS_PER_WORD-1:0];
+            wire                    partial_ready [ELEMENTS_PER_WORD-1:0];
+            wire                    partial_last  [ELEMENTS_PER_WORD-1:0];
             
             genvar i;
             for (i = 0; i < ELEMENTS_PER_WORD; i = i + 1) begin
                 dot_product #(
                     .DATA_WIDTH(ELEMENT_WIDTH),
+                    .RESULT_WIDTH(RESULT_WIDTH),
                     .WORDS_PER_ROW(WORDS_PER_ROW),
                     .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
                 ) dp (
                     .clk(clk),
                     .rstn(rstn),
     
-                    .s_axis_a_tdata(s_axis_a_tdata[i*ELEMENT_WIDTH +: ELEMENT_WIDTH]),
+                    .s_axis_a_tdata(s_axis_a_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
                     .s_axis_a_tvalid(s_axis_a_tvalid),
                     .s_axis_a_tready(s_axis_a_tready_vec[i]),
     
-                    .s_axis_b_tdata(s_axis_b_tdata[i*ELEMENT_WIDTH +: ELEMENT_WIDTH]),
+                    .s_axis_b_tdata(s_axis_b_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
                     .s_axis_b_tvalid(s_axis_b_tvalid),
                     .s_axis_b_tready(s_axis_b_tready_vec[i]),
     
@@ -70,10 +72,10 @@ module mvm_compute #(
             end
         
             localparam integer NUM_LVLS = $clog2(ELEMENTS_PER_WORD);
-            wire [ELEMENT_WIDTH-1:0] adder_tree_data  [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
-            wire                     adder_tree_valid [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
-            wire                     adder_tree_ready [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
-            wire                     adder_tree_last  [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+            wire [RESULT_WIDTH-1:0] adder_tree_data  [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+            wire                    adder_tree_valid [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+            wire                    adder_tree_ready [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
+            wire                    adder_tree_last  [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
             
             genvar j;
             for (j = 0; j < ELEMENTS_PER_WORD; j = j + 1) begin
@@ -116,6 +118,7 @@ module mvm_compute #(
         end else if (ELEMENTS_PER_WORD == 1) begin : gen_single
             dot_product #(
                 .DATA_WIDTH(ELEMENT_WIDTH),
+                .RESULT_WIDTH(RESULT_WIDTH),
                 .WORDS_PER_ROW(WORDS_PER_ROW),
                 .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
             ) dp_single (

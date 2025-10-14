@@ -2,6 +2,7 @@
 
 module dot_product #(
     parameter DATA_WIDTH = 64,
+    parameter RESULT_WIDTH = 16,
     parameter WORDS_PER_ROW = 17048,
     parameter ROWS_PER_CHANNEL = 4262
 )(
@@ -9,37 +10,42 @@ module dot_product #(
     input wire rstn,
 
     // Input stream A
-    input  wire [DATA_WIDTH-1:0]  s_axis_a_tdata,
-    input  wire                   s_axis_a_tvalid,
-    output wire                   s_axis_a_tready,
+    input  wire [DATA_WIDTH-1:0]   s_axis_a_tdata,
+    input  wire                    s_axis_a_tvalid,
+    output wire                    s_axis_a_tready,
 
     // Input stream B
-    input  wire [DATA_WIDTH-1:0]  s_axis_b_tdata,
-    input  wire                   s_axis_b_tvalid,
-    output wire                   s_axis_b_tready,
+    input  wire [DATA_WIDTH-1:0]   s_axis_b_tdata,
+    input  wire                    s_axis_b_tvalid,
+    output wire                    s_axis_b_tready,
 
     // Output stream
-    output reg  [DATA_WIDTH-1:0]  m_axis_tdata,
-    output reg                    m_axis_tvalid,
-    input  wire                   m_axis_tready,
-    output reg                    m_axis_tlast
+    output reg  [RESULT_WIDTH-1:0] m_axis_tdata,
+    output reg                     m_axis_tvalid,
+    input  wire                    m_axis_tready,
+    output reg                     m_axis_tlast
 );
   
     // ========================================
     //            INSTANTIATE MACs
     // ========================================   
      
-    // Accumulator input (multiplier output)
-    wire                  acc_axis_a_tvalid;
-    wire                  acc_axis_a_tready;
-    wire [DATA_WIDTH-1:0] acc_axis_a_tdata;
-    wire                  acc_axis_a_tlast;
+    // Precision converter input
+    wire                  fp_axis_a_tvalid;
+    wire                  fp_axis_a_tready;
+    wire [DATA_WIDTH-1:0] fp_axis_a_tdata;
+
+    // Accumulator input
+    wire                    acc_axis_a_tvalid;
+    wire                    acc_axis_a_tready;
+    wire [RESULT_WIDTH-1:0] acc_axis_a_tdata;
+    wire                    acc_axis_a_tlast;
     
     // Accumulator output
-    wire                  acc_axis_result_tvalid;
-    wire                  acc_axis_result_tready;
-    wire [DATA_WIDTH-1:0] acc_axis_result_tdata;
-    wire                  acc_axis_result_tlast;
+    wire                    acc_axis_result_tvalid;
+    wire                    acc_axis_result_tready;
+    wire [RESULT_WIDTH-1:0] acc_axis_result_tdata;
+    wire                    acc_axis_result_tlast;
 
     fp64_mult u_fp64_mult (
         .aclk(clk),
@@ -52,6 +58,19 @@ module dot_product #(
         .s_axis_b_tvalid(s_axis_b_tvalid),
         .s_axis_b_tready(s_axis_b_tready),
         .s_axis_b_tdata(s_axis_b_tdata),
+
+        .m_axis_result_tvalid(fp_axis_a_tvalid),
+        .m_axis_result_tready(fp_axis_a_tready),
+        .m_axis_result_tdata(fp_axis_a_tdata)
+    );
+
+    fp16_to_fp64 u_fp16_to_fp64 (
+        .aclk(clk),
+        .aresetn(rstn),
+
+        .s_axis_a_tvalid(fp_axis_a_tvalid),
+        .s_axis_a_tready(fp_axis_a_tready),
+        .s_axis_a_tdata(fp_axis_a_tdata),
 
         .m_axis_result_tvalid(acc_axis_a_tvalid),
         .m_axis_result_tready(acc_axis_a_tready),

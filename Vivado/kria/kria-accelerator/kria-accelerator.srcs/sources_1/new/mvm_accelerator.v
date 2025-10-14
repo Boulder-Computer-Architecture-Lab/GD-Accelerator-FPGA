@@ -1,17 +1,20 @@
 `timescale 1ns / 1ps
 
 module mvm_accelerator #(
-    parameter ARCH_TYPE         = 0,
-    parameter AXI_RAM_BASE_ADDR = 64'h8000_0000,
+    parameter ARCH_TYPE          = 0,
+    parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
     
-    parameter DATA_WIDTH        = 128,
-    parameter ADDR_WIDTH        = 64,
-    parameter ID_WIDTH          = 8,
+    parameter DATA_WIDTH         = 128,
+    parameter ADDR_WIDTH         = 64,
+    parameter ID_WIDTH           = 8,
 
-    parameter ELEMENT_WIDTH     = 64,
-    parameter ELEMENTS_PER_ROW  = 17048,
-    parameter NUM_ROWS          = 17048,
-    parameter NUM_CHANNELS      = 4
+    parameter ELEMENT_WIDTH      = 16,
+    parameter ELEMENTS_PER_ROW   = 17048,
+    parameter NUM_ROWS           = 17048,
+    parameter NUM_CHANNELS       = 4,
+
+    parameter AXI_RAM_DATA_WIDTH = 256,
+    parameter RESULT_WIDTH       = 64
 )(
 
     input  wire                  clk,
@@ -39,25 +42,25 @@ module mvm_accelerator #(
     input  wire                  s_axis_a_3_tlast,
 
     // Output streams
-    output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
-    output wire                     m_axis_0_tvalid,
-    input  wire                     m_axis_0_tready,
-    output wire                     m_axis_0_tlast,
+    output wire [RESULT_WIDTH-1:0] m_axis_0_tdata,
+    output wire                    m_axis_0_tvalid,
+    input  wire                    m_axis_0_tready,
+    output wire                    m_axis_0_tlast,
     
-    output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
-    output wire                     m_axis_1_tvalid,
-    input  wire                     m_axis_1_tready,
-    output wire                     m_axis_1_tlast,
+    output wire [RESULT_WIDTH-1:0] m_axis_1_tdata,
+    output wire                    m_axis_1_tvalid,
+    input  wire                    m_axis_1_tready,
+    output wire                    m_axis_1_tlast,
     
-    output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
-    output wire                     m_axis_2_tvalid,
-    input  wire                     m_axis_2_tready,
-    output wire                     m_axis_2_tlast,
+    output wire [RESULT_WIDTH-1:0] m_axis_2_tdata,
+    output wire                    m_axis_2_tvalid,
+    input  wire                    m_axis_2_tready,
+    output wire                    m_axis_2_tlast,
 
-    output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
-    output wire                     m_axis_3_tvalid,
-    input  wire                     m_axis_3_tready,
-    output wire                     m_axis_3_tlast,
+    output wire [RESULT_WIDTH-1:0] m_axis_3_tdata,
+    output wire                    m_axis_3_tvalid,
+    input  wire                    m_axis_3_tready,
+    output wire                    m_axis_3_tlast,
 
     // S-AXI interface (for writing vector b)
     input  wire [ID_WIDTH-1:0]   s_axi_b_awid,
@@ -71,11 +74,11 @@ module mvm_accelerator #(
     input  wire                  s_axi_b_awvalid,
     output wire                  s_axi_b_awready,
     
-    input  wire [DATA_WIDTH-1:0]     s_axi_b_wdata,
-    input  wire [(DATA_WIDTH/8)-1:0] s_axi_b_wstrb,
-    input  wire                      s_axi_b_wlast,
-    input  wire                      s_axi_b_wvalid,
-    output wire                      s_axi_b_wready,
+    input  wire [AXI_RAM_DATA_WIDTH-1:0]     s_axi_b_wdata,
+    input  wire [(AXI_RAM_DATA_WIDTH/8)-1:0] s_axi_b_wstrb,
+    input  wire                              s_axi_b_wlast,
+    input  wire                              s_axi_b_wvalid,
+    output wire                              s_axi_b_wready,
     
     output wire [ID_WIDTH-1:0] s_axi_b_bid,
     output wire [1:0]          s_axi_b_bresp,
@@ -104,7 +107,9 @@ module mvm_accelerator #(
                 .NUM_CHANNELS(NUM_CHANNELS),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
                 .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR)
+                .AXI_RAM_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
+                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
+                .RESULT_WIDTH(RESULT_WIDTH)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),

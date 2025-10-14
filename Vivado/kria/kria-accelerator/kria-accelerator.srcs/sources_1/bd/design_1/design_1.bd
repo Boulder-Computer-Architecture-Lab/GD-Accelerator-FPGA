@@ -2227,6 +2227,9 @@
           "ELEMENTS_PER_ROW": {
             "value": "16384"
           },
+          "ELEMENT_WIDTH": {
+            "value": "16"
+          },
           "NUM_CHANNELS": {
             "value": "4"
           },
@@ -2782,7 +2785,7 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
             "parameters": {
               "DATA_WIDTH": {
-                "value": "128",
+                "value": "256",
                 "value_src": "auto"
               },
               "PROTOCOL": {
@@ -2957,13 +2960,13 @@
               "WDATA": {
                 "physical_name": "s_axi_b_wdata",
                 "direction": "I",
-                "left": "127",
+                "left": "255",
                 "right": "0"
               },
               "WSTRB": {
                 "physical_name": "s_axi_b_wstrb",
                 "direction": "I",
-                "left": "15",
+                "left": "31",
                 "right": "0"
               },
               "WLAST": {
@@ -3154,7 +3157,7 @@
             "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
             "parameters": {
               "MAX_BURST_LENGTH": {
-                "value": "256"
+                "value": "128"
               },
               "NUM_READ_OUTSTANDING": {
                 "value": "2"

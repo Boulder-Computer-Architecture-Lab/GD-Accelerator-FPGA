@@ -20,6 +20,8 @@ mkdir -p "$destdir"
 # Use rsync to get all files (except matrix)
 rsync -avz \
 	--exclude="trmult_reduced.bin" \
+	--exclude="trmult_reduced16.bin" \
+	--exclude="trmult_reduced64.bin" \
 	--exclude="*.un~" \
     -e ssh \
     "$targetdev:$remotedir/" \

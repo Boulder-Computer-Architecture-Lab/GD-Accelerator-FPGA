@@ -2,19 +2,129 @@
 
 module tb_mvm_accelerator;
 
+    typedef logic [15:0] fp16_t;
+
+    function automatic fp16_t f32_to_f16(input shortreal s);
+
+        int unsigned x;
+        bit          sign;
+        int unsigned exp_u, frac_u;
+        int          half_exp; // signed
+        int unsigned half_frac;
+        fp16_t       h;
+    
+        x       = $shortrealtobits(s); // 0|8|23
+        sign    = x[31];
+        exp_u   = (x >> 23) & 8'hFF;
+        frac_u  =  x        & 32'h7FFFFF;
+    
+        if (exp_u == 8'hFF) begin
+            // Inf/NaN
+            half_frac = (frac_u != 0) ? (16'h200 | (frac_u >> 13)) : 16'h000;
+            h = {sign, 5'h1F, half_frac[9:0]};
+        end else if (exp_u == 0) begin
+            if (frac_u == 0) begin
+                h = {sign, 5'h00, 10'h000}; // +/- 0
+            end else begin
+                // normalize float subnormal
+                int e = -126;
+                int unsigned f = frac_u;
+                while ((f & 32'h0080_0000) == 0) begin
+                    f <<= 1;
+                    e -= 1;
+                end
+                f &= 32'h007F_FFFF;
+                half_exp = e + 15;
+                if (half_exp <= 0) begin
+                    if (half_exp < -10) h = {sign, 5'h00, 10'h000};
+                    else begin
+                        int unsigned mant = (f | 32'h0080_0000) >> (1 - half_exp);
+                        half_frac = (mant + 32'h0000_1000) >> 13;  // RNE
+                        h = {sign, 5'h00, half_frac[9:0]};
+                    end
+                end else begin
+                    half_frac = (frac_u + 32'h0000_1000) >> 13;  // RNE
+                    if (half_frac == 1024) begin half_exp += 1; half_frac = 0; end
+                    if (half_exp >= 31) h = {sign, 5'h1F, 10'h000};
+                    else                h = {sign, half_exp[4:0], half_frac[9:0]};
+                end
+            end
+        end else begin
+            // normal float
+            half_exp = $signed(exp_u) - 127 + 15;
+            if (half_exp >= 31) begin
+                h = {sign, 5'h1F, 10'h000}; // overflow -> Inf
+            end else if (half_exp <= 0) begin
+                if (half_exp < -10) h = {sign, 5'h00, 10'h000};
+                else begin
+                    int unsigned mant = (frac_u | 32'h0080_0000);
+                    int          sh   = 14 - half_exp;
+                    int unsigned sub  = (mant + (1 << (sh-1))) >> sh; // RNE
+                    h = {sign, 5'h00, sub[9:0]};
+                end
+            end else begin
+                half_frac = (frac_u + 32'h0000_1000) >> 13;  // RNE
+                if (half_frac == 1024) begin half_exp += 1; half_frac = 0; end
+                if (half_exp >= 31) h = {sign, 5'h1F, 10'h000};
+                else                h = {sign, half_exp[4:0], half_frac[9:0]};
+            end
+        end
+        return h;
+    endfunction
+    
+    function automatic shortreal f16_to_f32(input fp16_t h);
+        bit          sign;
+        int unsigned exp_h, frac_h;
+        int unsigned out_exp, out_frac;
+        int unsigned u32;
+    
+        sign   = h[15];
+        exp_h  = h[14:10];
+        frac_h = h[9:0];
+    
+        if (exp_h == 0) begin
+            if (frac_h == 0) begin
+                out_exp  = 0;
+                out_frac = 0;
+            end else begin
+                // half subnormal -> normalize
+                int f = frac_h;
+                int shift = 0;
+                while ((f & 10'h200) == 0) begin
+                    f <<= 1; shift++;
+                end
+                f &= 10'h3FF;
+                out_exp  = 127 - 15 - shift;
+                out_frac = f << 13;
+            end
+        end else if (exp_h == 31) begin
+            out_exp  = 255;
+            out_frac = (frac_h != 0) ? ((frac_h << 13) | 32'h0007_FFFF) : 0; // keep NaN payload non-zero
+        end else begin
+            out_exp  = exp_h - 15 + 127;
+            out_frac = frac_h << 13;
+        end
+    
+        u32 = (sign << 31) | (out_exp << 23) | out_frac;
+        return $bitstoshortreal(u32);
+    endfunction
+
     `include "axi_a_channel_bindings.svh"
     `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
                                      // Note: Also run ./Vivado/scripts/update_channels.py when this 
                                      // is changed to update all the relevant header files
 
-    parameter ARCH_TYPE = 0; // Select accelerator type (0=split, 1=bcast)
+    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
+    
+    parameter int NUM_TRANSFERS = 2;
 
     parameter int DATA_WIDTH = 128;
     parameter int ADDR_WIDTH = 64;
     parameter int ID_WIDTH   = 8;
     parameter int STRB_WIDTH = DATA_WIDTH/8;
     
-    parameter int ELEMENT_WIDTH = 64;
+    parameter int ELEMENT_WIDTH = 16;
+    parameter int RESULT_WIDTH  = 64;
     
     parameter int NUM_ACCEL_INST     = 1;
     parameter int CHANNELS_PER_INST  = 4;
@@ -25,15 +135,21 @@ module tb_mvm_accelerator;
     parameter int NUM_ROWS         = 16;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
+    parameter int AXI_RAM_DATA_WIDTH = 256;
+    parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
+    
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
-    localparam WORDS_PER_PARTITION    = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     
-    localparam MAX_BURST_LEN = 256;
+    localparam AXI_RAM_ELEMENTS_PER_WORD = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
+    localparam AXI_RAM_WORDS_PER_ROW = ELEMENTS_PER_ROW / AXI_RAM_ELEMENTS_PER_WORD;
+    localparam WORDS_PER_PARTITION    = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    
+    localparam MAX_BURST_LEN = 128;
     
     reg clk = 0, rstn = 1;
     
-    reg start = 0;
+    reg start_transfer = 0;
     
     // Inputs
     logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS] = '{default:'0};
@@ -42,10 +158,10 @@ module tb_mvm_accelerator;
     logic                  s_axis_a_tlast   [NUM_CHANNELS] = '{default:1'b0};
     
     // Outputs
-    logic [ELEMENT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS] = '{default:'0};
-    logic                     m_axis_tvalid    [NUM_CHANNELS] = '{default:1'b0};
-    logic                     m_axis_tready    [NUM_CHANNELS] = '{default:1'b0};
-    logic                     m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
+    logic [RESULT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS] = '{default:'0};
+    logic                    m_axis_tvalid    [NUM_CHANNELS] = '{default:1'b0};
+    logic                    m_axis_tready    [NUM_CHANNELS] = '{default:1'b0};
+    logic                    m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
 
     // AXI Full write interface for vector b
     logic [ID_WIDTH-1:0]   s_axi_b_awid      [NUM_ACCEL_INST] = '{default:'0};
@@ -58,8 +174,8 @@ module tb_mvm_accelerator;
     logic [2:0]            s_axi_b_awprot    [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_awvalid   [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_awready   [NUM_ACCEL_INST] = '{default:'0};
-    logic [DATA_WIDTH-1:0] s_axi_b_wdata     [NUM_ACCEL_INST] = '{default:'0};
-    logic [STRB_WIDTH-1:0] s_axi_b_wstrb     [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata     [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb     [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_wlast     [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_wvalid    [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_wready    [NUM_ACCEL_INST] = '{default:'0};
@@ -68,7 +184,7 @@ module tb_mvm_accelerator;
     logic                  s_axi_b_bvalid    [NUM_ACCEL_INST] = '{default:'0};
     logic                  s_axi_b_bready    [NUM_ACCEL_INST] = '{default:'0};
              
-    logic [DATA_WIDTH-1:0] vector [WORDS_PER_ROW-1:0] = '{default:'0};
+    logic [AXI_RAM_DATA_WIDTH-1:0] vector [AXI_RAM_WORDS_PER_ROW-1:0] = '{default:'0};
     
     // AXI full write task
     task axi_write_burst(
@@ -84,7 +200,7 @@ module tb_mvm_accelerator;
             // Write address
             s_axi_b_awaddr[inst]  = addr;
             s_axi_b_awlen[inst]   = len - 1;
-            s_axi_b_awsize[inst]  = $clog2(STRB_WIDTH);
+            s_axi_b_awsize[inst]  = $clog2(AXI_RAM_STRB_WIDTH);
             s_axi_b_awburst[inst] = 1;
             s_axi_b_awvalid[inst] = 1;
             
@@ -103,7 +219,7 @@ module tb_mvm_accelerator;
                 idx = k + bram_offset;
                 $display("[AXI WRITE] Instance %0d: Writing beat %0d: data = %h (vector[%0d])", inst, k, vector[idx], idx);
                 s_axi_b_wdata[inst] = vector[idx];
-                s_axi_b_wstrb[inst] = {STRB_WIDTH{1'b1}};
+                s_axi_b_wstrb[inst] = {AXI_RAM_STRB_WIDTH{1'b1}};
                 s_axi_b_wvalid[inst] = 1;
                 s_axi_b_wlast[inst] = (k == len-1);
                 
@@ -151,21 +267,41 @@ module tb_mvm_accelerator;
                 .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
-                .AXI_RAM_BASE_ADDR(BASE_ADDR + STRIDE * inst)
+                .AXI_RAM_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
+                .AXI_RAM_BASE_ADDR(BASE_ADDR + STRIDE * inst),
+                .RESULT_WIDTH(RESULT_WIDTH)
             ) dut (
                 .clk(clk), 
                 .rstn(rstn),
                 `GET_CHANNELS
-                `include "axi_full_write_bindings.svh"
+                .s_axi_b_awid      (s_axi_b_awid   [inst]),
+                .s_axi_b_awaddr    (s_axi_b_awaddr [inst]),
+                .s_axi_b_awlen     (s_axi_b_awlen  [inst]),
+                .s_axi_b_awsize    (s_axi_b_awsize [inst]),
+                .s_axi_b_awburst   (s_axi_b_awburst[inst]),
+                .s_axi_b_awlock    (s_axi_b_awlock [inst]),
+                .s_axi_b_awcache   (s_axi_b_awcache[inst]),
+                .s_axi_b_awprot    (s_axi_b_awprot [inst]),
+                .s_axi_b_awvalid   (s_axi_b_awvalid[inst]),
+                .s_axi_b_awready   (s_axi_b_awready[inst]),
+                .s_axi_b_wdata     (s_axi_b_wdata  [inst]),
+                .s_axi_b_wstrb     (s_axi_b_wstrb  [inst]),
+                .s_axi_b_wlast     (s_axi_b_wlast  [inst]),
+                .s_axi_b_wvalid    (s_axi_b_wvalid [inst]),
+                .s_axi_b_wready    (s_axi_b_wready [inst]),
+                .s_axi_b_bid       (s_axi_b_bid    [inst]),
+                .s_axi_b_bresp     (s_axi_b_bresp  [inst]),
+                .s_axi_b_bvalid    (s_axi_b_bvalid [inst]),
+                .s_axi_b_bready    (s_axi_b_bready [inst])
             );
         end
     endgenerate
         
     // Clock generation
-    always #1.667 clk = ~clk; // (pclk0: 300 MHz)
+    always #3 clk = ~clk; // (pclk0: 167 MHz)
     
-    real a_values [NUM_CHANNELS][ELEMENTS_PER_ROW];
-    real b_values [ELEMENTS_PER_ROW];
+    fp16_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW];
+    fp16_t b_values [ELEMENTS_PER_ROW];
     
     reg inputs_sent      [NUM_CHANNELS-1:0];
     reg outputs_received [NUM_CHANNELS-1:0];
@@ -177,7 +313,8 @@ module tb_mvm_accelerator;
     integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
     integer final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
 
-    // Initialization
+    // Initialization & start_transfer ctrl
+    int finished_transfer;
     initial begin
     
         // Reset
@@ -194,18 +331,20 @@ module tb_mvm_accelerator;
             m_axis_tready[i] = 1;
         
             for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
-                a_values[i][j] = (j+1) / ((i+1) * 1000.0);
-                b_values[j] = (j+1) / 10000.0;
-                //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, $realtobits(a_values[i][j]), a_values[i][j]);
+                automatic shortreal a_sr = shortreal'((j+1.0) / ((i+1) * 100000.0));
+                automatic shortreal b_sr = shortreal'((j+1.0) / 10000.0);
+                a_values[i][j] = f32_to_f16(a_sr);  // fp16 bits
+                b_values[j]    = f32_to_f16(b_sr);  // fp16 bits
+                //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, a_values[i][j], f16_to_f32(a_values[i][j]));
             end
         end
         
         for (int w = 0; w < WORDS_PER_ROW; w++) begin
             vector[w] = '0;
-            for (int j = 0; j < ELEMENTS_PER_WORD; j++) begin
-                vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(b_values[w * ELEMENTS_PER_WORD + j]);
+            for (int j = 0; j < AXI_RAM_ELEMENTS_PER_WORD; j++) begin
+                vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j];
                 //$display("vector[%0d][%0d] = %h (real = %f)", 
-                //         w, j, vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], b_values[w * ELEMENTS_PER_WORD + j]);
+                //         w, j, vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], f16_to_f32(b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j]));
             end
         end
         
@@ -221,7 +360,7 @@ module tb_mvm_accelerator;
                 for (int k = 0; k < num_full_bursts; k++) begin
                     automatic int burst_offset = base_offset + k * MAX_BURST_LEN;
                     axi_write_burst(
-                        base_addr + burst_offset * STRB_WIDTH,
+                        base_addr + burst_offset * AXI_RAM_STRB_WIDTH,
                         MAX_BURST_LEN,
                         burst_offset,
                         i
@@ -231,7 +370,7 @@ module tb_mvm_accelerator;
                 if (final_burst_len > 0) begin
                     automatic int burst_offset = base_offset + num_full_bursts * MAX_BURST_LEN;
                     axi_write_burst(
-                        base_addr + burst_offset * STRB_WIDTH,
+                        base_addr + burst_offset * AXI_RAM_STRB_WIDTH,
                         final_burst_len,
                         burst_offset,
                         i
@@ -239,77 +378,105 @@ module tb_mvm_accelerator;
                 end
             end
         end
-        
-        repeat(2048) @(posedge clk);
-        
+                
         $display("Initialization complete\n");
-        start = 1;
+        repeat (512) @(posedge clk);
+        start_transfer = 1;
+        
+        forever begin
+            @(posedge clk);
+            start_transfer = 0;
+            wait(finished_transfer);
+            repeat (1024) @(posedge clk);
+            start_transfer = 1;
+        end
     end
             
     // Parallel channel drivers
     generate
         for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
-            initial begin
-                wait(start);
+            initial begin                
+                for (int i = 0; i < NUM_TRANSFERS; i++) begin
                 
-                for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
-                    expected[ch][j] = 0;
-                    
-                    // Send inputs
-                    for (int word_idx = 0; word_idx < WORDS_PER_ROW; word_idx++) begin
-                        s_axis_a_tdata[ch] = '0;
-                        
-                        for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
-                            automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
-                            s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = $realtobits(a_values[ch][abs_idx]);
-                            expected[ch][j] += a_values[ch][abs_idx] * b_values[abs_idx];
-                        end
-                        
-                        s_axis_a_tvalid[ch] = 1;
-                        s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW-1);
+                    wait(start_transfer);
 
-                        do begin
-                            @(posedge clk);
-                        end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
+                    for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
+                        expected[ch][j] = 0.0;
                         
-                        s_axis_a_tvalid[ch] = 0;
-                        s_axis_a_tlast[ch]  = 0;
+                        // Send inputs
+                        for (int word_idx = 0; word_idx < WORDS_PER_ROW; word_idx++) begin
+                            s_axis_a_tdata[ch] = '0;
+                            
+                            for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
+                                automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
+                                automatic shortreal a32 = f16_to_f32(a_values[ch][abs_idx]);
+                                automatic shortreal b32 = f16_to_f32(b_values[abs_idx]);
+                                
+                                s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = a_values[ch][abs_idx];
+                                expected[ch][j] += real'(a32) * real'(b32);
+                            end
+                            
+                            s_axis_a_tvalid[ch] = 1;
+                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW-1);
+    
+                            do begin
+                                @(posedge clk);
+                            end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
+                            
+                            s_axis_a_tvalid[ch] = 0;
+                            s_axis_a_tlast[ch]  = 0;
+                        end
+                        $display("%0d: Channel %0d: All inputs sent.", j, ch);
                     end
-                    $display("%0d: Channel %0d: All inputs sent.", j, ch);
+                    
+                    inputs_sent[ch] = 1;
                 end
-                
-                inputs_sent[ch] = 1;
             end
         end
     endgenerate
         
     // Capture outputs
     generate
-      for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : capture_output
-        initial begin
-          for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
-            @(posedge clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
-            $display("%0d: Ch%0d: Result=%f | Expected=%f",
-                     j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
-          end
-          outputs_received[ch] = 1;
+        for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : capture_output
+            initial begin
+                for (int i = 0; i < NUM_CHANNELS; i++) begin
+                    for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
+                        @(posedge clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
+                        $display("%0d: Ch%0d: Result=%f | Expected=%f",
+                            j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
+                    end
+                    outputs_received[ch] = 1;
+                end
+            end
         end
-      end
     endgenerate
     
     // Finish once all outputs are received
+    int finished_count = 0;
     initial begin
-        wait(start);
+        wait(start_transfer);
     
-        forever begin
-            automatic int finished = 1;
+        forever begin        
+            automatic int check_finished = 1;
             for (int ch = 0; ch < NUM_CHANNELS; ch++) begin
                 if (!inputs_sent[ch] || !outputs_received[ch])
-                    finished = 0;
+                    check_finished = 0;
             end
-            if (finished) begin
-                $display("All outputs received.");
-                break;
+            finished_transfer = check_finished;
+            
+            if (finished_transfer) begin
+                $display("\nTransfer %0d: All outputs received.\n", finished_count);
+                if (finished_count == NUM_TRANSFERS - 1) begin
+                    break;
+                end else begin
+                    @(posedge clk);
+                    finished_transfer = 0;
+                    finished_count = finished_count + 1;
+                    for (int ch = 0; ch < NUM_CHANNELS; ch++) begin
+                        inputs_sent[ch] = 0;
+                        outputs_received[ch] = 0;
+                    end
+                end
             end
             @(posedge clk);
         end
