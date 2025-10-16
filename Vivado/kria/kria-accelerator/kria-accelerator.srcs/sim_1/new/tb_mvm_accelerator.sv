@@ -164,25 +164,25 @@ module tb_mvm_accelerator;
     logic                    m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
 
     // AXI Full write interface for vector b
-    logic [ID_WIDTH-1:0]   s_axi_b_awid      [NUM_ACCEL_INST] = '{default:'0};
-    logic [ADDR_WIDTH-1:0] s_axi_b_awaddr    [NUM_ACCEL_INST] = '{default:'0};
-    logic [7:0]            s_axi_b_awlen     [NUM_ACCEL_INST] = '{default:'0};
-    logic [2:0]            s_axi_b_awsize    [NUM_ACCEL_INST] = '{default:'0};
-    logic [1:0]            s_axi_b_awburst   [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awlock    [NUM_ACCEL_INST] = '{default:'0};
-    logic [3:0]            s_axi_b_awcache   [NUM_ACCEL_INST] = '{default:'0};
-    logic [2:0]            s_axi_b_awprot    [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awvalid   [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awready   [NUM_ACCEL_INST] = '{default:'0};
-    logic [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata     [NUM_ACCEL_INST] = '{default:'0};
-    logic [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb     [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wlast     [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wvalid    [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wready    [NUM_ACCEL_INST] = '{default:'0};
-    logic [ID_WIDTH-1:0]   s_axi_b_bid       [NUM_ACCEL_INST] = '{default:'0};
-    logic [1:0]            s_axi_b_bresp     [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_bvalid    [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_bready    [NUM_ACCEL_INST] = '{default:'0};
+    logic [ID_WIDTH-1:0]   s_axi_b_awid          [NUM_ACCEL_INST] = '{default:'0};
+    logic [ADDR_WIDTH-1:0] s_axi_b_awaddr        [NUM_ACCEL_INST] = '{default:'0};
+    logic [7:0]            s_axi_b_awlen         [NUM_ACCEL_INST] = '{default:'0};
+    logic [2:0]            s_axi_b_awsize        [NUM_ACCEL_INST] = '{default:'0};
+    logic [1:0]            s_axi_b_awburst       [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_awlock        [NUM_ACCEL_INST] = '{default:'0};
+    logic [3:0]            s_axi_b_awcache       [NUM_ACCEL_INST] = '{default:'0};
+    logic [2:0]            s_axi_b_awprot        [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_awvalid       [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_awready       [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_wlast         [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_wvalid        [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_wready        [NUM_ACCEL_INST] = '{default:'0};
+    logic [ID_WIDTH-1:0]   s_axi_b_bid           [NUM_ACCEL_INST] = '{default:'0};
+    logic [1:0]            s_axi_b_bresp         [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_bvalid        [NUM_ACCEL_INST] = '{default:'0};
+    logic                  s_axi_b_bready        [NUM_ACCEL_INST] = '{default:'0};
              
     logic [AXI_RAM_DATA_WIDTH-1:0] vector [AXI_RAM_WORDS_PER_ROW-1:0] = '{default:'0};
     

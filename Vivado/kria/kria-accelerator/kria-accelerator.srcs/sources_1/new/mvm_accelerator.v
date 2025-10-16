@@ -2,6 +2,7 @@
 
 module mvm_accelerator #(
     parameter ARCH_TYPE          = 0,
+    parameter PROFILE            = 1,
     parameter AXI_RAM_BASE_ADDR  = 64'h8000_0000,
     
     parameter DATA_WIDTH         = 128,
@@ -14,7 +15,11 @@ module mvm_accelerator #(
     parameter NUM_CHANNELS       = 4,
 
     parameter AXI_RAM_DATA_WIDTH = 256,
-    parameter RESULT_WIDTH       = 64
+    parameter RESULT_WIDTH       = 64,
+
+    // Profiler
+    parameter AXIL_ADDR_WIDTH = 12,
+    parameter AXIL_DATA_WIDTH = 32
 )(
 
     input  wire                  clk,
@@ -62,7 +67,7 @@ module mvm_accelerator #(
     input  wire                    m_axis_3_tready,
     output wire                    m_axis_3_tlast,
 
-    // S-AXI interface (for writing vector b)
+    // S-AXI interface for writing vector b
     input  wire [ID_WIDTH-1:0]   s_axi_b_awid,
     input  wire [ADDR_WIDTH-1:0] s_axi_b_awaddr,
     input  wire [7:0]            s_axi_b_awlen,
@@ -83,7 +88,29 @@ module mvm_accelerator #(
     output wire [ID_WIDTH-1:0] s_axi_b_bid,
     output wire [1:0]          s_axi_b_bresp,
     output wire                s_axi_b_bvalid,
-    input  wire                s_axi_b_bready
+    input  wire                s_axi_b_bready,
+
+    // S-AXIL interface for profiling 
+    // (can leave unconnected if PROFILE = 0)
+    input  wire                       s_axil_aclk,
+    input  wire                       s_axil_aresetn,
+
+    input  wire [AXIL_ADDR_WIDTH-1:0] s_axil_awaddr,
+    input  wire                       s_axil_awvalid,
+    output wire                       s_axil_awready,
+    input  wire [AXIL_DATA_WIDTH-1:0] s_axil_wdata,
+    input  wire                       s_axil_wvalid,
+    output wire                       s_axil_wready,
+    output wire [1:0]                 s_axil_bresp,
+    output wire                       s_axil_bvalid,
+    input  wire                       s_axil_bready,
+    input  wire [AXIL_ADDR_WIDTH-1:0] s_axil_araddr,
+    input  wire                       s_axil_arvalid,
+    output wire                       s_axil_arready,
+    output wire [AXIL_DATA_WIDTH-1:0] s_axil_rdata,
+    output wire [1:0]                 s_axil_rresp,
+    output wire                       s_axil_rvalid,
+    input  wire                       s_axil_rready
 );
 
     localparam NUM_RAM_PARTITIONS = NUM_CHANNELS;
@@ -93,6 +120,63 @@ module mvm_accelerator #(
     localparam ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS;
     
     generate
+
+        if (PROFILE) begin
+            axis_dma_profiler #(
+                .NUM_DMAS(NUM_CHANNELS),
+                .USE_CDC(0),
+                .AXIS_S_DATA_WIDTH(DATA_WIDTH),
+                .AXIS_M_DATA_WIDTH(RESULT_WIDTH),
+                .AXIL_ADDR_WIDTH(AXIL_ADDR_WIDTH),
+                .AXIL_DATA_WIDTH(AXIL_DATA_WIDTH)
+            ) prof (
+                .axis_clk        (clk),
+                .axis_aresetn    (rstn),
+                .s_axil_aclk     (s_axil_aclk),
+                .s_axil_aresetn  (s_axil_aresetn),
+                .s_axil_awaddr   (s_axil_awaddr),
+                .s_axil_awvalid  (s_axil_awvalid),
+                .s_axil_awready  (s_axil_awready),
+                .s_axil_wdata    (s_axil_wdata),
+                .s_axil_wvalid   (s_axil_wvalid),
+                .s_axil_wready   (s_axil_wready),
+                .s_axil_bresp    (s_axil_bresp),
+                .s_axil_bvalid   (s_axil_bvalid),
+                .s_axil_bready   (s_axil_bready),
+                .s_axil_araddr   (s_axil_araddr),
+                .s_axil_arvalid  (s_axil_arvalid),
+                .s_axil_arready  (s_axil_arready),
+                .s_axil_rdata    (s_axil_rdata),
+                .s_axil_rresp    (s_axil_rresp),
+                .s_axil_rvalid   (s_axil_rvalid),
+                .s_axil_rready   (s_axil_rready),
+                .s0_axis_tvalid  (s_axis_a_0_tvalid),
+                .s0_axis_tready  (s_axis_a_0_tready),
+                .s0_axis_tlast   (s_axis_a_0_tlast),
+                .s1_axis_tvalid  (s_axis_a_1_tvalid),
+                .s1_axis_tready  (s_axis_a_1_tready),
+                .s1_axis_tlast   (s_axis_a_1_tlast),
+                .s2_axis_tvalid  (s_axis_a_2_tvalid),
+                .s2_axis_tready  (s_axis_a_2_tready),
+                .s2_axis_tlast   (s_axis_a_2_tlast),
+                .s3_axis_tvalid  (s_axis_a_3_tvalid),
+                .s3_axis_tready  (s_axis_a_3_tready),
+                .s3_axis_tlast   (s_axis_a_3_tlast),
+                .m0_axis_tvalid  (m_axis_0_tvalid),
+                .m0_axis_tready  (m_axis_0_tready),
+                .m0_axis_tlast   (m_axis_0_tlast),
+                .m1_axis_tvalid  (m_axis_1_tvalid),
+                .m1_axis_tready  (m_axis_1_tready),
+                .m1_axis_tlast   (m_axis_1_tlast),
+                .m2_axis_tvalid  (m_axis_2_tvalid),
+                .m2_axis_tready  (m_axis_2_tready),
+                .m2_axis_tlast   (m_axis_2_tlast),
+                .m3_axis_tvalid  (m_axis_3_tvalid),
+                .m3_axis_tready  (m_axis_3_tready),
+                .m3_axis_tlast   (m_axis_3_tlast)
+            );
+        end
+
         if (ARCH_TYPE == 0) begin
             mvm_accelerator_split #(
                 .DATA_WIDTH(DATA_WIDTH),

@@ -1,17 +1,14 @@
 `timescale 1ns/1ps
 
 module axis_dma_profiler #(
-    parameter integer NUM_DMAS        = 4, 
-    parameter integer USE_CDC         = 0,
+    parameter NUM_DMAS        = 4, 
+    parameter USE_CDC         = 0,
 
-    parameter integer AXIL_ADDR_WIDTH = 12,
-    parameter integer AXIL_DATA_WIDTH = 32,
+    parameter AXIS_S_DATA_WIDTH = 128,
+    parameter AXIS_M_DATA_WIDTH = 64,
 
-    // Per-channel data widths
-    parameter integer DATA_WIDTH0 = 64,
-    parameter integer DATA_WIDTH1 = 64,
-    parameter integer DATA_WIDTH2 = 64,
-    parameter integer DATA_WIDTH3 = 64
+    parameter AXIL_ADDR_WIDTH = 12,
+    parameter AXIL_DATA_WIDTH = 32
 )(
     input  wire                       axis_clk,
     input  wire                       axis_aresetn, 
@@ -36,78 +33,52 @@ module axis_dma_profiler #(
     output wire                       s_axil_rvalid,
     input  wire                       s_axil_rready,
 
-    input  wire [DATA_WIDTH0-1:0]     s0_axis_tdata,
     input  wire                       s0_axis_tvalid,
+    input  wire                       s0_axis_tready,
     input  wire                       s0_axis_tlast,
-    output wire                       s0_axis_tready,
 
-    output wire [DATA_WIDTH0-1:0]     m0_axis_tdata,
-    output wire                       m0_axis_tvalid,
-    output wire                       m0_axis_tlast,
+    input  wire                       m0_axis_tvalid,
     input  wire                       m0_axis_tready,
+    input  wire                       m0_axis_tlast,
 
-    input  wire [DATA_WIDTH1-1:0]     s1_axis_tdata,
     input  wire                       s1_axis_tvalid,
+    input  wire                       s1_axis_tready,
     input  wire                       s1_axis_tlast,
-    output wire                       s1_axis_tready,
 
-    output wire [DATA_WIDTH1-1:0]     m1_axis_tdata,
-    output wire                       m1_axis_tvalid,
-    output wire                       m1_axis_tlast,
+    input  wire                       m1_axis_tvalid,
     input  wire                       m1_axis_tready,
+    input  wire                       m1_axis_tlast,
 
-    input  wire [DATA_WIDTH2-1:0]     s2_axis_tdata,
     input  wire                       s2_axis_tvalid,
+    input  wire                       s2_axis_tready,
     input  wire                       s2_axis_tlast,
-    output wire                       s2_axis_tready,
 
-    output wire [DATA_WIDTH2-1:0]     m2_axis_tdata,
-    output wire                       m2_axis_tvalid,
-    output wire                       m2_axis_tlast,
+    input  wire                       m2_axis_tvalid,
     input  wire                       m2_axis_tready,
+    input  wire                       m2_axis_tlast,
 
-    input  wire [DATA_WIDTH3-1:0]     s3_axis_tdata,
     input  wire                       s3_axis_tvalid,
+    input  wire                       s3_axis_tready,
     input  wire                       s3_axis_tlast,
-    output wire                       s3_axis_tready,
 
-    output wire [DATA_WIDTH3-1:0]     m3_axis_tdata,
-    output wire                       m3_axis_tvalid,
-    output wire                       m3_axis_tlast,
-    input  wire                       m3_axis_tready
+    input  wire                       m3_axis_tvalid,
+    input  wire                       m3_axis_tready,
+    input  wire                       m3_axis_tlast
 );
 
-    // CH0
-    assign m0_axis_tdata  = s0_axis_tdata;
-    assign m0_axis_tvalid = s0_axis_tvalid;
-    assign m0_axis_tlast  = s0_axis_tlast;
-    assign s0_axis_tready = m0_axis_tready;
-    // CH1
-    assign m1_axis_tdata  = s1_axis_tdata;
-    assign m1_axis_tvalid = s1_axis_tvalid;
-    assign m1_axis_tlast  = s1_axis_tlast;
-    assign s1_axis_tready = m1_axis_tready;
-    // CH2
-    assign m2_axis_tdata  = s2_axis_tdata;
-    assign m2_axis_tvalid = s2_axis_tvalid;
-    assign m2_axis_tlast  = s2_axis_tlast;
-    assign s2_axis_tready = m2_axis_tready;
-    // CH3
-    assign m3_axis_tdata  = s3_axis_tdata;
-    assign m3_axis_tvalid = s3_axis_tvalid;
-    assign m3_axis_tlast  = s3_axis_tlast;
-    assign s3_axis_tready = m3_axis_tready;
+    localparam MAX_CH = 4;
 
-    localparam integer MAX_CH = 4;
-    wire [MAX_CH-1:0] tvalid_v = {s3_axis_tvalid, s2_axis_tvalid, s1_axis_tvalid, s0_axis_tvalid};
-    wire [MAX_CH-1:0] tready_v = {s3_axis_tready, s2_axis_tready, s1_axis_tready, s0_axis_tready};
-    wire [MAX_CH-1:0] tlast_v  = {s3_axis_tlast,  s2_axis_tlast,  s1_axis_tlast,  s0_axis_tlast};
+    wire [MAX_CH-1:0] s_tready_v = {s3_axis_tready, s2_axis_tready, s1_axis_tready, s0_axis_tready};
+    wire [MAX_CH-1:0] s_tvalid_v = {s3_axis_tvalid, s2_axis_tvalid, s1_axis_tvalid, s0_axis_tvalid};
+    wire [MAX_CH-1:0] s_tlast_v  = {s3_axis_tlast,  s2_axis_tlast,  s1_axis_tlast,  s0_axis_tlast};
 
-    // Bytes per beat per channel
-    localparam integer DATA_BYTES0 = DATA_WIDTH0/8;
-    localparam integer DATA_BYTES1 = DATA_WIDTH1/8;
-    localparam integer DATA_BYTES2 = DATA_WIDTH2/8;
-    localparam integer DATA_BYTES3 = DATA_WIDTH3/8;
+    wire [MAX_CH-1:0] m_tready_v = {m3_axis_tready, m2_axis_tready, m1_axis_tready, m0_axis_tready};
+    wire [MAX_CH-1:0] m_tvalid_v = {m3_axis_tvalid, m2_axis_tvalid, m1_axis_tvalid, m0_axis_tvalid};
+    wire [MAX_CH-1:0] m_tlast_v  = {m3_axis_tlast,  m2_axis_tlast,  m1_axis_tlast,  m0_axis_tlast};
+
+    // -------- per channel stats --------
+    localparam AXIS_S_DATA_BYTES = AXIS_S_DATA_WIDTH/8;
+    localparam AXIS_M_DATA_BYTES = AXIS_M_DATA_WIDTH/8;
 
     reg  [MAX_CH-1:0] running, have_result;
     reg  [63:0]       cycle_cnt [0:MAX_CH-1];
@@ -118,7 +89,7 @@ module axis_dma_profiler #(
     reg  [63:0]       tready_low_cnt [0:MAX_CH-1];
     reg  [63:0]       tvalid_low_cnt [0:MAX_CH-1];
 
-    reg        armed      [0:MAX_CH-1];  // seen tlast, waiting for next packet start
+    reg        armed      [0:MAX_CH-1]; // seen tlast, waiting for next packet start
     reg [63:0] idle_cnt   [0:MAX_CH-1];
     reg [63:0] gap_last   [0:MAX_CH-1];
     reg [63:0] gap_total  [0:MAX_CH-1];
@@ -126,21 +97,19 @@ module axis_dma_profiler #(
     reg [63:0] gap_max    [0:MAX_CH-1];
     reg [31:0] gap_count  [0:MAX_CH-1];
     reg        gap_valid  [0:MAX_CH-1];
-
     reg [63:0] busy_total [0:MAX_CH-1];
 
     reg seen_hs [0:MAX_CH-1];
+    reg [MAX_CH-1:0] running_m;
 
     genvar ch;
     generate
         for (ch = 0; ch < MAX_CH; ch = ch + 1) begin : g_prof
-            wire active = (ch < NUM_DMAS);
-            wire hs     = tvalid_v[ch] & tready_v[ch];
 
-            wire [15:0] BYTES_THIS =
-                (ch==0) ? DATA_BYTES0[15:0] :
-                (ch==1) ? DATA_BYTES1[15:0] :
-                (ch==2) ? DATA_BYTES2[15:0] : DATA_BYTES3[15:0];
+            wire active = (ch < NUM_DMAS);
+
+            wire hs  = s_tvalid_v[ch] && s_tready_v[ch];
+            wire hsm = m_tvalid_v[ch] && m_tready_v[ch];
 
             always @(posedge axis_clk) begin
                 if (!axis_aresetn || !active) begin
@@ -166,6 +135,8 @@ module axis_dma_profiler #(
                     gap_valid[ch]   <= 1'b0;
                     busy_total[ch]  <= 64'd0;
 
+                    running_m[ch]   <= 1'b0;
+
                 end else begin
                     if (seen_hs[ch] && !running[ch] && armed[ch])
                         idle_cnt[ch] <= idle_cnt[ch] + 1;
@@ -177,7 +148,7 @@ module axis_dma_profiler #(
                         have_result[ch] <= 1'b0;
                         cycle_cnt[ch]   <= 64'd1; // include first cycle
                         beat_cnt[ch]    <= 64'd1; // include first beat
-                        byte_cnt[ch]    <= BYTES_THIS;
+                        byte_cnt[ch]    <= AXIS_S_DATA_BYTES;
 
                         if (armed[ch]) begin
                             gap_last[ch] <= idle_cnt[ch];
@@ -194,8 +165,8 @@ module axis_dma_profiler #(
                         cycle_cnt[ch] <= cycle_cnt[ch] + 1;
                         if (hs) begin
                             beat_cnt[ch] <= beat_cnt[ch] + 1;
-                            byte_cnt[ch] <= byte_cnt[ch] + BYTES_THIS;
-                            if (tlast_v[ch]) begin
+                            byte_cnt[ch] <= byte_cnt[ch] + AXIS_S_DATA_BYTES;
+                            if (s_tlast_v[ch]) begin
                                 running[ch]     <= 1'b0;
                                 have_result[ch] <= 1'b1;
                                 pkt_cnt[ch]     <= pkt_cnt[ch] + 1;
@@ -205,17 +176,80 @@ module axis_dma_profiler #(
 
                                 busy_total[ch] <= busy_total[ch] + cycle_cnt[ch];
                             end
-                        end else if (tready_v[ch] && !tvalid_v[ch]) begin
-                            tvalid_low_cnt[ch] <= tvalid_low_cnt[ch] + 1;
-                        end else if (!tready_v[ch] && tvalid_v[ch]) begin
-                            tready_low_cnt[ch] <= tready_low_cnt[ch] + 1;
+                        end else begin
+                            if (!s_tvalid_v[ch])
+                                tvalid_low_cnt[ch] <= tvalid_low_cnt[ch] + 1;
+                            if (!s_tready_v[ch])
+                                tready_low_cnt[ch] <= tready_low_cnt[ch] + 1;
                         end
                     end
+
+                    if (!running_m[ch] && hsm)
+                        running_m[ch] <= 1'b1;
+                    if (hsm && m_tlast_v[ch])
+                        running_m[ch] <= 1'b0;
+
                 end
             end
         end
     endgenerate
 
+    // -------- global stats --------
+    wire any_hs_s      = |(s_tvalid_v && s_tready_v);
+    wire any_running_s = |running;
+    wire any_running_m = |running_m;
+
+    // Track first s_axis hs to last s_axis hs
+    reg        g_ss_active, g_ss_valid;
+    reg [63:0] g_ss_cycles, g_ss_acc;
+
+    always @(posedge axis_clk) begin
+        if (!axis_aresetn) begin
+            g_ss_active <= 1'b0; g_ss_valid <= 1'b0;
+            g_ss_cycles <= 64'd0; g_ss_acc <= 64'd0;
+        end else begin
+            if (!g_ss_active && !any_running_s && any_hs_s) begin
+                g_ss_active <= 1'b1;
+                g_ss_valid <= 1'b0;
+                g_ss_acc <= 64'd1;
+            end else if (g_ss_active) begin
+                if (!any_running_s) begin
+                    g_ss_active  <= 1'b0;
+                    g_ss_valid   <= 1'b1;
+                    g_ss_cycles  <= g_ss_acc;
+                end else begin
+                    g_ss_acc <= g_ss_acc + 1;
+                end
+            end
+        end
+    end
+
+    // Track first s_axis hs to last m_axis hs
+    reg        g_sm_active, g_sm_valid;
+    reg [63:0] g_sm_cycles, g_sm_acc;
+
+    always @(posedge axis_clk) begin
+        if (!axis_aresetn) begin
+            g_sm_active <= 1'b0; g_sm_valid <= 1'b0;
+            g_sm_cycles <= 64'd0; g_sm_acc <= 64'd0;
+        end else begin
+            if (!g_sm_active && !any_running_s && any_hs_s) begin
+                g_sm_active <= 1'b1;
+                g_sm_valid <= 1'b0;
+                g_sm_acc <= 64'd1;
+            end else if (g_sm_active) begin
+                if (!any_running_m) begin
+                    g_sm_active  <= 1'b0;
+                    g_sm_valid   <= 1'b1;
+                    g_sm_cycles  <= g_sm_acc;
+                end else begin
+                    g_sm_acc <= g_sm_acc + 1;
+                end
+            end
+        end
+    end
+
+    // -------- cdc --------
     wire [AXIL_ADDR_WIDTH-1:0] m_axil_awaddr;
     wire                       m_axil_awvalid;
     wire                       m_axil_awready;
@@ -320,12 +354,12 @@ module axis_dma_profiler #(
     );
 
     // -------- decode: ch window + word offset --------
-    localparam integer CH_BITS        = $clog2(MAX_CH);
-    localparam integer BYTES_PER_WIN  = 'h100; // 0x100 bytes per channel window
-    localparam integer WORD_BYTES     = AXIL_DATA_WIDTH/8;
-    localparam integer WORDS_PER_WIN  = BYTES_PER_WIN / WORD_BYTES;
-    localparam integer WIN_WORD_BITS  = $clog2(WORDS_PER_WIN);
-    localparam integer SHIFT          = $clog2(WORD_BYTES);
+    localparam CH_BITS        = $clog2(MAX_CH);
+    localparam BYTES_PER_WIN  = 'h100; // 0x100 bytes per channel window
+    localparam WORD_BYTES     = AXIL_DATA_WIDTH/8;
+    localparam WORDS_PER_WIN  = BYTES_PER_WIN / WORD_BYTES;
+    localparam WIN_WORD_BITS  = $clog2(WORDS_PER_WIN);
+    localparam SHIFT          = $clog2(WORD_BYTES);
 
     wire [AXIL_ADDR_WIDTH-1:0] waddr = reg_rd_addr >> SHIFT;
     wire [WIN_WORD_BITS-1:0]   word_off = waddr[WIN_WORD_BITS-1:0];
@@ -356,35 +390,55 @@ module axis_dma_profiler #(
 
     wire [63:0] busy_total_mux = get64(ch_sel, busy_total[0], busy_total[1], busy_total[2], busy_total[3]);
 
+    localparam [5:0] CHANNEL_BASE = 6'h00;
+    localparam [5:0] GAP_BASE     = 6'h0E;
+    localparam [5:0] GLOBAL_BASE  = 6'h18;
+
     always @* begin
         case (word_off)
-            6'h00: reg_rd_data = {30'd0, running[ch_sel], have_result[ch_sel]}; // STATUS
-            6'h01: reg_rd_data = cycles_mux[31:0];
-            6'h02: reg_rd_data = cycles_mux[63:32];
-            6'h03: reg_rd_data = beats_mux[31:0];
-            6'h04: reg_rd_data = beats_mux[63:32];
-            6'h05: reg_rd_data = bytes_mux[31:0];
-            6'h06: reg_rd_data = bytes_mux[63:32];
-            6'h07: reg_rd_data = pkts_mux;
 
-            6'h08: reg_rd_data = tready_low_mux[31:0];
-            6'h09: reg_rd_data = tready_low_mux[63:32];
-            6'h0A: reg_rd_data = tvalid_low_mux[31:0];
-            6'h0B: reg_rd_data = tvalid_low_mux[63:32];
+            /* ========================== REGISTER MAP ========================== */
 
-            6'h0C: reg_rd_data = gap_last_mux [31:0];
-            6'h0D: reg_rd_data = gap_last_mux [63:32];
-            6'h0E: reg_rd_data = gap_total_mux[31:0];
-            6'h0F: reg_rd_data = gap_total_mux[63:32];
-            6'h10: reg_rd_data = gap_min_mux  [31:0];
-            6'h11: reg_rd_data = gap_min_mux  [63:32];
-            6'h12: reg_rd_data = gap_max_mux  [31:0];
-            6'h13: reg_rd_data = gap_max_mux  [63:32];
-            6'h14: reg_rd_data = gap_count_mux;
-            6'h15: reg_rd_data = {30'd0, armed[ch_sel], gap_valid[ch_sel]};
-
-            6'h16: reg_rd_data = busy_total_mux[31:0];
-            6'h17: reg_rd_data = busy_total_mux[63:32];
+            // PER CHANNEL PER PACKET (window offsets are within each 0x100-byte channel window)
+            (CHANNEL_BASE+6'h00): reg_rd_data = {30'd0, running[ch_sel], have_result[ch_sel]}; // [0x00] Status
+            (CHANNEL_BASE+6'h01): reg_rd_data = cycles_mux[31:0];                              // [0x04] Packet cycle count (LO)
+            (CHANNEL_BASE+6'h02): reg_rd_data = cycles_mux[63:32];                             // [0x08] Packet cycle count (HI)
+            (CHANNEL_BASE+6'h03): reg_rd_data = beats_mux[31:0];                               // [0x0C] Packet beat count (LO)
+            (CHANNEL_BASE+6'h04): reg_rd_data = beats_mux[63:32];                              // [0x10] Packet beat count (HI)
+            (CHANNEL_BASE+6'h05): reg_rd_data = bytes_mux[31:0];                               // [0x14] Packet byte count (LO)
+            (CHANNEL_BASE+6'h06): reg_rd_data = bytes_mux[63:32];                              // [0x18] Packet byte count (HI)
+            (CHANNEL_BASE+6'h07): reg_rd_data = pkts_mux;                                      // [0x1C] Packet counter
+            
+            (CHANNEL_BASE+6'h08): reg_rd_data = tready_low_mux[31:0];                          // [0x20] Cycles with TREADY=0 while running (LO)
+            (CHANNEL_BASE+6'h09): reg_rd_data = tready_low_mux[63:32];                         // [0x24] Cycles with TREADY=0 while running (HI)
+            (CHANNEL_BASE+6'h0A): reg_rd_data = tvalid_low_mux[31:0];                          // [0x28] Cycles with TVALID=0 while running (LO)
+            (CHANNEL_BASE+6'h0B): reg_rd_data = tvalid_low_mux[63:32];                         // [0x2C] Cycles with TVALID=0 while running (HI)
+            
+            (CHANNEL_BASE+6'h0C): reg_rd_data = busy_total_mux[31:0];                          // [0x30] Sum of busy cycles over all packets (LO)
+            (CHANNEL_BASE+6'h0D): reg_rd_data = busy_total_mux[63:32];                         // [0x34] Sum of busy cycles over all packets (HI)
+            
+            // PER CHANNEL BETWEEN PACKETS (idle/gap statistics between packet end and next packet start)
+            (GAP_BASE+6'h00): reg_rd_data = {30'd0, armed[ch_sel], gap_valid[ch_sel]};         // [0x38] Gap status
+            (GAP_BASE+6'h01): reg_rd_data = gap_last_mux [31:0];                               // [0x3C] Last inter-packet gap (cycles) (LO)
+            (GAP_BASE+6'h02): reg_rd_data = gap_last_mux [63:32];                              // [0x40] Last inter-packet gap (cycles) (HI)
+            (GAP_BASE+6'h03): reg_rd_data = gap_total_mux[31:0];                               // [0x44] Total accumulated inter-packet gap (LO)
+            (GAP_BASE+6'h04): reg_rd_data = gap_total_mux[63:32];                              // [0x48] Total accumulated inter-packet gap (HI)
+            (GAP_BASE+6'h05): reg_rd_data = gap_min_mux  [31:0];                               // [0x4C] Minimum observed inter-packet gap (LO)
+            (GAP_BASE+6'h06): reg_rd_data = gap_min_mux  [63:32];                              // [0x50] Minimum observed inter-packet gap (HI)
+            (GAP_BASE+6'h07): reg_rd_data = gap_max_mux  [31:0];                               // [0x54] Maximum observed inter-packet gap (LO)
+            (GAP_BASE+6'h08): reg_rd_data = gap_max_mux  [63:32];                              // [0x58] Maximum observed inter-packet gap (HI)
+            (GAP_BASE+6'h09): reg_rd_data = gap_count_mux;                                     // [0x5C] Number of inter-packet gaps measured
+            
+            // GLOBAL COUNTERS (aliased in every channel window; same values regardless of ch_sel)
+            (GLOBAL_BASE+6'h00): reg_rd_data = {30'd0, g_ss_active, g_ss_valid};               // [0x60] Global S->S status
+            (GLOBAL_BASE+6'h01): reg_rd_data = g_ss_cycles[31:0];                              // [0x64] Global S->S cycle count (LO)
+            (GLOBAL_BASE+6'h02): reg_rd_data = g_ss_cycles[63:32];                             // [0x68] Global S->S cycle count (HI)
+            
+            (GLOBAL_BASE+6'h03): reg_rd_data = {30'd0, g_sm_active, g_sm_valid};               // [0x6C] Global S->M status
+            (GLOBAL_BASE+6'h04): reg_rd_data = g_sm_cycles[31:0];                              // [0x70] Global S->M cycle count (LO)
+            (GLOBAL_BASE+6'h05): reg_rd_data = g_sm_cycles[63:32];                             // [0x74] Global S->M cycle count (HI)
+            
+            /* ================================================================== */
 
             default: reg_rd_data = {AXIL_DATA_WIDTH{1'b0}};
         endcase
