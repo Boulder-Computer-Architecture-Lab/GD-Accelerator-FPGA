@@ -132,7 +132,7 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int ELEMENTS_PER_ROW = 16384;
-    parameter int NUM_ROWS         = 16;
+    parameter int NUM_ROWS         = 8;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     parameter int AXI_RAM_DATA_WIDTH = 256;
@@ -273,6 +273,9 @@ module tb_mvm_accelerator;
             ) dut (
                 .clk(clk), 
                 .rstn(rstn),
+                .s_axil_aclk(clk),
+                .s_axil_aresetn(rstn),
+                
                 `GET_CHANNELS
                 .s_axi_b_awid      (s_axi_b_awid   [inst]),
                 .s_axi_b_awaddr    (s_axi_b_awaddr [inst]),

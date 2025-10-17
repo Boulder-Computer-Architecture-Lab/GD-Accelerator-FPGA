@@ -71,7 +71,7 @@ module mvm_compute #(
                 );
             end
         
-            localparam integer NUM_LVLS = $clog2(ELEMENTS_PER_WORD);
+            localparam NUM_LVLS = $clog2(ELEMENTS_PER_WORD);
             wire [RESULT_WIDTH-1:0] adder_tree_data  [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
             wire                    adder_tree_valid [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];
             wire                    adder_tree_ready [0:NUM_LVLS][0:ELEMENTS_PER_WORD-1];

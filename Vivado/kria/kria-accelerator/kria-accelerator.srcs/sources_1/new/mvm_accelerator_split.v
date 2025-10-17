@@ -30,22 +30,18 @@ module mvm_accelerator_split #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
     input  wire                  s_axis_a_0_tvalid,
     output wire                  s_axis_a_0_tready,
-    input  wire                  s_axis_a_0_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
     input  wire                  s_axis_a_1_tvalid,
     output wire                  s_axis_a_1_tready,
-    input  wire                  s_axis_a_1_tlast,
 
     input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
     input  wire                  s_axis_a_2_tvalid,
     output wire                  s_axis_a_2_tready,
-    input  wire                  s_axis_a_2_tlast,
     
     input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
     input  wire                  s_axis_a_3_tvalid,
     output wire                  s_axis_a_3_tready,
-    input  wire                  s_axis_a_3_tlast,
     
     // Output streams
     output wire [RESULT_WIDTH-1:0] m_axis_0_tdata,
@@ -129,7 +125,6 @@ module mvm_accelerator_split #(
     wire [DATA_WIDTH-1:0] s_axis_a_tdata  [MAX_CH-1:0];
     wire                  s_axis_a_tvalid [MAX_CH-1:0];
     wire                  s_axis_a_tready [MAX_CH-1:0];
-    wire                  s_axis_a_tlast  [MAX_CH-1:0];
     
     // Output stream arrays
     wire [RESULT_WIDTH-1:0] m_axis_tdata  [MAX_CH-1:0];
@@ -158,7 +153,6 @@ module mvm_accelerator_split #(
     assign s_axis_a_tdata[0]  = s_axis_a_0_tdata;
     assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
     assign s_axis_a_0_tready  = s_axis_a_tready[0];
-    assign s_axis_a_tlast[0]  = s_axis_a_0_tlast;
     
     assign m_axis_0_tdata   = m_axis_tdata[0];
     assign m_axis_0_tvalid  = m_axis_tvalid[0];
@@ -168,7 +162,6 @@ module mvm_accelerator_split #(
     assign s_axis_a_tdata[1]  = s_axis_a_1_tdata;
     assign s_axis_a_tvalid[1] = s_axis_a_1_tvalid;
     assign s_axis_a_1_tready  = s_axis_a_tready[1];
-    assign s_axis_a_tlast[1]  = s_axis_a_1_tlast;
     
     assign m_axis_1_tdata   = m_axis_tdata[1];
     assign m_axis_1_tvalid  = m_axis_tvalid[1];
@@ -178,7 +171,6 @@ module mvm_accelerator_split #(
     assign s_axis_a_tdata[2]  = s_axis_a_2_tdata;
     assign s_axis_a_tvalid[2] = s_axis_a_2_tvalid;
     assign s_axis_a_2_tready  = s_axis_a_tready[2];
-    assign s_axis_a_tlast[2]  = s_axis_a_2_tlast;
     
     assign m_axis_2_tdata   = m_axis_tdata[2];
     assign m_axis_2_tvalid  = m_axis_tvalid[2];
@@ -188,7 +180,6 @@ module mvm_accelerator_split #(
     assign s_axis_a_tdata[3]  = s_axis_a_3_tdata;
     assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
     assign s_axis_a_3_tready  = s_axis_a_tready[3];
-    assign s_axis_a_tlast[3]  = s_axis_a_3_tlast;
     
     assign m_axis_3_tdata   = m_axis_tdata[3];
     assign m_axis_3_tvalid  = m_axis_tvalid[3];
@@ -373,7 +364,6 @@ module mvm_accelerator_split #(
                 .s_axis_a_tdata (s_axis_a_tdata[ch]),
                 .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
                 .s_axis_a_tready(s_axis_a_tready[ch]),
-                .s_axis_a_tlast (s_axis_a_tlast[ch]),
                 
                 .m_axis_tdata (m_axis_tdata[ch]),
                 .m_axis_tvalid(m_axis_tvalid[ch]),

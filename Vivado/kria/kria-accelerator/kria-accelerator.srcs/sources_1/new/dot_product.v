@@ -96,7 +96,8 @@ module dot_product #(
     //             TLAST HANDLING
     // ========================================
     
-    // Accumulator input tlast (per row)
+    // Accumulator input tlast (per row);
+    // Used to reset the accumulated value
     reg [$clog2(WORDS_PER_ROW)-1:0] word_count_in;
     
     wire handshake_in = acc_axis_a_tready && acc_axis_a_tvalid;
@@ -158,6 +159,6 @@ module dot_product #(
         end
     end
     
-    assign acc_axis_result_tready = !m_axis_tvalid || (m_axis_tvalid & m_axis_tready);
+    assign acc_axis_result_tready = !m_axis_tvalid || (m_axis_tvalid && m_axis_tready);
 
 endmodule

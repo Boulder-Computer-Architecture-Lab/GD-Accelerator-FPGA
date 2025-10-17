@@ -202,22 +202,18 @@ module mvm_accelerator #(
                 .s_axis_a_0_tdata(s_axis_a_0_tdata),
                 .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
                 .s_axis_a_0_tready(s_axis_a_0_tready),
-                .s_axis_a_0_tlast(s_axis_a_0_tlast),
             
                 .s_axis_a_1_tdata(s_axis_a_1_tdata),
                 .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
                 .s_axis_a_1_tready(s_axis_a_1_tready),
-                .s_axis_a_1_tlast(s_axis_a_1_tlast),
 
                 .s_axis_a_2_tdata(s_axis_a_2_tdata),
                 .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
                 .s_axis_a_2_tready(s_axis_a_2_tready),
-                .s_axis_a_2_tlast(s_axis_a_2_tlast),
             
                 .s_axis_a_3_tdata(s_axis_a_3_tdata),
                 .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
                 .s_axis_a_3_tready(s_axis_a_3_tready),
-                .s_axis_a_3_tlast(s_axis_a_3_tlast),
             
                 // Output channels
                 .m_axis_0_tdata(m_axis_0_tdata),

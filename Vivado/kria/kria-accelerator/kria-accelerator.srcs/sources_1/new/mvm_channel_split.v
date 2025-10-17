@@ -32,7 +32,6 @@ module mvm_channel_split #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
-    input  wire                  s_axis_a_tlast,
     
     // Output result stream
     output wire [RESULT_WIDTH-1:0] m_axis_tdata,
@@ -96,7 +95,6 @@ module mvm_channel_split #(
 
     localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
-    localparam PARTITION_WIDTH = $clog2(WORDS_PER_PARTITION+1);
 
     localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
     localparam INPUT_FIFO_A_DEPTH = WORDS_PER_PARTITION;
@@ -110,49 +108,42 @@ module mvm_channel_split #(
     wire [DATA_WIDTH-1:0] gate_a_tdata;
     wire                  gate_a_tvalid;
     wire                  gate_a_tready;
-    wire                  gate_a_tlast;
     
     wire [DATA_WIDTH-1:0] fifo_a_s_axis_tdata;
     wire                  fifo_a_s_axis_tvalid;
     wire                  fifo_a_s_axis_tready;
-    wire                  fifo_a_s_axis_tlast;
 
     wire [DATA_WIDTH-1:0] fifo_a_m_axis_tdata;
     wire                  fifo_a_m_axis_tvalid;
     wire                  fifo_a_m_axis_tready;
-    wire                  fifo_a_m_axis_tlast;    
     
     wire [DATA_WIDTH-1:0] pipe_a_tdata;
     wire                  pipe_a_tvalid;
     wire                  pipe_a_tready;
-    wire                  pipe_a_tlast;
 
     assign fifo_a_s_axis_tdata = gate_a_tdata;
     assign fifo_a_s_axis_tvalid = activate_fifo && gate_a_tvalid;
     assign gate_a_tready = activate_fifo && fifo_a_s_axis_tready;
-    assign fifo_a_s_axis_tlast = gate_a_tlast;
 
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
-        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
         .REG_TYPE(SKID)
     ) a_gate (
         .clk(clk), .rstn(rstn),
         .s_axis_tdata (s_axis_a_tdata),
         .s_axis_tvalid(s_axis_a_tvalid),
         .s_axis_tready(s_axis_a_tready),
-        .s_axis_tlast(s_axis_a_tlast),
         .m_axis_tdata (gate_a_tdata),
         .m_axis_tvalid(gate_a_tvalid),
-        .m_axis_tready(gate_a_tready),
-        .m_axis_tlast(gate_a_tlast)
+        .m_axis_tready(gate_a_tready)
     );
 
     axis_fifo #(
         .DEPTH(INPUT_FIFO_A_DEPTH),
         .DATA_WIDTH(DATA_WIDTH),
         .KEEP_ENABLE(0),
-        .LAST_ENABLE(1),
+        .LAST_ENABLE(0),
         .ID_ENABLE(0),
         .DEST_ENABLE(0),
         .USER_ENABLE(0),
@@ -172,7 +163,6 @@ module mvm_channel_split #(
         .s_axis_tkeep(),
         .s_axis_tvalid(fifo_a_s_axis_tvalid),
         .s_axis_tready(fifo_a_s_axis_tready),
-        .s_axis_tlast(fifo_a_s_axis_tlast),
         .s_axis_tid(8'b0),
         .s_axis_tdest(8'b0),
         .s_axis_tuser(1'b0),
@@ -181,7 +171,6 @@ module mvm_channel_split #(
         .m_axis_tkeep(),
         .m_axis_tvalid(fifo_a_m_axis_tvalid),
         .m_axis_tready(fifo_a_m_axis_tready),
-        .m_axis_tlast(fifo_a_m_axis_tlast),
         .m_axis_tid(),
         .m_axis_tdest(),
         .m_axis_tuser(),
@@ -198,18 +187,16 @@ module mvm_channel_split #(
     
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
-        .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
+        .KEEP_ENABLE(0), .LAST_ENABLE(0), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
         .REG_TYPE(SKID)
     ) a_skid (
         .clk(clk), .rstn(rstn),
         .s_axis_tdata (fifo_a_m_axis_tdata),
         .s_axis_tvalid(fifo_a_m_axis_tvalid),
         .s_axis_tready(fifo_a_m_axis_tready),
-        .s_axis_tlast(fifo_a_m_axis_tlast),
         .m_axis_tdata (pipe_a_tdata),
         .m_axis_tvalid(pipe_a_tvalid),
-        .m_axis_tready(pipe_a_tready),
-        .m_axis_tlast(pipe_a_tlast)
+        .m_axis_tready(pipe_a_tready)
     );
 
     // B
@@ -569,37 +556,20 @@ module mvm_channel_split #(
     //         PARTITION ACCESS CTRL
     // ========================================
     
-    //reg [PARTITION_WIDTH-1:0] word_count_a;
-
     wire last_into_ram_fifo;
     wire last_into_compute;
 
     always @(posedge clk) begin
         if (!rstn || !done_rstn) begin
-            //word_count_a <= 0;
             first_part_consumed <= 1'b0;
             partition_done <= 1'b0;
         end else begin
-
-            // Partition done
-            partition_done <= 1'b0;
-            if (last_into_ram_fifo) 
-                partition_done <= 1'b1;
-
-            // First partition consumed
-            /*
-            if (fifo_a_s_axis_tvalid && gate_a_tready) begin
-                if (word_count_a == WORDS_PER_PARTITION-1) begin
-                    word_count_a <= 0;
-                    first_part_consumed <= 1'b1;
-                end else begin
-                    word_count_a <= word_count_a + 1;
-                end
-            end 
-            */
            if (last_into_compute)
                first_part_consumed <= 1'b1;
 
+            partition_done <= 1'b0;
+            if (last_into_ram_fifo) 
+                partition_done <= 1'b1;
         end
     end
 
