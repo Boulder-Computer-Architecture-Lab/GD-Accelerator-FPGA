@@ -87,6 +87,7 @@ module mvm_accelerator_split #(
     output wire                  s_axi_b_bvalid,
     input  wire                  s_axi_b_bready
 );  
+
     // =============================================================
     //                      LOCAL RESET
     // =============================================================
@@ -196,55 +197,51 @@ module mvm_accelerator_split #(
     reg                             ch_start  [NUM_CHANNELS-1:0];
     reg                             ch_init   [NUM_CHANNELS-1:0];
     reg  [NUM_PARTITIONS_WIDTH-1:0] ch_pidx   [NUM_CHANNELS-1:0];
-    reg                             ch_active [NUM_CHANNELS-1:0];
     wire                            ch_pdone  [NUM_CHANNELS-1:0];
 
     reg  [ROWS_PER_CHANNEL_WIDTH-1:0] ch_num_rows_fetched [NUM_CHANNELS-1:0];
     wire                              ch_all_rows_fetched [NUM_CHANNELS-1:0];
 
     reg  part_in_use [NUM_RAM_PARTITIONS-1:0];
-    reg  part_grant  [NUM_RAM_PARTITIONS-1:0];
     wire part_valid  [NUM_RAM_PARTITIONS-1:0];
 
     wire ch_allow_prefetch [NUM_CHANNELS-1:0];
+    reg  ch_seen_a_data    [NUM_CHANNELS-1:0];
     
-    integer p, q, r;
-
     genvar ch;
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin : assign_fetched
             assign ch_all_rows_fetched[ch] = (ch_num_rows_fetched[ch] == ROWS_PER_CHANNEL);
         end
     endgenerate
-    
-    // Per channel signals
+
+    integer p;
     always @(posedge clk) begin
         if (!rstn || !done_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                ch_pidx[p]   <= 0;
-                ch_start[p]  <= 1'b0;
-                ch_active[p] <= 1'b0;
-                ch_init[p]   <= (p == 0);
+                ch_pidx[p]             <= 0;
+                ch_start[p]            <= 1'b0;
+                ch_seen_a_data[p]      <= 1'b0;
                 ch_num_rows_fetched[p] <= 0;
+                part_in_use[p]         <= 1'b0;
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
-                if (p > 0 && !ch_init[p] && ch_pdone[p-1])
-                    ch_init[p] <= 1'b1;
+                if (s_axis_a_tvalid[p])
+                    ch_seen_a_data[p] <= 1'b1;
 
                 if (!ch_start[p]) begin
-                    ch_start[p] <= part_grant[ch_pidx[p]] 
-                                    &&  ch_init[p] 
-                                    && !ch_active[p] 
-                                    &&  ch_allow_prefetch[p]
-                                    && !ch_all_rows_fetched[p];
+                    ch_start[p] <= !part_in_use[ch_pidx[p]]
+                                &&  ch_allow_prefetch  [p]
+                                && !ch_all_rows_fetched[p]
+                                &&  ch_seen_a_data[p];
                 end else begin
                     ch_start[p] <= 1'b0;
-                    ch_active[p] <= 1'b1;
+                    part_in_use[ch_pidx[p]] <= 1'b1;
                 end
 
                 if (ch_pdone[p]) begin
-                    ch_active[p] <= 1'b0;
+                    part_in_use[ch_pidx[p]] <= 1'b0;
                     if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
                         ch_pidx[p] <= 0;
                         ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
@@ -255,81 +252,6 @@ module mvm_accelerator_split #(
             end
         end
     end
-
-    // Per partition signals
-    always @(posedge clk) begin
-        if (!rstn || !done_rstn) begin
-            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1)
-                part_grant[q] <= 1'b0;
-        end else begin
-            for (q = 0; q < NUM_CHANNELS; q = q + 1) begin
-                if (!ch_all_rows_fetched[q] && !ch_active[q])
-                    part_grant[ch_pidx[q]] <= part_valid[ch_pidx[q]] && !part_in_use[ch_pidx[q]];
-
-                if (ch_start[q])
-                    part_grant[ch_pidx[q]] <= 1'b0;
-            end
-        end
-    end
-    
-    always @* begin
-        for (r = 0; r < NUM_RAM_PARTITIONS; r = r + 1) 
-            part_in_use[r] = 1'b0;
-        
-        for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
-            if (ch_active[r])
-                part_in_use[ch_pidx[r]] = 1'b1;
-        end
-    end
-
-    // =============================================================
-    //                   TRACK PARTITION VALID 
-    // =============================================================
-    
-    localparam AXI_RAM_WORDS_PER_BURST      = 128;
-    localparam AXI_RAM_ELEMENTS_PER_WORD    = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
-    localparam AXI_RAM_WORDS_PER_ROW        = ELEMENTS_PER_ROW / AXI_RAM_ELEMENTS_PER_WORD;
-    localparam AXI_RAM_WORDS_PER_PARTITION  = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam AXI_RAM_BURSTS_PER_PARTITION = AXI_RAM_WORDS_PER_PARTITION / AXI_RAM_WORDS_PER_BURST;
-
-    localparam TOTAL_BURSTS      = NUM_RAM_PARTITIONS * AXI_RAM_BURSTS_PER_PARTITION;
-    localparam BURST_COUNT_WIDTH = $clog2(TOTAL_BURSTS+1);
-
-    reg [BURST_COUNT_WIDTH-1:0] burst_count;
-
-    always @(negedge clk) begin
-        if (!rstn) begin
-            burst_count <= 0;
-        end else if (s_axi_b_bvalid && s_axi_b_bready) begin
-            if (burst_count < TOTAL_BURSTS)
-                burst_count <= burst_count + 1;
-            else
-                burst_count <= 1;
-        end
-    end
-
-    genvar pvalid;
-    generate
-        for (pvalid = 0; pvalid < NUM_RAM_PARTITIONS; pvalid = pvalid + 1) begin : gen_pvalid
-            assign part_valid[pvalid] = (burst_count >= (pvalid+1) * AXI_RAM_BURSTS_PER_PARTITION);
-        end
-    endgenerate
-
-    // =============================================================
-    //                  MVM_CHANNEL FIFO_A GATING
-    // =============================================================
-
-    wire activate_fifo       [NUM_CHANNELS-1:0];
-    wire first_part_consumed [NUM_CHANNELS-1:0];
-
-    assign activate_fifo[0] = 1'b1;
-
-    genvar i;
-    generate
-        for (i = 1; i < NUM_CHANNELS; i = i + 1) begin : activate_fifos
-            assign activate_fifo[i] = first_part_consumed[i-1];
-        end
-    endgenerate
     
     // =============================================================
     //                  GENERATE CHANNELS
@@ -387,16 +309,12 @@ module mvm_accelerator_split #(
                 .m_axi_rvalid  (m_axi_rvalid[ch]),
                 .m_axi_rready  (m_axi_rready[ch]),
                 
-                .start(ch_start[ch]),
-                .partition_done(ch_pdone[ch]),
+                .start          (ch_start[ch]),
+                .partition_done (ch_pdone[ch]),
                 .partition_index(ch_pidx[ch]),
-                .allow_prefetch(ch_allow_prefetch[ch]),
+                .allow_prefetch (ch_allow_prefetch[ch]),
 
-                .first_part_consumed(first_part_consumed[ch]),
-                .activate_fifo(activate_fifo[ch]),
-                .channel_active(ch_active[ch]),
-
-                .done_rstn(done_rstn),
+                .done_rstn   (done_rstn),
                 .channel_done(ch_done[ch])
             );
         end
@@ -417,6 +335,9 @@ module mvm_accelerator_split #(
         end
     endfunction
     
+    localparam AXI_RAM_ELEMENTS_PER_WORD    = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
+    localparam AXI_RAM_WORDS_PER_ROW        = ELEMENTS_PER_ROW / AXI_RAM_ELEMENTS_PER_WORD;
+    localparam AXI_RAM_WORDS_PER_PARTITION  = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam AXI_RAM_ADDR_WIDTH  = $clog2(AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH);
     localparam [ADDR_WIDTH-1:0] REGION_STRIDE = (1 << AXI_RAM_ADDR_WIDTH);
     localparam [NUM_RAM_PARTITIONS*ADDR_WIDTH-1:0] M_BASE_ADDR = gen_m_base_addr(AXI_RAM_BASE_ADDR, REGION_STRIDE);

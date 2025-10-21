@@ -132,11 +132,13 @@ module tb_mvm_accelerator;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
     parameter int ELEMENTS_PER_ROW = 16384;
-    parameter int NUM_ROWS         = 8;
+    parameter int NUM_ROWS         = 48;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     parameter int AXI_RAM_DATA_WIDTH = 256;
     parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
+    
+    int input_order[CHANNELS_PER_INST] = '{3, 0, 2, 1};
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
@@ -383,7 +385,6 @@ module tb_mvm_accelerator;
         end
                 
         $display("Initialization complete\n");
-        repeat (512) @(posedge clk);
         start_transfer = 1;
         
         forever begin
@@ -394,7 +395,7 @@ module tb_mvm_accelerator;
             start_transfer = 1;
         end
     end
-            
+                
     // Parallel channel drivers
     generate
         for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : channel_driver
@@ -402,14 +403,21 @@ module tb_mvm_accelerator;
                 for (int i = 0; i < NUM_TRANSFERS; i++) begin
                 
                     wait(start_transfer);
+                    
+                    // Stagger first input
+                    repeat(5012 * input_order[ch]) @(posedge clk);
 
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
                         expected[ch][j] = 0.0;
                         
                         // Send inputs
                         for (int word_idx = 0; word_idx < WORDS_PER_ROW; word_idx++) begin
+                        
+                            // Random delays
+                            //automatic bit rand_bool = ($urandom_range(0, 999) < 1); // 0.1% chance
+                            //if (rand_bool) repeat(256) @(posedge clk);
+                        
                             s_axis_a_tdata[ch] = '0;
-                            
                             for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
                                 automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
                                 automatic shortreal a32 = f16_to_f32(a_values[ch][abs_idx]);

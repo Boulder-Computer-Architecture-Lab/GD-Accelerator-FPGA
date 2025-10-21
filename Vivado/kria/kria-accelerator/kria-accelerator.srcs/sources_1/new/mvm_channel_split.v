@@ -63,11 +63,6 @@ module mvm_channel_split #(
     input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
     output wire allow_prefetch,
 
-    // Fifo gating
-    output reg  first_part_consumed,
-    input  wire activate_fifo,
-    input  wire channel_active,
-
     // Reset handling
     input  wire done_rstn,
     output reg  channel_done
@@ -96,10 +91,13 @@ module mvm_channel_split #(
     localparam WORDS_PER_PARTITION = WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam BYTES_PER_PARTITION = WORDS_PER_PARTITION * STRB_WIDTH;
 
-    localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
     localparam INPUT_FIFO_A_DEPTH = WORDS_PER_PARTITION;
+    localparam INPUT_FIFO_B_DEPTH = WORDS_PER_PARTITION;
     localparam RAM_FIFO_B_DEPTH   = AXI_RAM_WORDS_PER_PARTITION;
     localparam OUTPUT_FIFO_DEPTH  = 64;
+
+    localparam BRAM = 0;
+    localparam URAM = 1;
     localparam SKID = 2;
         
     // ------------- Input Buffers ------------
@@ -122,8 +120,8 @@ module mvm_channel_split #(
     wire                  pipe_a_tready;
 
     assign fifo_a_s_axis_tdata = gate_a_tdata;
-    assign fifo_a_s_axis_tvalid = activate_fifo && gate_a_tvalid;
-    assign gate_a_tready = activate_fifo && fifo_a_s_axis_tready;
+    assign fifo_a_s_axis_tvalid = gate_a_tvalid;
+    assign gate_a_tready = fifo_a_s_axis_tready;
 
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -154,7 +152,8 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0)
+        .PAUSE_ENABLE(0),
+        .RAM_TYPE(BRAM) 
     ) axis_data_fifo_in (
         .clk(clk),
         .rstn(rstn),
@@ -263,7 +262,8 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0)
+        .PAUSE_ENABLE(0),
+        .RAM_TYPE(URAM)
     ) axis_data_fifo_b (
         .clk(clk),
         .rstn(rstn),
@@ -355,7 +355,8 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0)
+        .PAUSE_ENABLE(0),
+        .RAM_TYPE(BRAM)
     ) axis_data_fifo_out (
         .clk(clk),
         .rstn(rstn),
@@ -417,7 +418,8 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0)
+        .PAUSE_ENABLE(0),
+        .RAM_TYPE(BRAM)
     ) ram_fifo (
         .clk(clk),
         .rstn(rstn),
@@ -557,16 +559,11 @@ module mvm_channel_split #(
     // ========================================
     
     wire last_into_ram_fifo;
-    wire last_into_compute;
 
     always @(posedge clk) begin
         if (!rstn || !done_rstn) begin
-            first_part_consumed <= 1'b0;
             partition_done <= 1'b0;
         end else begin
-           if (last_into_compute)
-               first_part_consumed <= 1'b1;
-
             partition_done <= 1'b0;
             if (last_into_ram_fifo) 
                 partition_done <= 1'b1;
@@ -574,7 +571,6 @@ module mvm_channel_split #(
     end
 
     assign last_into_ram_fifo = m_axis_dmaout_tvalid && m_axis_dmaout_tready && m_axis_dmaout_tlast;
-    assign last_into_compute  = fifo_b_m_axis_tvalid && fifo_b_m_axis_tready && fifo_b_m_axis_tlast;
     assign allow_prefetch = (fifo_b_status_depth < INPUT_FIFO_B_DEPTH-5);
     
     // ========================================

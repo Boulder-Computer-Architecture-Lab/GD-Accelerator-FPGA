@@ -88,7 +88,9 @@ module axis_fifo #
     // Enable pause request input
     parameter PAUSE_ENABLE = 0,
     // Pause between frames
-    parameter FRAME_PAUSE = FRAME_FIFO
+    parameter FRAME_PAUSE = FRAME_FIFO,
+    // 0=BRAM, 1=URAM
+    parameter RAM_TYPE = 0
 )
 (
     input  wire                   clk,
@@ -188,7 +190,7 @@ reg [ADDR_WIDTH:0] wr_ptr_reg = {ADDR_WIDTH+1{1'b0}};
 reg [ADDR_WIDTH:0] wr_ptr_commit_reg = {ADDR_WIDTH+1{1'b0}};
 reg [ADDR_WIDTH:0] rd_ptr_reg = {ADDR_WIDTH+1{1'b0}};
 
-(* ramstyle = "no_rw_check" *)
+(* ram_style = (RAM_TYPE == 0) ? "block" : "ultra", ramstyle = "no_rw_check" *)
 reg [WIDTH-1:0] mem[(2**ADDR_WIDTH)-1:0];
 reg mem_read_data_valid_reg = 1'b0;
 

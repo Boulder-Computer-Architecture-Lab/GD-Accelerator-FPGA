@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="10,660.760 ns"></ZoomStartTime>
-      <ZoomEndTime time="11,544.368 ns"></ZoomEndTime>
-      <Cursor1Time time="10,875.550 ns"></Cursor1Time>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="1,830.600 ns"></ZoomEndTime>
+      <Cursor1Time time="39,081.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="1033"></NameColumnWidth>
+      <NameColumnWidth column_width="1023"></NameColumnWidth>
       <ValueColumnWidth column_width="146"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="39" />
+   <WVObjectSize size="57" />
    <wvobject fp_name="/tb_mvm_accelerator/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -175,5 +175,91 @@
    <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /m_axis_3_tlast" type="logic">
       <obj_property name="ElementShortName">m_axis_3_tlast</obj_property>
       <obj_property name="ObjectShortName">m_axis_3_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /\channel_gen[0].channel_inst /fifo_b_status_depth" type="array">
+      <obj_property name="ElementShortName">fifo_b_status_depth[11:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_b_status_depth[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /\channel_gen[1].channel_inst /fifo_b_status_depth" type="array">
+      <obj_property name="ElementShortName">fifo_b_status_depth[11:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_b_status_depth[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /\channel_gen[2].channel_inst /fifo_b_status_depth" type="array">
+      <obj_property name="ElementShortName">fifo_b_status_depth[11:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_b_status_depth[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /\channel_gen[3].channel_inst /fifo_b_status_depth" type="array">
+      <obj_property name="ElementShortName">fifo_b_status_depth[11:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_b_status_depth[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_start" type="array">
+      <obj_property name="ElementShortName">ch_start[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_start[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_init" type="array">
+      <obj_property name="ElementShortName">ch_init[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_init[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_pidx" type="array">
+      <obj_property name="ElementShortName">ch_pidx[3:0][2:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_pidx[3:0][2:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_active" type="array">
+      <obj_property name="ElementShortName">ch_active[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_active[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_pdone" type="array">
+      <obj_property name="ElementShortName">ch_pdone[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_pdone[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_num_rows_fetched" type="array">
+      <obj_property name="ElementShortName">ch_num_rows_fetched[3:0][8:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_num_rows_fetched[3:0][8:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_all_rows_fetched" type="array">
+      <obj_property name="ElementShortName">ch_all_rows_fetched[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_all_rows_fetched[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /part_in_use" type="array">
+      <obj_property name="ElementShortName">part_in_use[3:0]</obj_property>
+      <obj_property name="ObjectShortName">part_in_use[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /part_grant" type="array">
+      <obj_property name="ElementShortName">part_grant[3:0]</obj_property>
+      <obj_property name="ObjectShortName">part_grant[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /part_valid" type="array">
+      <obj_property name="ElementShortName">part_valid[3:0]</obj_property>
+      <obj_property name="ObjectShortName">part_valid[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /ch_allow_prefetch" type="array">
+      <obj_property name="ElementShortName">ch_allow_prefetch[3:0]</obj_property>
+      <obj_property name="ObjectShortName">ch_allow_prefetch[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /burst_count" type="array">
+      <obj_property name="ElementShortName">burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">burst_count[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /activate_fifo" type="array">
+      <obj_property name="ElementShortName">activate_fifo[3:0]</obj_property>
+      <obj_property name="ObjectShortName">activate_fifo[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_mvm_accelerator/\gen_accel[0].dut /\genblk2.mvm /first_part_consumed" type="array">
+      <obj_property name="ElementShortName">first_part_consumed[3:0]</obj_property>
+      <obj_property name="ObjectShortName">first_part_consumed[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
 </wave_config>
