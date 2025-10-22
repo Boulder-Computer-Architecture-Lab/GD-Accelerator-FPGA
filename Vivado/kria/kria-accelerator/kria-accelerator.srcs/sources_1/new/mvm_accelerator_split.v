@@ -194,19 +194,15 @@ module mvm_accelerator_split #(
     localparam NUM_PARTITIONS_WIDTH = $clog2(NUM_RAM_PARTITIONS+1);
     localparam ROWS_PER_CHANNEL_WIDTH = $clog2(ROWS_PER_CHANNEL+1);
 
-    reg                             ch_start  [NUM_CHANNELS-1:0];
-    reg                             ch_init   [NUM_CHANNELS-1:0];
-    reg  [NUM_PARTITIONS_WIDTH-1:0] ch_pidx   [NUM_CHANNELS-1:0];
-    wire                            ch_pdone  [NUM_CHANNELS-1:0];
-
+    reg                               ch_start            [NUM_CHANNELS-1:0];
+    reg                               ch_init             [NUM_CHANNELS-1:0];
+    reg  [NUM_PARTITIONS_WIDTH-1:0]   ch_pidx             [NUM_CHANNELS-1:0];
+    wire                              ch_pdone            [NUM_CHANNELS-1:0];
+    reg                               ch_seen_a_data      [NUM_CHANNELS-1:0];
     reg  [ROWS_PER_CHANNEL_WIDTH-1:0] ch_num_rows_fetched [NUM_CHANNELS-1:0];
     wire                              ch_all_rows_fetched [NUM_CHANNELS-1:0];
 
     reg  part_in_use [NUM_RAM_PARTITIONS-1:0];
-    wire part_valid  [NUM_RAM_PARTITIONS-1:0];
-
-    wire ch_allow_prefetch [NUM_CHANNELS-1:0];
-    reg  ch_seen_a_data    [NUM_CHANNELS-1:0];
     
     genvar ch;
     generate
@@ -232,7 +228,6 @@ module mvm_accelerator_split #(
 
                 if (!ch_start[p]) begin
                     ch_start[p] <= !part_in_use[ch_pidx[p]]
-                                &&  ch_allow_prefetch  [p]
                                 && !ch_all_rows_fetched[p]
                                 &&  ch_seen_a_data[p];
                 end else begin
@@ -312,7 +307,6 @@ module mvm_accelerator_split #(
                 .start          (ch_start[ch]),
                 .partition_done (ch_pdone[ch]),
                 .partition_index(ch_pidx[ch]),
-                .allow_prefetch (ch_allow_prefetch[ch]),
 
                 .done_rstn   (done_rstn),
                 .channel_done(ch_done[ch])

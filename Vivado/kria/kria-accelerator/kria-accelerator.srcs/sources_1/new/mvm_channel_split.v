@@ -61,7 +61,6 @@ module mvm_channel_split #(
     input  wire start,
     output reg  partition_done,
     input  wire [$clog2(NUM_RAM_PARTITIONS+1)-1:0] partition_index,
-    output wire allow_prefetch,
 
     // Reset handling
     input  wire done_rstn,
@@ -555,10 +554,10 @@ module mvm_channel_split #(
     );
 
     // ========================================
-    //         PARTITION ACCESS CTRL
+    //             PARTITION DONE
     // ========================================
     
-    wire last_into_ram_fifo;
+    wire last_into_ram_fifo = m_axis_dmaout_tvalid && m_axis_dmaout_tready && m_axis_dmaout_tlast;
 
     always @(posedge clk) begin
         if (!rstn || !done_rstn) begin
@@ -569,9 +568,6 @@ module mvm_channel_split #(
                 partition_done <= 1'b1;
         end
     end
-
-    assign last_into_ram_fifo = m_axis_dmaout_tvalid && m_axis_dmaout_tready && m_axis_dmaout_tlast;
-    assign allow_prefetch = (fifo_b_status_depth < INPUT_FIFO_B_DEPTH-5);
     
     // ========================================
     //             COMPUTE LOGIC

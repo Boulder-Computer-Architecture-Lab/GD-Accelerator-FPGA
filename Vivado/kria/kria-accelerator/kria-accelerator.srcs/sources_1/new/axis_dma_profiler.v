@@ -76,6 +76,61 @@ module axis_dma_profiler #(
     wire [MAX_CH-1:0] m_tvalid_v = {m3_axis_tvalid, m2_axis_tvalid, m1_axis_tvalid, m0_axis_tvalid};
     wire [MAX_CH-1:0] m_tlast_v  = {m3_axis_tlast,  m2_axis_tlast,  m1_axis_tlast,  m0_axis_tlast};
 
+    // -------- global stats --------
+    wire any_hs_s      = |(s_tvalid_v & s_tready_v);
+    wire any_running_s = |running;
+    wire any_running_m = |running_m;
+
+    // Track first s_axis hs to last s_axis hs
+    reg        g_ss_active, g_ss_valid;
+    reg [63:0] g_ss_cycles;
+
+    always @(posedge axis_clk) begin
+        if (!axis_aresetn) begin
+            g_ss_active <= 1'b0; 
+            g_ss_valid  <= 1'b0;
+            g_ss_cycles <= 64'd0;
+        end else begin
+            if (!g_ss_active && !any_running_s && any_hs_s) begin
+                g_ss_active <= 1'b1;
+                g_ss_valid  <= 1'b0;
+                g_ss_cycles <= 64'd1;
+            end else if (g_ss_active) begin
+                if (!any_running_s) begin
+                    g_ss_active  <= 1'b0;
+                    g_ss_valid   <= 1'b1;
+                end else begin
+                    g_ss_cycles <= g_ss_cycles + 1;
+                end
+            end
+        end
+    end
+
+    // Track first s_axis hs to last m_axis hs
+    reg        g_sm_active, g_sm_valid;
+    reg [63:0] g_sm_cycles;
+
+    always @(posedge axis_clk) begin
+        if (!axis_aresetn) begin
+            g_sm_active <= 1'b0; 
+            g_sm_valid  <= 1'b0;
+            g_sm_cycles <= 64'd0;
+        end else begin
+            if (!g_sm_active && !any_running_m && any_hs_s) begin
+                g_sm_active <= 1'b1;
+                g_sm_valid  <= 1'b0;
+                g_sm_cycles <= 64'd1;
+            end else if (g_sm_active) begin
+                if (!any_running_m) begin
+                    g_sm_active  <= 1'b0;
+                    g_sm_valid   <= 1'b1;
+                end else begin
+                    g_sm_cycles <= g_sm_cycles + 1;
+                end
+            end
+        end
+    end
+
     // -------- per channel stats --------
     localparam AXIS_S_DATA_BYTES = AXIS_S_DATA_WIDTH/8;
     localparam AXIS_M_DATA_BYTES = AXIS_M_DATA_WIDTH/8;
@@ -205,61 +260,6 @@ module axis_dma_profiler #(
             end
         end
     endgenerate
-
-    // -------- global stats --------
-    wire any_hs_s      = |(s_tvalid_v & s_tready_v);
-    wire any_running_s = |running;
-    wire any_running_m = |running_m;
-
-    // Track first s_axis hs to last s_axis hs
-    reg        g_ss_active, g_ss_valid;
-    reg [63:0] g_ss_cycles;
-
-    always @(posedge axis_clk) begin
-        if (!axis_aresetn) begin
-            g_ss_active <= 1'b0; 
-            g_ss_valid  <= 1'b0;
-            g_ss_cycles <= 64'd0;
-        end else begin
-            if (!g_ss_active && !any_running_s && any_hs_s) begin
-                g_ss_active <= 1'b1;
-                g_ss_valid  <= 1'b0;
-                g_ss_cycles <= 64'd1;
-            end else if (g_ss_active) begin
-                if (!any_running_s) begin
-                    g_ss_active  <= 1'b0;
-                    g_ss_valid   <= 1'b1;
-                end else begin
-                    g_ss_cycles <= g_ss_cycles + 1;
-                end
-            end
-        end
-    end
-
-    // Track first s_axis hs to last m_axis hs
-    reg        g_sm_active, g_sm_valid;
-    reg [63:0] g_sm_cycles;
-
-    always @(posedge axis_clk) begin
-        if (!axis_aresetn) begin
-            g_sm_active <= 1'b0; 
-            g_sm_valid  <= 1'b0;
-            g_sm_cycles <= 64'd0;
-        end else begin
-            if (!g_sm_active && !any_running_m && any_hs_s) begin
-                g_sm_active <= 1'b1;
-                g_sm_valid  <= 1'b0;
-                g_sm_cycles <= 64'd1;
-            end else if (g_sm_active) begin
-                if (!any_running_m) begin
-                    g_sm_active  <= 1'b0;
-                    g_sm_valid   <= 1'b1;
-                end else begin
-                    g_sm_cycles <= g_sm_cycles + 1;
-                end
-            end
-        end
-    end
 
     // -------- cdc --------
     wire [AXIL_ADDR_WIDTH-1:0] m_axil_awaddr;

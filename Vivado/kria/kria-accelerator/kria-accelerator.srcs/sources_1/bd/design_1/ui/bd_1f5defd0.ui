@@ -6,8 +6,8 @@
    "Color Coded_ScaleFactor":"1.75185",
    "Color Coded_TopLeft":"10,-58",
    "Default View_Layers":"/rst_ps8_0_99M_peripheral_aresetn:true|/zynq_ultra_ps_e_0_pl_clk0:true|/zynq_ultra_ps_e_0_pl_resetn0:true|",
-   "Default View_ScaleFactor":"0.81509",
-   "Default View_TopLeft":"-470,-1127",
+   "Default View_ScaleFactor":"2.29139",
+   "Default View_TopLeft":"1203,-716",
    "Display-PortTypeClock":"true",
    "Display-PortTypeReset":"true",
    "ExpandedHierarchyInLayout":"",
@@ -29,59 +29,59 @@ preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1700 -y -410 -defaultsOSRD
 preplace inst ps8_0_axi_periph -pg 1 -lvl 2 -x 1090 -y -270 -defaultsOSRD
 preplace inst rst_ps8_0_99M -pg 1 -lvl 1 -x 540 -y 60 -defaultsOSRD
 preplace inst axi_smc -pg 1 -lvl 1 -x 540 -y -1030 -defaultsOSRD -orient R180
-preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 2180 -y -360 -defaultsOSRD
+preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 2200 -y -360 -defaultsOSRD
 preplace inst axi_cdma_0 -pg 1 -lvl 3 -x 1700 -y -610 -defaultsOSRD
-preplace inst axi_smc1 -pg 1 -lvl 4 -x 2180 -y -600 -defaultsOSRD
+preplace inst axi_smc1 -pg 1 -lvl 4 -x 2200 -y -600 -defaultsOSRD
 preplace inst ps8_0_axi_periph1 -pg 1 -lvl 2 -x 1090 -y 30 -defaultsOSRD
-preplace inst smartconnect_0 -pg 1 -lvl 4 -x 2180 -y -100 -defaultsOSRD -orient R180
+preplace inst smartconnect_0 -pg 1 -lvl 4 -x 2200 -y -100 -defaultsOSRD -orient R180
 preplace inst axi_dma_1 -pg 1 -lvl 3 -x 1700 -y -170 -defaultsOSRD
 preplace inst smartconnect_1 -pg 1 -lvl 1 -x 540 -y -860 -defaultsOSRD -orient R180
-preplace inst smartconnect_2 -pg 1 -lvl 4 -x 2180 -y 80 -defaultsOSRD -orient R180
+preplace inst smartconnect_2 -pg 1 -lvl 4 -x 2200 -y 80 -defaultsOSRD -orient R180
 preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1700 -y 70 -defaultsOSRD
 preplace inst axi_dma_3 -pg 1 -lvl 3 -x 1700 -y 310 -defaultsOSRD
 preplace inst smartconnect_3 -pg 1 -lvl 1 -x 540 -y -660 -defaultsOSRD -orient R180
 preplace inst smartconnect_4 -pg 1 -lvl 1 -x 540 -y -500 -defaultsOSRD -orient R180
-preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 930J -750 1470J -770 2010 -690 2310
-preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 230 -400 920 -710 1510 -720 2000 -680 2360
+preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 930J -750 1470J -770 2030 -690 2330
+preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 230 -400 920 -710 1510 -720 2020 -680 2380
 preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 0 2 250 160 830
-preplace netloc S00_AXI_1 1 1 1 840 -220n
+preplace netloc S00_AXI_1 1 1 1 840 -230n
 preplace netloc axi_cdma_0_M_AXI 1 3 1 N -620
 preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1950J -450n
 preplace netloc axi_dma_0_M_AXI_MM2S 1 1 3 NJ -990 NJ -990 1890
-preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1940 -510 2340
+preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1940 -510 2360
 preplace netloc axi_dma_0_M_AXI_SG 1 1 3 NJ -1030 NJ -1030 1900
 preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1960 -430n
 preplace netloc axi_dma_1_M_AXI_MM2S 1 1 3 NJ -830 N -830 1870
-preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 NJ -200 2320J
+preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 NJ -200 2340J
 preplace netloc axi_dma_1_M_AXI_SG 1 1 3 NJ -850 N -850 1880
 preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1970 -410n
 preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 830J -760 NJ -760 1930
-preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1990J -10 2320J
+preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1990J -10 2340J
 preplace netloc axi_dma_2_M_AXI_SG 1 1 3 840J -740 1480J -750 1920
-preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 2020 -390n
+preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 2040 -390n
 preplace netloc axi_dma_3_M_AXI_MM2S 1 1 3 940J -730 1490J -740 1910
-preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 2040 170 2310J
+preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 2060 170 2330J
 preplace netloc axi_dma_3_M_AXI_SG 1 1 3 950J -720 1500J -730 1860
-preplace netloc axi_smc1_M00_AXI 1 1 4 NJ -1010 NJ -1010 NJ -1010 2320
-preplace netloc axi_smc1_M01_AXI 1 3 2 2050 -520 2320
+preplace netloc axi_smc1_M00_AXI 1 1 4 NJ -1010 NJ -1010 NJ -1010 2340
+preplace netloc axi_smc1_M01_AXI 1 3 2 2070 -520 2340
 preplace netloc axi_smc_M00_AXI 1 0 1 250 -1030n
-preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1540 -710 NJ -710 2370J
-preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1530 470 NJ 470 2370J
-preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1480 480 NJ 480 2350J
-preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1540 450 NJ 450 2330J
+preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1540 -710 NJ -710 2390J
+preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1530 470 NJ 470 2390J
+preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1480 480 NJ 480 2370J
+preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1540 450 NJ 450 2350J
 preplace netloc ps8_0_axi_periph1_M00_AXI 1 2 1 1520 10n
 preplace netloc ps8_0_axi_periph1_M01_AXI 1 2 1 1230 40n
 preplace netloc ps8_0_axi_periph_M00_AXI 1 2 1 1500 -640n
 preplace netloc ps8_0_axi_periph_M01_AXI 1 2 2 1480 -700 1980J
 preplace netloc ps8_0_axi_periph_M02_AXI 1 2 1 1530 -470n
 preplace netloc ps8_0_axi_periph_M03_AXI 1 2 1 1480 -240n
-preplace netloc smartconnect_0_M00_AXI 1 0 4 190 460 NJ 460 NJ 460 2030
+preplace netloc smartconnect_0_M00_AXI 1 0 4 190 460 NJ 460 NJ 460 2050
 preplace netloc smartconnect_1_M00_AXI 1 0 1 200 -860n
-preplace netloc smartconnect_2_M00_AXI 1 0 4 240 440 N 440 N 440 2050
+preplace netloc smartconnect_2_M00_AXI 1 0 4 240 440 N 440 N 440 2070
 preplace netloc smartconnect_3_M00_AXI 1 0 1 210 -660n
 preplace netloc smartconnect_4_M00_AXI 1 0 1 220 -500n
-preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 1 1 950J -390n
-levelinfo -pg 1 -20 540 1090 1700 2180 2520
+preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 1 1 830J -390n
+levelinfo -pg 1 -20 540 1090 1700 2200 2420
 pagesize -pg 1 -db -bbox -sgen -20 -1370 2820 940
 "
 }
