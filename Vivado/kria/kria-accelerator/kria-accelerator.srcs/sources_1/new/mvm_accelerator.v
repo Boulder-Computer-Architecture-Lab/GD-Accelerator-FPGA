@@ -118,62 +118,106 @@ module mvm_accelerator #(
     localparam ELEMENTS_PER_WORD  = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW      = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
     localparam ROWS_PER_CHANNEL   = NUM_ROWS / NUM_CHANNELS;
+
+    // =============================================================
+    //                      PACK CHANNELS
+    // =============================================================
+    
+    localparam MAX_CH = 4;
+
+    // Input stream arrays
+    wire [DATA_WIDTH*MAX_CH-1:0] s_axis_a_tdata;
+    wire [MAX_CH-1:0]            s_axis_a_tvalid;
+    wire [MAX_CH-1:0]            s_axis_a_tready;
+    wire [MAX_CH-1:0]            s_axis_a_tlast;
+    
+    assign s_axis_a_tdata[DATA_WIDTH*0 +: DATA_WIDTH] = s_axis_a_0_tdata;
+    assign s_axis_a_tdata[DATA_WIDTH*1 +: DATA_WIDTH] = s_axis_a_1_tdata;
+    assign s_axis_a_tdata[DATA_WIDTH*2 +: DATA_WIDTH] = s_axis_a_2_tdata;
+    assign s_axis_a_tdata[DATA_WIDTH*3 +: DATA_WIDTH] = s_axis_a_3_tdata;
+
+    assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
+    assign s_axis_a_tvalid[1] = s_axis_a_1_tvalid;
+    assign s_axis_a_tvalid[2] = s_axis_a_2_tvalid;
+    assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
+
+    assign s_axis_a_0_tready  = s_axis_a_tready[0];
+    assign s_axis_a_1_tready  = s_axis_a_tready[1];
+    assign s_axis_a_2_tready  = s_axis_a_tready[2];
+    assign s_axis_a_3_tready  = s_axis_a_tready[3];
+
+    assign s_axis_a_tlast[0]  = s_axis_a_0_tlast;
+    assign s_axis_a_tlast[1]  = s_axis_a_1_tlast;
+    assign s_axis_a_tlast[2]  = s_axis_a_2_tlast;
+    assign s_axis_a_tlast[3]  = s_axis_a_3_tlast;
+
+    // Output stream arrays
+    wire [RESULT_WIDTH*MAX_CH-1:0] m_axis_tdata;
+    wire [MAX_CH-1:0]              m_axis_tvalid;
+    wire [MAX_CH-1:0]              m_axis_tready;
+    wire [MAX_CH-1:0]              m_axis_tlast;
+
+    assign m_axis_0_tdata   = m_axis_tdata[RESULT_WIDTH*0 +: RESULT_WIDTH];
+    assign m_axis_1_tdata   = m_axis_tdata[RESULT_WIDTH*1 +: RESULT_WIDTH];
+    assign m_axis_2_tdata   = m_axis_tdata[RESULT_WIDTH*2 +: RESULT_WIDTH];
+    assign m_axis_3_tdata   = m_axis_tdata[RESULT_WIDTH*3 +: RESULT_WIDTH];
+    
+    assign m_axis_0_tvalid  = m_axis_tvalid[0];
+    assign m_axis_1_tvalid  = m_axis_tvalid[1];
+    assign m_axis_2_tvalid  = m_axis_tvalid[2];
+    assign m_axis_3_tvalid  = m_axis_tvalid[3];
+    
+    assign m_axis_tready[0] = m_axis_0_tready;
+    assign m_axis_tready[1] = m_axis_1_tready;
+    assign m_axis_tready[2] = m_axis_2_tready;
+    assign m_axis_tready[3] = m_axis_3_tready;
+    
+    assign m_axis_0_tlast   = m_axis_tlast[0];
+    assign m_axis_1_tlast   = m_axis_tlast[1];
+    assign m_axis_2_tlast   = m_axis_tlast[2];
+    assign m_axis_3_tlast   = m_axis_tlast[3];
+    
+    // =============================================================
+    //                         INSTANCES
+    // =============================================================
     
     generate
-
         if (PROFILE) begin
             axis_dma_profiler #(
                 .NUM_DMAS(NUM_CHANNELS),
-                .USE_CDC(0),
+                .MAX_DMAS(MAX_CH),
                 .AXIS_S_DATA_WIDTH(DATA_WIDTH),
                 .AXIS_M_DATA_WIDTH(RESULT_WIDTH),
                 .AXIL_ADDR_WIDTH(AXIL_ADDR_WIDTH),
                 .AXIL_DATA_WIDTH(AXIL_DATA_WIDTH)
             ) prof (
-                .axis_clk        (clk),
-                .axis_aresetn    (rstn),
-                .s_axil_aclk     (s_axil_aclk),
-                .s_axil_aresetn  (s_axil_aresetn),
-                .s_axil_awaddr   (s_axil_awaddr),
-                .s_axil_awvalid  (s_axil_awvalid),
-                .s_axil_awready  (s_axil_awready),
-                .s_axil_wdata    (s_axil_wdata),
-                .s_axil_wvalid   (s_axil_wvalid),
-                .s_axil_wready   (s_axil_wready),
-                .s_axil_bresp    (s_axil_bresp),
-                .s_axil_bvalid   (s_axil_bvalid),
-                .s_axil_bready   (s_axil_bready),
-                .s_axil_araddr   (s_axil_araddr),
-                .s_axil_arvalid  (s_axil_arvalid),
-                .s_axil_arready  (s_axil_arready),
-                .s_axil_rdata    (s_axil_rdata),
-                .s_axil_rresp    (s_axil_rresp),
-                .s_axil_rvalid   (s_axil_rvalid),
-                .s_axil_rready   (s_axil_rready),
-                .s0_axis_tvalid  (s_axis_a_0_tvalid),
-                .s0_axis_tready  (s_axis_a_0_tready),
-                .s0_axis_tlast   (s_axis_a_0_tlast),
-                .s1_axis_tvalid  (s_axis_a_1_tvalid),
-                .s1_axis_tready  (s_axis_a_1_tready),
-                .s1_axis_tlast   (s_axis_a_1_tlast),
-                .s2_axis_tvalid  (s_axis_a_2_tvalid),
-                .s2_axis_tready  (s_axis_a_2_tready),
-                .s2_axis_tlast   (s_axis_a_2_tlast),
-                .s3_axis_tvalid  (s_axis_a_3_tvalid),
-                .s3_axis_tready  (s_axis_a_3_tready),
-                .s3_axis_tlast   (s_axis_a_3_tlast),
-                .m0_axis_tvalid  (m_axis_0_tvalid),
-                .m0_axis_tready  (m_axis_0_tready),
-                .m0_axis_tlast   (m_axis_0_tlast),
-                .m1_axis_tvalid  (m_axis_1_tvalid),
-                .m1_axis_tready  (m_axis_1_tready),
-                .m1_axis_tlast   (m_axis_1_tlast),
-                .m2_axis_tvalid  (m_axis_2_tvalid),
-                .m2_axis_tready  (m_axis_2_tready),
-                .m2_axis_tlast   (m_axis_2_tlast),
-                .m3_axis_tvalid  (m_axis_3_tvalid),
-                .m3_axis_tready  (m_axis_3_tready),
-                .m3_axis_tlast   (m_axis_3_tlast)
+                .axis_clk       (clk),
+                .axis_aresetn   (rstn),
+                .s_tvalid_v     (s_axis_a_tvalid),
+                .s_tready_v     (s_axis_a_tready),
+                .s_tlast_v      (s_axis_a_tlast),
+                .m_tvalid_v     (m_axis_tvalid),
+                .m_tready_v     (m_axis_tready),
+                .m_tlast_v      (m_axis_tlast),
+
+                .s_axil_aclk    (s_axil_aclk),
+                .s_axil_aresetn (s_axil_aresetn),
+                .s_axil_awaddr  (s_axil_awaddr),
+                .s_axil_awvalid (s_axil_awvalid),
+                .s_axil_awready (s_axil_awready),
+                .s_axil_wdata   (s_axil_wdata),
+                .s_axil_wvalid  (s_axil_wvalid),
+                .s_axil_wready  (s_axil_wready),
+                .s_axil_bresp   (s_axil_bresp),
+                .s_axil_bvalid  (s_axil_bvalid),
+                .s_axil_bready  (s_axil_bready),
+                .s_axil_araddr  (s_axil_araddr),
+                .s_axil_arvalid (s_axil_arvalid),
+                .s_axil_arready (s_axil_arready),
+                .s_axil_rdata   (s_axil_rdata),
+                .s_axil_rresp   (s_axil_rresp),
+                .s_axil_rvalid  (s_axil_rvalid),
+                .s_axil_rready  (s_axil_rready)
             );
         end
 
@@ -199,65 +243,36 @@ module mvm_accelerator #(
                 .rstn(rstn),
                 
                 // Input channels
-                .s_axis_a_0_tdata(s_axis_a_0_tdata),
-                .s_axis_a_0_tvalid(s_axis_a_0_tvalid),
-                .s_axis_a_0_tready(s_axis_a_0_tready),
-            
-                .s_axis_a_1_tdata(s_axis_a_1_tdata),
-                .s_axis_a_1_tvalid(s_axis_a_1_tvalid),
-                .s_axis_a_1_tready(s_axis_a_1_tready),
-
-                .s_axis_a_2_tdata(s_axis_a_2_tdata),
-                .s_axis_a_2_tvalid(s_axis_a_2_tvalid),
-                .s_axis_a_2_tready(s_axis_a_2_tready),
-            
-                .s_axis_a_3_tdata(s_axis_a_3_tdata),
-                .s_axis_a_3_tvalid(s_axis_a_3_tvalid),
-                .s_axis_a_3_tready(s_axis_a_3_tready),
+                .s_axis_a_tdata (s_axis_a_tdata),
+                .s_axis_a_tvalid(s_axis_a_tvalid),
+                .s_axis_a_tready(s_axis_a_tready),
             
                 // Output channels
-                .m_axis_0_tdata(m_axis_0_tdata),
-                .m_axis_0_tvalid(m_axis_0_tvalid),
-                .m_axis_0_tready(m_axis_0_tready),
-                .m_axis_0_tlast(m_axis_0_tlast),
-            
-                .m_axis_1_tdata(m_axis_1_tdata),
-                .m_axis_1_tvalid(m_axis_1_tvalid),
-                .m_axis_1_tready(m_axis_1_tready),
-                .m_axis_1_tlast(m_axis_1_tlast),
-            
-                .m_axis_2_tdata(m_axis_2_tdata),
-                .m_axis_2_tvalid(m_axis_2_tvalid),
-                .m_axis_2_tready(m_axis_2_tready),
-                .m_axis_2_tlast(m_axis_2_tlast),
-            
-                .m_axis_3_tdata(m_axis_3_tdata),
-                .m_axis_3_tvalid(m_axis_3_tvalid),
-                .m_axis_3_tready(m_axis_3_tready),
-                .m_axis_3_tlast(m_axis_3_tlast),
+                .m_axis_tdata (m_axis_tdata),
+                .m_axis_tvalid(m_axis_tvalid),
+                .m_axis_tready(m_axis_tready),
+                .m_axis_tlast (m_axis_tlast),
             
                 // AXI slave interface
-                .s_axi_b_awid(s_axi_b_awid),
-                .s_axi_b_awaddr(s_axi_b_awaddr),
-                .s_axi_b_awlen(s_axi_b_awlen),
-                .s_axi_b_awsize(s_axi_b_awsize),
+                .s_axi_b_awid   (s_axi_b_awid),
+                .s_axi_b_awaddr (s_axi_b_awaddr),
+                .s_axi_b_awlen  (s_axi_b_awlen),
+                .s_axi_b_awsize (s_axi_b_awsize),
                 .s_axi_b_awburst(s_axi_b_awburst),
-                .s_axi_b_awlock(s_axi_b_awlock),
+                .s_axi_b_awlock (s_axi_b_awlock),
                 .s_axi_b_awcache(s_axi_b_awcache),
-                .s_axi_b_awprot(s_axi_b_awprot),
+                .s_axi_b_awprot (s_axi_b_awprot),
                 .s_axi_b_awvalid(s_axi_b_awvalid),
                 .s_axi_b_awready(s_axi_b_awready),
-            
-                .s_axi_b_wdata(s_axi_b_wdata),
-                .s_axi_b_wstrb(s_axi_b_wstrb),
-                .s_axi_b_wlast(s_axi_b_wlast),
-                .s_axi_b_wvalid(s_axi_b_wvalid),
-                .s_axi_b_wready(s_axi_b_wready),
-            
-                .s_axi_b_bid(s_axi_b_bid),
-                .s_axi_b_bresp(s_axi_b_bresp),
-                .s_axi_b_bvalid(s_axi_b_bvalid),
-                .s_axi_b_bready(s_axi_b_bready)
+                .s_axi_b_wdata  (s_axi_b_wdata),
+                .s_axi_b_wstrb  (s_axi_b_wstrb),
+                .s_axi_b_wlast  (s_axi_b_wlast),
+                .s_axi_b_wvalid (s_axi_b_wvalid),
+                .s_axi_b_wready (s_axi_b_wready),
+                .s_axi_b_bid    (s_axi_b_bid),
+                .s_axi_b_bresp  (s_axi_b_bresp),
+                .s_axi_b_bvalid (s_axi_b_bvalid),
+                .s_axi_b_bready (s_axi_b_bready)
             );
         end
     endgenerate

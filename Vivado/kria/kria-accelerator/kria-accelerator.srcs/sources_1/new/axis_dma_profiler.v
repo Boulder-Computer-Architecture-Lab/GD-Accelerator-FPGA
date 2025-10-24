@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 
 module axis_dma_profiler #(
-    parameter NUM_DMAS        = 4, 
-    parameter USE_CDC         = 0,
+    parameter NUM_DMAS = 4, 
+    parameter MAX_DMAS = 4,
 
     parameter AXIS_S_DATA_WIDTH = 128,
     parameter AXIS_M_DATA_WIDTH = 64,
@@ -33,48 +33,14 @@ module axis_dma_profiler #(
     output wire                       s_axil_rvalid,
     input  wire                       s_axil_rready,
 
-    input  wire                       s0_axis_tvalid,
-    input  wire                       s0_axis_tready,
-    input  wire                       s0_axis_tlast,
+    input  wire [MAX_DMAS-1:0]        s_tready_v,
+    input  wire [MAX_DMAS-1:0]        s_tvalid_v,
+    input  wire [MAX_DMAS-1:0]        s_tlast_v,
 
-    input  wire                       m0_axis_tvalid,
-    input  wire                       m0_axis_tready,
-    input  wire                       m0_axis_tlast,
-
-    input  wire                       s1_axis_tvalid,
-    input  wire                       s1_axis_tready,
-    input  wire                       s1_axis_tlast,
-
-    input  wire                       m1_axis_tvalid,
-    input  wire                       m1_axis_tready,
-    input  wire                       m1_axis_tlast,
-
-    input  wire                       s2_axis_tvalid,
-    input  wire                       s2_axis_tready,
-    input  wire                       s2_axis_tlast,
-
-    input  wire                       m2_axis_tvalid,
-    input  wire                       m2_axis_tready,
-    input  wire                       m2_axis_tlast,
-
-    input  wire                       s3_axis_tvalid,
-    input  wire                       s3_axis_tready,
-    input  wire                       s3_axis_tlast,
-
-    input  wire                       m3_axis_tvalid,
-    input  wire                       m3_axis_tready,
-    input  wire                       m3_axis_tlast
+    input  wire [MAX_DMAS-1:0]        m_tready_v,
+    input  wire [MAX_DMAS-1:0]        m_tvalid_v,
+    input  wire [MAX_DMAS-1:0]        m_tlast_v
 );
-
-    localparam MAX_CH = 4;
-
-    wire [MAX_CH-1:0] s_tready_v = {s3_axis_tready, s2_axis_tready, s1_axis_tready, s0_axis_tready};
-    wire [MAX_CH-1:0] s_tvalid_v = {s3_axis_tvalid, s2_axis_tvalid, s1_axis_tvalid, s0_axis_tvalid};
-    wire [MAX_CH-1:0] s_tlast_v  = {s3_axis_tlast,  s2_axis_tlast,  s1_axis_tlast,  s0_axis_tlast};
-
-    wire [MAX_CH-1:0] m_tready_v = {m3_axis_tready, m2_axis_tready, m1_axis_tready, m0_axis_tready};
-    wire [MAX_CH-1:0] m_tvalid_v = {m3_axis_tvalid, m2_axis_tvalid, m1_axis_tvalid, m0_axis_tvalid};
-    wire [MAX_CH-1:0] m_tlast_v  = {m3_axis_tlast,  m2_axis_tlast,  m1_axis_tlast,  m0_axis_tlast};
 
     // -------- global stats --------
     wire any_hs_s      = |(s_tvalid_v & s_tready_v);
@@ -135,33 +101,31 @@ module axis_dma_profiler #(
     localparam AXIS_S_DATA_BYTES = AXIS_S_DATA_WIDTH/8;
     localparam AXIS_M_DATA_BYTES = AXIS_M_DATA_WIDTH/8;
 
-    reg  [MAX_CH-1:0] running, have_result;
-    reg  [63:0]       cycle_cnt [0:MAX_CH-1];
-    reg  [63:0]       beat_cnt  [0:MAX_CH-1];
-    reg  [63:0]       byte_cnt  [0:MAX_CH-1];
-    reg  [31:0]       pkt_cnt   [0:MAX_CH-1];
+    reg  [MAX_DMAS-1:0] running, have_result;
+    reg  [63:0]         cycle_cnt       [0:MAX_DMAS-1];
+    reg  [63:0]         beat_cnt        [0:MAX_DMAS-1];
+    reg  [63:0]         byte_cnt        [0:MAX_DMAS-1];
+    reg  [31:0]         pkt_cnt         [0:MAX_DMAS-1];
+    reg  [63:0]         tready_low_cnt  [0:MAX_DMAS-1];
+    reg  [63:0]         tvalid_low_cnt  [0:MAX_DMAS-1];
+    reg  [63:0]         first_hs_offset [0:MAX_DMAS-1];
 
-    reg  [63:0]       tready_low_cnt [0:MAX_CH-1];
-    reg  [63:0]       tvalid_low_cnt [0:MAX_CH-1];
+    reg         armed      [0:MAX_DMAS-1]; // seen tlast, waiting for next packet start
+    reg  [63:0] idle_cnt   [0:MAX_DMAS-1];
+    reg  [63:0] gap_last   [0:MAX_DMAS-1];
+    reg  [63:0] gap_total  [0:MAX_DMAS-1];
+    reg  [63:0] gap_min    [0:MAX_DMAS-1];
+    reg  [63:0] gap_max    [0:MAX_DMAS-1];
+    reg  [31:0] gap_count  [0:MAX_DMAS-1];
+    reg         gap_valid  [0:MAX_DMAS-1];
+    reg  [63:0] busy_total [0:MAX_DMAS-1];
 
-    reg  [63:0]       first_hs_offset [0:MAX_CH-1];
-
-    reg         armed      [0:MAX_CH-1]; // seen tlast, waiting for next packet start
-    reg  [63:0] idle_cnt   [0:MAX_CH-1];
-    reg  [63:0] gap_last   [0:MAX_CH-1];
-    reg  [63:0] gap_total  [0:MAX_CH-1];
-    reg  [63:0] gap_min    [0:MAX_CH-1];
-    reg  [63:0] gap_max    [0:MAX_CH-1];
-    reg  [31:0] gap_count  [0:MAX_CH-1];
-    reg         gap_valid  [0:MAX_CH-1];
-    reg  [63:0] busy_total [0:MAX_CH-1];
-
-    reg seen_hs [0:MAX_CH-1];
-    reg [MAX_CH-1:0] running_m;
+    reg seen_hs [0:MAX_DMAS-1];
+    reg [MAX_DMAS-1:0] running_m;
 
     genvar ch;
     generate
-        for (ch = 0; ch < MAX_CH; ch = ch + 1) begin : g_prof
+        for (ch = 0; ch < MAX_DMAS; ch = ch + 1) begin : g_prof
 
             wire active = (ch < NUM_DMAS);
 
@@ -261,88 +225,7 @@ module axis_dma_profiler #(
         end
     endgenerate
 
-    // -------- cdc --------
-    wire [AXIL_ADDR_WIDTH-1:0] m_axil_awaddr;
-    wire                       m_axil_awvalid;
-    wire                       m_axil_awready;
-    wire [AXIL_DATA_WIDTH-1:0] m_axil_wdata;
-    wire                       m_axil_wvalid;
-    wire                       m_axil_wready;
-    wire [1:0]                 m_axil_bresp;
-    wire                       m_axil_bvalid;
-    wire                       m_axil_bready;
-    wire [AXIL_ADDR_WIDTH-1:0] m_axil_araddr;
-    wire                       m_axil_arvalid;
-    wire                       m_axil_arready;
-    wire [AXIL_DATA_WIDTH-1:0] m_axil_rdata;
-    wire [1:0]                 m_axil_rresp;
-    wire                       m_axil_rvalid;
-    wire                       m_axil_rready;
-
-    generate
-        if (USE_CDC) begin
-            axil_cdc #(
-                .DATA_WIDTH (AXIL_DATA_WIDTH),
-                .ADDR_WIDTH (AXIL_ADDR_WIDTH)
-            ) axil_cdc_i (
-                .s_clk          (s_axil_aclk),
-                .s_rstn         (s_axil_aresetn),
-                .s_axil_awaddr  (s_axil_awaddr),
-                .s_axil_awvalid (s_axil_awvalid),
-                .s_axil_awready (s_axil_awready),
-                .s_axil_wdata   (s_axil_wdata),
-                .s_axil_wvalid  (s_axil_wvalid),
-                .s_axil_wready  (s_axil_wready),
-                .s_axil_bresp   (s_axil_bresp),
-                .s_axil_bvalid  (s_axil_bvalid),
-                .s_axil_bready  (s_axil_bready),
-                .s_axil_araddr  (s_axil_araddr),
-                .s_axil_arvalid (s_axil_arvalid),
-                .s_axil_arready (s_axil_arready),
-                .s_axil_rdata   (s_axil_rdata),
-                .s_axil_rresp   (s_axil_rresp),
-                .s_axil_rvalid  (s_axil_rvalid),
-                .s_axil_rready  (s_axil_rready),
-
-                .m_clk          (axis_clk),
-                .m_rstn         (axis_aresetn),
-                .m_axil_awaddr  (m_axil_awaddr),
-                .m_axil_awvalid (m_axil_awvalid),
-                .m_axil_awready (m_axil_awready),
-                .m_axil_wdata   (m_axil_wdata),
-                .m_axil_wvalid  (m_axil_wvalid),
-                .m_axil_wready  (m_axil_wready),
-                .m_axil_bresp   (m_axil_bresp),
-                .m_axil_bvalid  (m_axil_bvalid),
-                .m_axil_bready  (m_axil_bready),
-                .m_axil_araddr  (m_axil_araddr),
-                .m_axil_arvalid (m_axil_arvalid),
-                .m_axil_arready (m_axil_arready),
-                .m_axil_rdata   (m_axil_rdata),
-                .m_axil_rresp   (m_axil_rresp),
-                .m_axil_rvalid  (m_axil_rvalid),
-                .m_axil_rready  (m_axil_rready)
-            );
-        end else begin
-            assign m_axil_awaddr = s_axil_awaddr;
-            assign m_axil_awvalid = s_axil_awvalid;
-            assign s_axil_awready = m_axil_awready;
-            assign m_axil_wdata = s_axil_wdata;
-            assign m_axil_wvalid = s_axil_wvalid;
-            assign s_axil_wready = m_axil_wready;
-            assign s_axil_bresp = m_axil_bresp;
-            assign s_axil_bvalid = m_axil_bvalid;
-            assign m_axil_bready = s_axil_bready;
-            assign m_axil_araddr = s_axil_araddr;
-            assign m_axil_arvalid = s_axil_arvalid;
-            assign s_axil_arready = m_axil_arready;
-            assign s_axil_rdata = m_axil_rdata;
-            assign s_axil_rresp = m_axil_rresp;
-            assign s_axil_rvalid = m_axil_rvalid;
-            assign m_axil_rready = s_axil_rready;
-        end
-    endgenerate
-
+    // -------- AXIL register --------
     wire [AXIL_ADDR_WIDTH-1:0] reg_rd_addr;
     wire                       reg_rd_en;
     reg  [AXIL_DATA_WIDTH-1:0] reg_rd_data;
@@ -353,20 +236,20 @@ module axis_dma_profiler #(
     ) axil_rd_i (
         .clk           (axis_clk),
         .rstn          (axis_aresetn),
-        .s_axil_araddr (m_axil_araddr),
-        .s_axil_arvalid(m_axil_arvalid),
-        .s_axil_arready(m_axil_arready),
-        .s_axil_rdata  (m_axil_rdata),
-        .s_axil_rresp  (m_axil_rresp),
-        .s_axil_rvalid (m_axil_rvalid),
-        .s_axil_rready (m_axil_rready),
+        .s_axil_araddr (s_axil_araddr),
+        .s_axil_arvalid(s_axil_arvalid),
+        .s_axil_arready(s_axil_arready),
+        .s_axil_rdata  (s_axil_rdata),
+        .s_axil_rresp  (s_axil_rresp),
+        .s_axil_rvalid (s_axil_rvalid),
+        .s_axil_rready (s_axil_rready),
         .reg_rd_addr   (reg_rd_addr),
         .reg_rd_en     (reg_rd_en),
         .reg_rd_data   (reg_rd_data)
     );
 
     // -------- decode: ch window + word offset --------
-    localparam CH_BITS        = $clog2(MAX_CH);
+    localparam CH_BITS        = $clog2(MAX_DMAS);
     localparam BYTES_PER_WIN  = 'h100; // 0x100 bytes per channel window
     localparam WORD_BYTES     = AXIL_DATA_WIDTH/8;
     localparam WORDS_PER_WIN  = BYTES_PER_WIN / WORD_BYTES;
@@ -428,8 +311,8 @@ module axis_dma_profiler #(
             (CHANNEL_BASE+6'h0A): reg_rd_data = tvalid_low_mux[31:0];                          // [0x28] Cycles with TVALID=0 while running (LO)
             (CHANNEL_BASE+6'h0B): reg_rd_data = tvalid_low_mux[63:32];                         // [0x2C] Cycles with TVALID=0 while running (HI)
 
-            (CHANNEL_BASE+6'h0C): reg_rd_data = first_hs_offset_mux[31:0];                     // [0x30] First hs timestamp relative to global first hs (LO)
-            (CHANNEL_BASE+6'h0D): reg_rd_data = first_hs_offset_mux[63:32];                    // [0x34] First hs timestamp relative to global first hs (HI)
+            (CHANNEL_BASE+6'h0C): reg_rd_data = first_hs_offset_mux[31:0];                     // [0x30] First hs relative to global first hs (LO)
+            (CHANNEL_BASE+6'h0D): reg_rd_data = first_hs_offset_mux[63:32];                    // [0x34] First hs relative to global first hs (HI)
             
             (CHANNEL_BASE+6'h0E): reg_rd_data = busy_total_mux[31:0];                          // [0x38] Sum of busy cycles over all packets (LO)
             (CHANNEL_BASE+6'h0F): reg_rd_data = busy_total_mux[63:32];                         // [0x3C] Sum of busy cycles over all packets (HI)

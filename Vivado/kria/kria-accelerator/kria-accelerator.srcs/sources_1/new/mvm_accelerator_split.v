@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 
 module mvm_accelerator_split #(
+    parameter MAX_CH = 4,
+
     parameter DATA_WIDTH         = 128,
     parameter ADDR_WIDTH         = 64,
     parameter STRB_WIDTH         = DATA_WIDTH / 8,
@@ -26,66 +28,37 @@ module mvm_accelerator_split #(
     input wire clk,
     input wire rstn,
     
-    // Input streams
-    input  wire [DATA_WIDTH-1:0] s_axis_a_0_tdata,
-    input  wire                  s_axis_a_0_tvalid,
-    output wire                  s_axis_a_0_tready,
+    // Input stream arrays
+    input  wire [DATA_WIDTH*MAX_CH-1:0] s_axis_a_tdata,
+    input  wire [MAX_CH-1:0]            s_axis_a_tvalid,
+    output wire [MAX_CH-1:0]            s_axis_a_tready,
     
-    input  wire [DATA_WIDTH-1:0] s_axis_a_1_tdata,
-    input  wire                  s_axis_a_1_tvalid,
-    output wire                  s_axis_a_1_tready,
-
-    input  wire [DATA_WIDTH-1:0] s_axis_a_2_tdata,
-    input  wire                  s_axis_a_2_tvalid,
-    output wire                  s_axis_a_2_tready,
+    // Output stream arrays
+    output wire [RESULT_WIDTH*MAX_CH-1:0] m_axis_tdata,
+    output wire [MAX_CH-1:0]              m_axis_tvalid,
+    input  wire [MAX_CH-1:0]              m_axis_tready,
+    output wire [MAX_CH-1:0]              m_axis_tlast,
     
-    input  wire [DATA_WIDTH-1:0] s_axis_a_3_tdata,
-    input  wire                  s_axis_a_3_tvalid,
-    output wire                  s_axis_a_3_tready,
-    
-    // Output streams
-    output wire [RESULT_WIDTH-1:0] m_axis_0_tdata,
-    output wire                    m_axis_0_tvalid,
-    input  wire                    m_axis_0_tready,
-    output wire                    m_axis_0_tlast,
-    
-    output wire [RESULT_WIDTH-1:0] m_axis_1_tdata,
-    output wire                    m_axis_1_tvalid,
-    input  wire                    m_axis_1_tready,
-    output wire                    m_axis_1_tlast,
-    
-    output wire [RESULT_WIDTH-1:0] m_axis_2_tdata,
-    output wire                    m_axis_2_tvalid,
-    input  wire                    m_axis_2_tready,
-    output wire                    m_axis_2_tlast,
-
-    output wire [RESULT_WIDTH-1:0] m_axis_3_tdata,
-    output wire                    m_axis_3_tvalid,
-    input  wire                    m_axis_3_tready,
-    output wire                    m_axis_3_tlast,
-
     // S-AXI interface
-    input  wire [ID_WIDTH-1:0]   s_axi_b_awid,
-    input  wire [ADDR_WIDTH-1:0] s_axi_b_awaddr,
-    input  wire [7:0]            s_axi_b_awlen,
-    input  wire [2:0]            s_axi_b_awsize,
-    input  wire [1:0]            s_axi_b_awburst,
-    input  wire                  s_axi_b_awlock,
-    input  wire [3:0]            s_axi_b_awcache,
-    input  wire [2:0]            s_axi_b_awprot,
-    input  wire                  s_axi_b_awvalid,
-    output wire                  s_axi_b_awready,
-    
+    input  wire [ID_WIDTH-1:0]           s_axi_b_awid,
+    input  wire [ADDR_WIDTH-1:0]         s_axi_b_awaddr,
+    input  wire [7:0]                    s_axi_b_awlen,
+    input  wire [2:0]                    s_axi_b_awsize,
+    input  wire [1:0]                    s_axi_b_awburst,
+    input  wire                          s_axi_b_awlock,
+    input  wire [3:0]                    s_axi_b_awcache,
+    input  wire [2:0]                    s_axi_b_awprot,
+    input  wire                          s_axi_b_awvalid,
+    output wire                          s_axi_b_awready,
     input  wire [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata,
     input  wire [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb,
     input  wire                          s_axi_b_wlast,
     input  wire                          s_axi_b_wvalid,
     output wire                          s_axi_b_wready,
-    
-    output wire [ID_WIDTH-1:0]   s_axi_b_bid,
-    output wire [1:0]            s_axi_b_bresp,
-    output wire                  s_axi_b_bvalid,
-    input  wire                  s_axi_b_bready
+    output wire [ID_WIDTH-1:0]           s_axi_b_bid,
+    output wire [1:0]                    s_axi_b_bresp,
+    output wire                          s_axi_b_bvalid,
+    input  wire                          s_axi_b_bready
 );  
 
     // =============================================================
@@ -116,77 +89,6 @@ module mvm_accelerator_split #(
         end
     end
 
-    // =============================================================
-    //                      PACK CHANNELS
-    // =============================================================
-    
-    localparam MAX_CH = 4;
-    
-    // Input stream arrays
-    wire [DATA_WIDTH-1:0] s_axis_a_tdata  [MAX_CH-1:0];
-    wire                  s_axis_a_tvalid [MAX_CH-1:0];
-    wire                  s_axis_a_tready [MAX_CH-1:0];
-    
-    // Output stream arrays
-    wire [RESULT_WIDTH-1:0] m_axis_tdata  [MAX_CH-1:0];
-    wire                    m_axis_tvalid [MAX_CH-1:0];
-    wire                    m_axis_tready [MAX_CH-1:0];
-    wire                    m_axis_tlast  [MAX_CH-1:0];
-    
-    wire [ID_WIDTH-1:0]         m_axi_arid     [MAX_CH-1:0];
-    wire [ADDR_WIDTH-1:0]       m_axi_araddr   [MAX_CH-1:0];
-    wire [7:0]                  m_axi_arlen    [MAX_CH-1:0];
-    wire [2:0]                  m_axi_arsize   [MAX_CH-1:0];
-    wire [1:0]                  m_axi_arburst  [MAX_CH-1:0];
-    wire                        m_axi_arlock   [MAX_CH-1:0];
-    wire [3:0]                  m_axi_arcache  [MAX_CH-1:0];
-    wire [2:0]                  m_axi_arprot   [MAX_CH-1:0];
-    wire                        m_axi_arvalid  [MAX_CH-1:0];
-    wire                        m_axi_arready  [MAX_CH-1:0];
-    
-    wire [ID_WIDTH-1:0]           m_axi_rid      [MAX_CH-1:0];
-    wire [AXI_RAM_DATA_WIDTH-1:0] m_axi_rdata    [MAX_CH-1:0];
-    wire [1:0]                    m_axi_rresp    [MAX_CH-1:0];
-    wire                          m_axi_rlast    [MAX_CH-1:0];
-    wire                          m_axi_rvalid   [MAX_CH-1:0];
-    wire                          m_axi_rready   [MAX_CH-1:0];
-
-    assign s_axis_a_tdata[0]  = s_axis_a_0_tdata;
-    assign s_axis_a_tvalid[0] = s_axis_a_0_tvalid;
-    assign s_axis_a_0_tready  = s_axis_a_tready[0];
-    
-    assign m_axis_0_tdata   = m_axis_tdata[0];
-    assign m_axis_0_tvalid  = m_axis_tvalid[0];
-    assign m_axis_tready[0] = m_axis_0_tready;
-    assign m_axis_0_tlast   = m_axis_tlast[0];
-    
-    assign s_axis_a_tdata[1]  = s_axis_a_1_tdata;
-    assign s_axis_a_tvalid[1] = s_axis_a_1_tvalid;
-    assign s_axis_a_1_tready  = s_axis_a_tready[1];
-    
-    assign m_axis_1_tdata   = m_axis_tdata[1];
-    assign m_axis_1_tvalid  = m_axis_tvalid[1];
-    assign m_axis_tready[1] = m_axis_1_tready;
-    assign m_axis_1_tlast   = m_axis_tlast[1];
-    
-    assign s_axis_a_tdata[2]  = s_axis_a_2_tdata;
-    assign s_axis_a_tvalid[2] = s_axis_a_2_tvalid;
-    assign s_axis_a_2_tready  = s_axis_a_tready[2];
-    
-    assign m_axis_2_tdata   = m_axis_tdata[2];
-    assign m_axis_2_tvalid  = m_axis_tvalid[2];
-    assign m_axis_tready[2] = m_axis_2_tready;
-    assign m_axis_2_tlast   = m_axis_tlast[2];
-    
-    assign s_axis_a_tdata[3]  = s_axis_a_3_tdata;
-    assign s_axis_a_tvalid[3] = s_axis_a_3_tvalid;
-    assign s_axis_a_3_tready  = s_axis_a_tready[3];
-    
-    assign m_axis_3_tdata   = m_axis_tdata[3];
-    assign m_axis_3_tvalid  = m_axis_tvalid[3];
-    assign m_axis_tready[3] = m_axis_3_tready;
-    assign m_axis_3_tlast   = m_axis_tlast[3];
-        
     // =============================================================
     //                  PARTITION ACCESS LOGIC
     // =============================================================
@@ -251,6 +153,23 @@ module mvm_accelerator_split #(
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================
+    
+    wire [ID_WIDTH-1:0]           m_axi_arid     [MAX_CH-1:0];
+    wire [ADDR_WIDTH-1:0]         m_axi_araddr   [MAX_CH-1:0];
+    wire [7:0]                    m_axi_arlen    [MAX_CH-1:0];
+    wire [2:0]                    m_axi_arsize   [MAX_CH-1:0];
+    wire [1:0]                    m_axi_arburst  [MAX_CH-1:0];
+    wire                          m_axi_arlock   [MAX_CH-1:0];
+    wire [3:0]                    m_axi_arcache  [MAX_CH-1:0];
+    wire [2:0]                    m_axi_arprot   [MAX_CH-1:0];
+    wire                          m_axi_arvalid  [MAX_CH-1:0];
+    wire                          m_axi_arready  [MAX_CH-1:0];
+    wire [ID_WIDTH-1:0]           m_axi_rid      [MAX_CH-1:0];
+    wire [AXI_RAM_DATA_WIDTH-1:0] m_axi_rdata    [MAX_CH-1:0];
+    wire [1:0]                    m_axi_rresp    [MAX_CH-1:0];
+    wire                          m_axi_rlast    [MAX_CH-1:0];
+    wire                          m_axi_rvalid   [MAX_CH-1:0];
+    wire                          m_axi_rready   [MAX_CH-1:0];
 
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin : channel_gen
@@ -278,38 +197,36 @@ module mvm_accelerator_split #(
                 .clk(clk),
                 .rstn(rstn),
                         
-                .s_axis_a_tdata (s_axis_a_tdata[ch]),
+                .s_axis_a_tdata (s_axis_a_tdata [DATA_WIDTH*ch +: DATA_WIDTH]),
                 .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
                 .s_axis_a_tready(s_axis_a_tready[ch]),
+                .m_axis_tdata   (m_axis_tdata   [RESULT_WIDTH*ch +: RESULT_WIDTH]),
+                .m_axis_tvalid  (m_axis_tvalid  [ch]),
+                .m_axis_tready  (m_axis_tready  [ch]),
+                .m_axis_tlast   (m_axis_tlast   [ch]),
                 
-                .m_axis_tdata (m_axis_tdata[ch]),
-                .m_axis_tvalid(m_axis_tvalid[ch]),
-                .m_axis_tready(m_axis_tready[ch]),
-                .m_axis_tlast (m_axis_tlast[ch]),
-                
-                .m_axi_arid    (m_axi_arid[ch]),
-                .m_axi_araddr  (m_axi_araddr[ch]),
-                .m_axi_arlen   (m_axi_arlen[ch]),
-                .m_axi_arsize  (m_axi_arsize[ch]),
-                .m_axi_arburst (m_axi_arburst[ch]),
-                .m_axi_arlock  (m_axi_arlock[ch]),
-                .m_axi_arcache (m_axi_arcache[ch]),
-                .m_axi_arprot  (m_axi_arprot[ch]),
-                .m_axi_arvalid (m_axi_arvalid[ch]),
-                .m_axi_arready (m_axi_arready[ch]),
-                .m_axi_rid     (m_axi_rid[ch]),
-                .m_axi_rdata   (m_axi_rdata[ch]),
-                .m_axi_rresp   (m_axi_rresp[ch]),
-                .m_axi_rlast   (m_axi_rlast[ch]),
-                .m_axi_rvalid  (m_axi_rvalid[ch]),
-                .m_axi_rready  (m_axi_rready[ch]),
+                .m_axi_arid     (m_axi_arid   [ch]),
+                .m_axi_araddr   (m_axi_araddr [ch]),
+                .m_axi_arlen    (m_axi_arlen  [ch]),
+                .m_axi_arsize   (m_axi_arsize [ch]),
+                .m_axi_arburst  (m_axi_arburst[ch]),
+                .m_axi_arlock   (m_axi_arlock [ch]),
+                .m_axi_arcache  (m_axi_arcache[ch]),
+                .m_axi_arprot   (m_axi_arprot [ch]),
+                .m_axi_arvalid  (m_axi_arvalid[ch]),
+                .m_axi_arready  (m_axi_arready[ch]),
+                .m_axi_rid      (m_axi_rid    [ch]),
+                .m_axi_rdata    (m_axi_rdata  [ch]),
+                .m_axi_rresp    (m_axi_rresp  [ch]),
+                .m_axi_rlast    (m_axi_rlast  [ch]),
+                .m_axi_rvalid   (m_axi_rvalid [ch]),
+                .m_axi_rready   (m_axi_rready [ch]),
                 
                 .start          (ch_start[ch]),
                 .partition_done (ch_pdone[ch]),
-                .partition_index(ch_pidx[ch]),
-
-                .done_rstn   (done_rstn),
-                .channel_done(ch_done[ch])
+                .partition_index(ch_pidx [ch]),
+                .channel_done   (ch_done [ch]),
+                .done_rstn      (done_rstn)
             );
         end
     endgenerate
