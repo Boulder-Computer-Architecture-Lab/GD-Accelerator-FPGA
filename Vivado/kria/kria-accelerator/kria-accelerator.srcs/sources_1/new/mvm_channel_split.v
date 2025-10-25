@@ -474,7 +474,10 @@ module mvm_channel_split #(
     localparam DMA_BURST_LEN = 128;
     localparam DMA_TAG_WIDTH = 8;
 
-    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * BYTES_PER_PARTITION);
+    localparam AXI_RAM_ADDR_WIDTH  = $clog2(AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH);
+    localparam [ADDR_WIDTH-1:0] PARTITION_ALIGN = (1 << AXI_RAM_ADDR_WIDTH);
+
+    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * PARTITION_ALIGN);
     wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
 
     reg  dma_desc_valid;

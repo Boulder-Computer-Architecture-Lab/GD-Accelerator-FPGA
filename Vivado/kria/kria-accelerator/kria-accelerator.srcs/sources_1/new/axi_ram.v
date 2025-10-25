@@ -46,7 +46,7 @@ module axi_ram #
     // 0=BRAM, 1=URAM
     parameter RAM_TYPE = 0,
     // Number of words in mem
-    parameter NUM_WORDS = 17048
+    parameter NUM_WORDS = 1024
 )
 (
     input  wire                   clk,

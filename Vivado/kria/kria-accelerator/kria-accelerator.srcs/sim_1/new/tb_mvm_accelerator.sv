@@ -131,21 +131,28 @@ module tb_mvm_accelerator;
     parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
     parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
     
-    parameter int ELEMENTS_PER_ROW = 16384;
+    parameter int ELEMENTS_PER_ROW = 17048;
     parameter int NUM_ROWS         = 48;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
     
     parameter int AXI_RAM_DATA_WIDTH = 256;
     parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
     
-    int input_order[CHANNELS_PER_INST] = '{3, 0, 2, 1};
+    int input_order[CHANNELS_PER_INST] = '{0, 1, 2, 3};
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
     
     localparam AXI_RAM_ELEMENTS_PER_WORD = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
-    localparam AXI_RAM_WORDS_PER_ROW = ELEMENTS_PER_ROW / AXI_RAM_ELEMENTS_PER_WORD;
-    localparam WORDS_PER_PARTITION    = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam ALIGN_FACTOR              = AXI_RAM_ELEMENTS_PER_WORD * NUM_RAM_PARTITIONS;
+    localparam ELEMENTS_PER_ROW_PADDED   = ((ELEMENTS_PER_ROW + ALIGN_FACTOR - 1) / ALIGN_FACTOR) * ALIGN_FACTOR;
+    localparam WORDS_PER_ROW_PADDED      = ELEMENTS_PER_ROW_PADDED / ELEMENTS_PER_WORD;
+        
+    localparam AXI_RAM_WORDS_PER_ROW       = ELEMENTS_PER_ROW_PADDED / AXI_RAM_ELEMENTS_PER_WORD;
+    localparam AXI_RAM_WORDS_PER_PARTITION = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam AXI_RAM_BYTES_PER_PARTITION = AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH;
+    localparam AXI_RAM_ADDR_WIDTH          = $clog2(AXI_RAM_BYTES_PER_PARTITION+1);
+    localparam [ADDR_WIDTH-1:0] PARTITION_ALIGN = (1 << AXI_RAM_ADDR_WIDTH);
     
     localparam MAX_BURST_LEN = 128;
     
@@ -192,7 +199,7 @@ module tb_mvm_accelerator;
     task axi_write_burst(
         input logic [ADDR_WIDTH-1:0] addr, 
         input int len, 
-        input int bram_offset, 
+        input int vec_offset,
         input int glob_inst
     );
         integer k, idx;
@@ -218,7 +225,7 @@ module tb_mvm_accelerator;
                 
             // Write data
             for (k = 0; k < len; k++) begin
-                idx = k + bram_offset;
+                idx = k + vec_offset;
                 $display("[AXI WRITE] Instance %0d: Writing beat %0d: data = %h (vector[%0d])", inst, k, vector[idx], idx);
                 s_axi_b_wdata[inst] = vector[idx];
                 s_axi_b_wstrb[inst] = {AXI_RAM_STRB_WIDTH{1'b1}};
@@ -247,7 +254,7 @@ module tb_mvm_accelerator;
             s_axi_b_awcache[inst] = 0;
             s_axi_b_awprot[inst]  = 0;
             s_axi_b_wlast[inst]   = 0;
-            s_axi_b_wstrb[inst]   = {STRB_WIDTH{1'b1}};
+            s_axi_b_wstrb[inst]   = {AXI_RAM_STRB_WIDTH{1'b1}};
             $display("[AXI WRITE] Instance %0d: Burst write complete\n", inst);
         end
     endtask
@@ -266,7 +273,7 @@ module tb_mvm_accelerator;
                 .ADDR_WIDTH(ADDR_WIDTH),
                 .ID_WIDTH(ID_WIDTH),
                 .ELEMENT_WIDTH(ELEMENT_WIDTH),
-                .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
+                .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW_PADDED),
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
                 .AXI_RAM_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
@@ -305,20 +312,19 @@ module tb_mvm_accelerator;
     // Clock generation
     always #3 clk = ~clk; // (pclk0: 167 MHz)
     
-    fp16_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW];
-    fp16_t b_values [ELEMENTS_PER_ROW];
+    fp16_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW_PADDED];
+    fp16_t b_values [ELEMENTS_PER_ROW_PADDED];
     
     reg inputs_sent      [NUM_CHANNELS-1:0];
     reg outputs_received [NUM_CHANNELS-1:0];
 
     real expected [NUM_CHANNELS-1:0][ROWS_PER_CHANNEL-1:0];    
     
-    logic [ADDR_WIDTH-1:0] base_addr; 
-    logic [ADDR_WIDTH-1:0] base_offset;
-    integer num_full_bursts = WORDS_PER_PARTITION / MAX_BURST_LEN;
-    integer final_burst_len = WORDS_PER_PARTITION % MAX_BURST_LEN;
+    logic [ADDR_WIDTH-1:0] base_addr, part_base, vec_base_offset, burst_offset;
+    int unsigned num_full_bursts = AXI_RAM_WORDS_PER_PARTITION / MAX_BURST_LEN;
+    int unsigned final_burst_len = AXI_RAM_WORDS_PER_PARTITION % MAX_BURST_LEN;
 
-    // Initialization & start_transfer ctrl
+    // Initialization + start_transfer control
     int finished_transfer;
     initial begin
     
@@ -328,23 +334,37 @@ module tb_mvm_accelerator;
         rstn = 1;
         
         repeat (4) @(posedge clk);
-    
+        
         for (int i = 0; i < NUM_CHANNELS; i++) begin
             inputs_sent[i] = 0;
             outputs_received[i] = 0;
-            
             m_axis_tready[i] = 1;
-        
+        end
+    
+        // Initialize a_values
+        for (int i = 0; i < NUM_CHANNELS; i++) begin
             for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
                 automatic shortreal a_sr = shortreal'((j+1.0) / ((i+1) * 100000.0));
-                automatic shortreal b_sr = shortreal'((j+1.0) / 10000.0);
-                a_values[i][j] = f32_to_f16(a_sr);  // fp16 bits
-                b_values[j]    = f32_to_f16(b_sr);  // fp16 bits
+                a_values[i][j] = f32_to_f16(a_sr);
                 //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, a_values[i][j], f16_to_f32(a_values[i][j]));
+            end
+            for (int j = ELEMENTS_PER_ROW; j < ELEMENTS_PER_ROW_PADDED; j++) begin
+                a_values[i][j] = 16'h0000;
             end
         end
         
-        for (int w = 0; w < WORDS_PER_ROW; w++) begin
+        // Initialize b_values
+        for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
+            automatic shortreal b_sr = shortreal'((j+1.0) / 10000.0);
+            b_values[j]    = f32_to_f16(b_sr);
+            //$display("b_values[%0d] = %h (real=%f)", i, b_values[j], f16_to_f32(b_values[j]));
+        end
+        for (int j = ELEMENTS_PER_ROW; j < ELEMENTS_PER_ROW_PADDED; j++) begin
+            b_values[j]    = 16'h0000;
+        end
+        
+        // Initialize vector (group b_values)
+        for (int w = 0; w < AXI_RAM_WORDS_PER_ROW; w++) begin
             vector[w] = '0;
             for (int j = 0; j < AXI_RAM_ELEMENTS_PER_WORD; j++) begin
                 vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j];
@@ -353,31 +373,32 @@ module tb_mvm_accelerator;
             end
         end
         
-        // Write vector to dut.axi_ram
+        // Write vector to BRAM
         for (int i = 0; i < NUM_ACCEL_INST; i++) begin
             base_addr = BASE_ADDR + STRIDE * i;
                       
             for (int j = 0; j < NUM_RAM_PARTITIONS; j++) begin
-                repeat (10) @(posedge clk);
+                part_base = base_addr + j * PARTITION_ALIGN;
+                vec_base_offset = j * AXI_RAM_WORDS_PER_PARTITION;
                                 
-                base_offset = j * WORDS_PER_PARTITION;
-                
                 for (int k = 0; k < num_full_bursts; k++) begin
-                    automatic int burst_offset = base_offset + k * MAX_BURST_LEN;
+                    automatic int unsigned word_off = k * MAX_BURST_LEN;
+                    burst_offset = part_base + word_off * AXI_RAM_STRB_WIDTH;
                     axi_write_burst(
-                        base_addr + burst_offset * AXI_RAM_STRB_WIDTH,
-                        MAX_BURST_LEN,
                         burst_offset,
+                        MAX_BURST_LEN,
+                        vec_base_offset + word_off,
                         i
                     );
                 end
                 
                 if (final_burst_len > 0) begin
-                    automatic int burst_offset = base_offset + num_full_bursts * MAX_BURST_LEN;
+                    automatic int unsigned word_off = num_full_bursts * MAX_BURST_LEN;
+                    burst_offset = part_base + word_off * AXI_RAM_STRB_WIDTH;
                     axi_write_burst(
-                        base_addr + burst_offset * AXI_RAM_STRB_WIDTH,
-                        final_burst_len,
                         burst_offset,
+                        final_burst_len,
+                        vec_base_offset + word_off,
                         i
                     );
                 end
@@ -405,13 +426,13 @@ module tb_mvm_accelerator;
                     wait(start_transfer);
                     
                     // Stagger first input
-                    repeat(5012 * input_order[ch]) @(posedge clk);
+                    repeat(1024 * input_order[ch]) @(posedge clk);
 
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
                         expected[ch][j] = 0.0;
                         
                         // Send inputs
-                        for (int word_idx = 0; word_idx < WORDS_PER_ROW; word_idx++) begin
+                        for (int word_idx = 0; word_idx < WORDS_PER_ROW_PADDED; word_idx++) begin
                         
                             // Random delays
                             //automatic bit rand_bool = ($urandom_range(0, 999) < 1); // 0.1% chance
@@ -428,7 +449,7 @@ module tb_mvm_accelerator;
                             end
                             
                             s_axis_a_tvalid[ch] = 1;
-                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW-1);
+                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW_PADDED-1);
     
                             do begin
                                 @(posedge clk);
@@ -450,7 +471,7 @@ module tb_mvm_accelerator;
     generate
         for (genvar ch = 0; ch < NUM_CHANNELS; ch++) begin : capture_output
             initial begin
-                for (int i = 0; i < NUM_CHANNELS; i++) begin
+                for (int i = 0; i < NUM_TRANSFERS; i++) begin
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
                         @(posedge clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
                         $display("%0d: Ch%0d: Result=%f | Expected=%f",

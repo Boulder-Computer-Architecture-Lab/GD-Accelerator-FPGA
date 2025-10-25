@@ -43,6 +43,9 @@ module axis_dma_profiler #(
 );
 
     // -------- global stats --------
+    reg  [MAX_DMAS-1:0] running;
+    reg  [MAX_DMAS-1:0] running_m;
+
     wire any_hs_s      = |(s_tvalid_v & s_tready_v);
     wire any_running_s = |running;
     wire any_running_m = |running_m;
@@ -101,7 +104,7 @@ module axis_dma_profiler #(
     localparam AXIS_S_DATA_BYTES = AXIS_S_DATA_WIDTH/8;
     localparam AXIS_M_DATA_BYTES = AXIS_M_DATA_WIDTH/8;
 
-    reg  [MAX_DMAS-1:0] running, have_result;
+    reg  [MAX_DMAS-1:0] have_result;
     reg  [63:0]         cycle_cnt       [0:MAX_DMAS-1];
     reg  [63:0]         beat_cnt        [0:MAX_DMAS-1];
     reg  [63:0]         byte_cnt        [0:MAX_DMAS-1];
@@ -109,6 +112,8 @@ module axis_dma_profiler #(
     reg  [63:0]         tready_low_cnt  [0:MAX_DMAS-1];
     reg  [63:0]         tvalid_low_cnt  [0:MAX_DMAS-1];
     reg  [63:0]         first_hs_offset [0:MAX_DMAS-1];
+
+    reg seen_hs [0:MAX_DMAS-1];
 
     reg         armed      [0:MAX_DMAS-1]; // seen tlast, waiting for next packet start
     reg  [63:0] idle_cnt   [0:MAX_DMAS-1];
@@ -119,9 +124,6 @@ module axis_dma_profiler #(
     reg  [31:0] gap_count  [0:MAX_DMAS-1];
     reg         gap_valid  [0:MAX_DMAS-1];
     reg  [63:0] busy_total [0:MAX_DMAS-1];
-
-    reg seen_hs [0:MAX_DMAS-1];
-    reg [MAX_DMAS-1:0] running_m;
 
     genvar ch;
     generate
