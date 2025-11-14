@@ -2,7 +2,6 @@
 
 module axis_dma_profiler #(
     parameter NUM_DMAS = 4, 
-    parameter MAX_DMAS = 4,
 
     parameter AXIS_S_DATA_WIDTH = 128,
     parameter AXIS_M_DATA_WIDTH = 64,
@@ -33,20 +32,21 @@ module axis_dma_profiler #(
     output wire                       s_axil_rvalid,
     input  wire                       s_axil_rready,
 
-    input  wire [MAX_DMAS-1:0]        s_tready_v,
-    input  wire [MAX_DMAS-1:0]        s_tvalid_v,
-    input  wire [MAX_DMAS-1:0]        s_tlast_v,
+    input  wire [NUM_DMAS-1:0]        s_tready_v,
+    input  wire [NUM_DMAS-1:0]        s_tvalid_v,
+    input  wire [NUM_DMAS-1:0]        s_tlast_v,
 
-    input  wire [MAX_DMAS-1:0]        m_tready_v,
-    input  wire [MAX_DMAS-1:0]        m_tvalid_v,
-    input  wire [MAX_DMAS-1:0]        m_tlast_v
+    input  wire [NUM_DMAS-1:0]        m_tready_v,
+    input  wire [NUM_DMAS-1:0]        m_tvalid_v,
+    input  wire [NUM_DMAS-1:0]        m_tlast_v
 );
 
     // -------- global stats --------
-    reg  [MAX_DMAS-1:0] running;
-    reg  [MAX_DMAS-1:0] running_m;
+    reg  [NUM_DMAS-1:0] running, running_m;
+    reg  [NUM_DMAS-1:0] ss_seen_mask;
+    wire [NUM_DMAS-1:0] s_hs_vec = (s_tvalid_v & s_tready_v);
 
-    wire any_hs_s      = |(s_tvalid_v & s_tready_v);
+    wire any_hs_s      = |s_hs_vec;
     wire any_running_s = |running;
     wire any_running_m = |running_m;
 
@@ -56,20 +56,23 @@ module axis_dma_profiler #(
 
     always @(posedge axis_clk) begin
         if (!axis_aresetn) begin
-            g_ss_active <= 1'b0; 
-            g_ss_valid  <= 1'b0;
-            g_ss_cycles <= 64'd0;
+            g_ss_active  <= 1'b0; 
+            g_ss_valid   <= 1'b0;
+            g_ss_cycles  <= 64'd0;
+            ss_seen_mask <= {NUM_DMAS{1'b0}};
         end else begin
             if (!g_ss_active && !any_running_s && any_hs_s) begin
                 g_ss_active <= 1'b1;
                 g_ss_valid  <= 1'b0;
                 g_ss_cycles <= 64'd1;
+                ss_seen_mask <= s_hs_vec;
             end else if (g_ss_active) begin
-                if (!any_running_s) begin
+                g_ss_cycles <= g_ss_cycles + 1;
+                ss_seen_mask <= ss_seen_mask | s_hs_vec;
+
+                if (!any_running_s && (ss_seen_mask == {NUM_DMAS{1'b1}})) begin
                     g_ss_active  <= 1'b0;
                     g_ss_valid   <= 1'b1;
-                end else begin
-                    g_ss_cycles <= g_ss_cycles + 1;
                 end
             end
         end
@@ -81,20 +84,20 @@ module axis_dma_profiler #(
 
     always @(posedge axis_clk) begin
         if (!axis_aresetn) begin
-            g_sm_active <= 1'b0; 
-            g_sm_valid  <= 1'b0;
-            g_sm_cycles <= 64'd0;
+            g_sm_active  <= 1'b0; 
+            g_sm_valid   <= 1'b0;
+            g_sm_cycles  <= 64'd0;
         end else begin
-            if (!g_sm_active && !any_running_m && any_hs_s) begin
+            if (g_ss_active && !any_running_s && ss_seen_mask == {NUM_DMAS{1'b1}}) begin // start counting on last ss_cycle
                 g_sm_active <= 1'b1;
                 g_sm_valid  <= 1'b0;
-                g_sm_cycles <= 64'd1;
+                g_sm_cycles <= g_ss_cycles + 1;
             end else if (g_sm_active) begin
+                g_sm_cycles <= g_sm_cycles + 1;
+
                 if (!any_running_m) begin
                     g_sm_active  <= 1'b0;
                     g_sm_valid   <= 1'b1;
-                end else begin
-                    g_sm_cycles <= g_sm_cycles + 1;
                 end
             end
         end
@@ -104,38 +107,36 @@ module axis_dma_profiler #(
     localparam AXIS_S_DATA_BYTES = AXIS_S_DATA_WIDTH/8;
     localparam AXIS_M_DATA_BYTES = AXIS_M_DATA_WIDTH/8;
 
-    reg  [MAX_DMAS-1:0] have_result;
-    reg  [63:0]         cycle_cnt       [0:MAX_DMAS-1];
-    reg  [63:0]         beat_cnt        [0:MAX_DMAS-1];
-    reg  [63:0]         byte_cnt        [0:MAX_DMAS-1];
-    reg  [31:0]         pkt_cnt         [0:MAX_DMAS-1];
-    reg  [63:0]         tready_low_cnt  [0:MAX_DMAS-1];
-    reg  [63:0]         tvalid_low_cnt  [0:MAX_DMAS-1];
-    reg  [63:0]         first_hs_offset [0:MAX_DMAS-1];
+    reg  [NUM_DMAS-1:0] have_result;
+    reg  [63:0]         cycle_cnt       [0:NUM_DMAS-1];
+    reg  [63:0]         beat_cnt        [0:NUM_DMAS-1];
+    reg  [63:0]         byte_cnt        [0:NUM_DMAS-1];
+    reg  [31:0]         pkt_cnt         [0:NUM_DMAS-1];
+    reg  [63:0]         tready_low_cnt  [0:NUM_DMAS-1];
+    reg  [63:0]         tvalid_low_cnt  [0:NUM_DMAS-1];
+    reg  [63:0]         first_hs_offset [0:NUM_DMAS-1];
 
-    reg seen_hs [0:MAX_DMAS-1];
+    reg  seen_hs [0:NUM_DMAS-1];
 
-    reg         armed      [0:MAX_DMAS-1]; // seen tlast, waiting for next packet start
-    reg  [63:0] idle_cnt   [0:MAX_DMAS-1];
-    reg  [63:0] gap_last   [0:MAX_DMAS-1];
-    reg  [63:0] gap_total  [0:MAX_DMAS-1];
-    reg  [63:0] gap_min    [0:MAX_DMAS-1];
-    reg  [63:0] gap_max    [0:MAX_DMAS-1];
-    reg  [31:0] gap_count  [0:MAX_DMAS-1];
-    reg         gap_valid  [0:MAX_DMAS-1];
-    reg  [63:0] busy_total [0:MAX_DMAS-1];
+    reg         armed      [0:NUM_DMAS-1]; // seen tlast, waiting for next packet start
+    reg  [63:0] idle_cnt   [0:NUM_DMAS-1];
+    reg  [63:0] gap_last   [0:NUM_DMAS-1];
+    reg  [63:0] gap_total  [0:NUM_DMAS-1];
+    reg  [63:0] gap_min    [0:NUM_DMAS-1];
+    reg  [63:0] gap_max    [0:NUM_DMAS-1];
+    reg  [31:0] gap_count  [0:NUM_DMAS-1];
+    reg         gap_valid  [0:NUM_DMAS-1];
+    reg  [63:0] busy_total [0:NUM_DMAS-1];
 
     genvar ch;
     generate
-        for (ch = 0; ch < MAX_DMAS; ch = ch + 1) begin : g_prof
-
-            wire active = (ch < NUM_DMAS);
+        for (ch = 0; ch < NUM_DMAS; ch = ch + 1) begin : g_prof
 
             wire hs  = s_tvalid_v[ch] && s_tready_v[ch];
             wire hsm = m_tvalid_v[ch] && m_tready_v[ch];
 
             always @(posedge axis_clk) begin
-                if (!axis_aresetn || !active) begin
+                if (!axis_aresetn) begin
                     seen_hs[ch]     <= 1'b0;
                     running[ch]     <= 1'b0;
                     have_result[ch] <= 1'b0;
@@ -173,8 +174,8 @@ module axis_dma_profiler #(
                                                             // relative to other channels
                         running[ch]     <= 1'b1;
                         have_result[ch] <= 1'b0;
-                        cycle_cnt[ch]   <= 64'd1; // include first cycle
-                        beat_cnt[ch]    <= 64'd1; // include first beat
+                        cycle_cnt[ch]   <= 64'd1;
+                        beat_cnt[ch]    <= 64'd1;
                         byte_cnt[ch]    <= AXIS_S_DATA_BYTES;
 
                         tready_low_cnt[ch] <= 64'd0;
@@ -228,8 +229,8 @@ module axis_dma_profiler #(
     endgenerate
 
     // -------- AXIL register --------
-    wire [AXIL_ADDR_WIDTH-1:0] reg_rd_addr;
     wire                       reg_rd_en;
+    wire [AXIL_ADDR_WIDTH-1:0] reg_rd_addr;
     reg  [AXIL_DATA_WIDTH-1:0] reg_rd_data;
 
     axil_reg_if_rd #(
@@ -251,7 +252,7 @@ module axis_dma_profiler #(
     );
 
     // -------- decode: ch window + word offset --------
-    localparam CH_BITS        = $clog2(MAX_DMAS);
+    localparam CH_BITS        = $clog2(NUM_DMAS);
     localparam BYTES_PER_WIN  = 'h100; // 0x100 bytes per channel window
     localparam WORD_BYTES     = AXIL_DATA_WIDTH/8;
     localparam WORDS_PER_WIN  = BYTES_PER_WIN / WORD_BYTES;

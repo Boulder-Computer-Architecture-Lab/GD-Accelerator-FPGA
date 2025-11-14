@@ -2,7 +2,7 @@
 
 module dot_product #(
     parameter DATA_WIDTH = 64,
-    parameter RESULT_WIDTH = 16,
+    parameter RESULT_WIDTH = 64,
     parameter WORDS_PER_ROW = 17048,
     parameter ROWS_PER_CHANNEL = 4262
 )(
@@ -13,6 +13,7 @@ module dot_product #(
     input  wire [DATA_WIDTH-1:0]   s_axis_a_tdata,
     input  wire                    s_axis_a_tvalid,
     output wire                    s_axis_a_tready,
+    input  wire                    s_axis_a_tlast,
 
     // Input stream B
     input  wire [DATA_WIDTH-1:0]   s_axis_b_tdata,
@@ -31,65 +32,71 @@ module dot_product #(
     // ========================================   
      
     // Precision converter input
+    wire [DATA_WIDTH-1:0] fp_axis_a_tdata;
     wire                  fp_axis_a_tvalid;
     wire                  fp_axis_a_tready;
-    wire [DATA_WIDTH-1:0] fp_axis_a_tdata;
+    wire                  fp_axis_a_tlast;
 
     // Accumulator input
+    wire [RESULT_WIDTH-1:0] acc_axis_a_tdata;
     wire                    acc_axis_a_tvalid;
     wire                    acc_axis_a_tready;
-    wire [RESULT_WIDTH-1:0] acc_axis_a_tdata;
     wire                    acc_axis_a_tlast;
+    wire                    acc_tlast_prop;
     
     // Accumulator output
+    wire [RESULT_WIDTH-1:0] acc_axis_result_tdata;
     wire                    acc_axis_result_tvalid;
     wire                    acc_axis_result_tready;
-    wire [RESULT_WIDTH-1:0] acc_axis_result_tdata;
     wire                    acc_axis_result_tlast;
 
     fp64_mult u_fp64_mult (
         .aclk(clk),
         .aresetn(rstn),
         
+        .s_axis_a_tdata(s_axis_a_tdata),
         .s_axis_a_tvalid(s_axis_a_tvalid),
         .s_axis_a_tready(s_axis_a_tready),
-        .s_axis_a_tdata(s_axis_a_tdata),
+        .s_axis_a_tlast(s_axis_a_tlast),
 
+        .s_axis_b_tdata(s_axis_b_tdata),
         .s_axis_b_tvalid(s_axis_b_tvalid),
         .s_axis_b_tready(s_axis_b_tready),
-        .s_axis_b_tdata(s_axis_b_tdata),
 
+        .m_axis_result_tdata(fp_axis_a_tdata),
         .m_axis_result_tvalid(fp_axis_a_tvalid),
         .m_axis_result_tready(fp_axis_a_tready),
-        .m_axis_result_tdata(fp_axis_a_tdata)
+        .m_axis_result_tlast(fp_axis_a_tlast)
     );
 
     fp16_to_fp64 u_fp16_to_fp64 (
         .aclk(clk),
         .aresetn(rstn),
 
+        .s_axis_a_tdata (fp_axis_a_tdata),
         .s_axis_a_tvalid(fp_axis_a_tvalid),
         .s_axis_a_tready(fp_axis_a_tready),
-        .s_axis_a_tdata(fp_axis_a_tdata),
+        .s_axis_a_tlast (fp_axis_a_tlast),
 
+        .m_axis_result_tdata (acc_axis_a_tdata),
         .m_axis_result_tvalid(acc_axis_a_tvalid),
         .m_axis_result_tready(acc_axis_a_tready),
-        .m_axis_result_tdata(acc_axis_a_tdata)
+        .m_axis_result_tlast (acc_tlast_prop)
     );
     
     fp64_accum u_fp64_accum (
         .aclk(clk),
         .aresetn(rstn),
 
+        .s_axis_a_tdata (acc_axis_a_tdata),
         .s_axis_a_tvalid(acc_axis_a_tvalid),
         .s_axis_a_tready(acc_axis_a_tready),
-        .s_axis_a_tdata(acc_axis_a_tdata),
-        .s_axis_a_tlast(acc_axis_a_tlast),
+        .s_axis_a_tlast (acc_axis_a_tlast),
 
+        .m_axis_result_tdata (acc_axis_result_tdata),
         .m_axis_result_tvalid(acc_axis_result_tvalid),
         .m_axis_result_tready(acc_axis_result_tready),
-        .m_axis_result_tdata(acc_axis_result_tdata),
-        .m_axis_result_tlast(acc_axis_result_tlast)
+        .m_axis_result_tlast (acc_axis_result_tlast)
     );
     
     // ========================================
@@ -116,8 +123,11 @@ module dot_product #(
         end
     end
     
-    assign acc_axis_a_tlast = last_in && handshake_in;
-    
+    assign acc_axis_a_tlast = (last_in && handshake_in) || acc_tlast_prop; // acc_tlast_prop is propogated from 
+                                                                           // s_axis_a_tlast in mvm_accelerator.v
+                                                                           // and is used to ensure we don't stall 
+                                                                           // on the last row if we miss an 
+                                                                           // element somewhere.
     // Accumulator output tlast (after all rows)
     reg [$clog2(ROWS_PER_CHANNEL)-1:0] word_count_out;
     

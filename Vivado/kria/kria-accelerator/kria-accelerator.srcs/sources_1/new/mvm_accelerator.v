@@ -185,7 +185,6 @@ module mvm_accelerator #(
         if (PROFILE) begin
             axis_dma_profiler #(
                 .NUM_DMAS(NUM_CHANNELS),
-                .MAX_DMAS(MAX_CH),
                 .AXIS_S_DATA_WIDTH(DATA_WIDTH),
                 .AXIS_M_DATA_WIDTH(RESULT_WIDTH),
                 .AXIL_ADDR_WIDTH(AXIL_ADDR_WIDTH),

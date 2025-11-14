@@ -138,7 +138,7 @@ module tb_mvm_accelerator;
     parameter int AXI_RAM_DATA_WIDTH = 256;
     parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
     
-    int input_order[CHANNELS_PER_INST] = '{0, 1, 2, 3};
+    int input_order[CHANNELS_PER_INST] = '{3, 0, 2, 1};
     
     localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
     localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
@@ -147,7 +147,7 @@ module tb_mvm_accelerator;
     localparam ALIGN_FACTOR              = AXI_RAM_ELEMENTS_PER_WORD * NUM_RAM_PARTITIONS;
     localparam ELEMENTS_PER_ROW_PADDED   = ((ELEMENTS_PER_ROW + ALIGN_FACTOR - 1) / ALIGN_FACTOR) * ALIGN_FACTOR;
     localparam WORDS_PER_ROW_PADDED      = ELEMENTS_PER_ROW_PADDED / ELEMENTS_PER_WORD;
-        
+    
     localparam AXI_RAM_WORDS_PER_ROW       = ELEMENTS_PER_ROW_PADDED / AXI_RAM_ELEMENTS_PER_WORD;
     localparam AXI_RAM_WORDS_PER_PARTITION = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
     localparam AXI_RAM_BYTES_PER_PARTITION = AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH;
@@ -426,7 +426,7 @@ module tb_mvm_accelerator;
                     wait(start_transfer);
                     
                     // Stagger first input
-                    repeat(1024 * input_order[ch]) @(posedge clk);
+                    repeat(5000 * input_order[ch]) @(posedge clk);
 
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
                         expected[ch][j] = 0.0;
@@ -449,7 +449,7 @@ module tb_mvm_accelerator;
                             end
                             
                             s_axis_a_tvalid[ch] = 1;
-                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW_PADDED-1);
+                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW_PADDED-1) && (j == ROWS_PER_CHANNEL-1);
     
                             do begin
                                 @(posedge clk);

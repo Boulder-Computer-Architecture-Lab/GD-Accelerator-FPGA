@@ -16,6 +16,7 @@ module mvm_compute #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
+    output wire                  s_axis_a_tlast,
 
     input  wire [DATA_WIDTH-1:0] s_axis_b_tdata,
     input  wire                  s_axis_b_tvalid,
@@ -56,18 +57,19 @@ module mvm_compute #(
                     .clk(clk),
                     .rstn(rstn),
     
-                    .s_axis_a_tdata(s_axis_a_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
+                    .s_axis_a_tdata (s_axis_a_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
                     .s_axis_a_tvalid(s_axis_a_tvalid),
                     .s_axis_a_tready(s_axis_a_tready_vec[i]),
+                    .s_axis_a_tlast (s_axis_a_tlast),
     
-                    .s_axis_b_tdata(s_axis_b_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
+                    .s_axis_b_tdata (s_axis_b_tdata[i*ELEMENT_WIDTH+: ELEMENT_WIDTH]),
                     .s_axis_b_tvalid(s_axis_b_tvalid),
                     .s_axis_b_tready(s_axis_b_tready_vec[i]),
     
-                    .m_axis_tdata(partial_sum[i]),
+                    .m_axis_tdata (partial_sum[i]),
                     .m_axis_tvalid(partial_valid[i]),
                     .m_axis_tready(partial_ready[i]),
-                    .m_axis_tlast(partial_last[i])
+                    .m_axis_tlast (partial_last[i])
                 );
             end
         
@@ -125,18 +127,19 @@ module mvm_compute #(
                 .clk(clk),
                 .rstn(rstn),
     
-                .s_axis_a_tdata(s_axis_a_tdata),
+                .s_axis_a_tdata (s_axis_a_tdata),
                 .s_axis_a_tvalid(s_axis_a_tvalid),
                 .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast (s_axis_a_tlast),
     
-                .s_axis_b_tdata(s_axis_b_tdata),
+                .s_axis_b_tdata (s_axis_b_tdata),
                 .s_axis_b_tvalid(s_axis_b_tvalid),
                 .s_axis_b_tready(s_axis_b_tready),
     
-                .m_axis_tdata(m_axis_tdata),
+                .m_axis_tdata (m_axis_tdata),
                 .m_axis_tvalid(m_axis_tvalid),
                 .m_axis_tready(m_axis_tready),
-                .m_axis_tlast(m_axis_tlast)
+                .m_axis_tlast (m_axis_tlast)
             );
         end
     endgenerate

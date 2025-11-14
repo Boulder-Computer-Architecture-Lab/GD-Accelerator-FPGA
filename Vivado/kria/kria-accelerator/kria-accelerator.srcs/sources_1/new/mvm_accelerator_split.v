@@ -32,6 +32,7 @@ module mvm_accelerator_split #(
     input  wire [DATA_WIDTH*MAX_CH-1:0] s_axis_a_tdata,
     input  wire [MAX_CH-1:0]            s_axis_a_tvalid,
     output wire [MAX_CH-1:0]            s_axis_a_tready,
+    output wire [MAX_CH-1:0]            s_axis_a_tlast,
     
     // Output stream arrays
     output wire [RESULT_WIDTH*MAX_CH-1:0] m_axis_tdata,
@@ -200,6 +201,7 @@ module mvm_accelerator_split #(
                 .s_axis_a_tdata (s_axis_a_tdata [DATA_WIDTH*ch +: DATA_WIDTH]),
                 .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
                 .s_axis_a_tready(s_axis_a_tready[ch]),
+                .s_axis_a_tlast (s_axis_a_tlast [ch]),
                 .m_axis_tdata   (m_axis_tdata   [RESULT_WIDTH*ch +: RESULT_WIDTH]),
                 .m_axis_tvalid  (m_axis_tvalid  [ch]),
                 .m_axis_tready  (m_axis_tready  [ch]),

@@ -774,22 +774,16 @@
             "value": "IOPLL"
           },
           "PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ": {
-            "value": "166.664993"
+            "value": "249.997498"
           },
           "PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ": {
-            "value": "180"
+            "value": "250"
           },
           "PSU__CRL_APB__PL0_REF_CTRL__SRCSEL": {
             "value": "IOPLL"
           },
           "PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ": {
             "value": "249.997498"
-          },
-          "PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ": {
-            "value": "250"
-          },
-          "PSU__CRL_APB__PL1_REF_CTRL__SRCSEL": {
-            "value": "IOPLL"
           },
           "PSU__CRL_APB__QSPI_REF_CTRL__ACT_FREQMHZ": {
             "value": "124.998749"
@@ -948,7 +942,7 @@
             "value": "1"
           },
           "PSU__FPGA_PL1_ENABLE": {
-            "value": "1"
+            "value": "0"
           },
           "PSU__GPIO0_MIO__IO": {
             "value": "MIO 0 .. 25"
@@ -1011,9 +1005,6 @@
             "value": "0"
           },
           "PSU__PL_CLK0_BUF": {
-            "value": "TRUE"
-          },
-          "PSU__PL_CLK1_BUF": {
             "value": "TRUE"
           },
           "PSU__PMU_COHERENCY": {
@@ -2233,7 +2224,7 @@
             "value": "128"
           },
           "ELEMENTS_PER_ROW": {
-            "value": "17056"
+            "value": "17088"
           },
           "ELEMENT_WIDTH": {
             "value": "16"
@@ -2242,7 +2233,7 @@
             "value": "4"
           },
           "NUM_ROWS": {
-            "value": "17056"
+            "value": "17088"
           }
         },
         "reference_info": {
@@ -2289,7 +2280,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2356,7 +2347,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2423,7 +2414,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2490,7 +2481,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2557,7 +2548,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2624,7 +2615,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2691,7 +2682,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2758,7 +2749,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -2801,7 +2792,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "ID_WIDTH": {
@@ -3025,7 +3016,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "ID_WIDTH": {
@@ -3212,7 +3203,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
@@ -3240,7 +3231,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "166664993",
+                "value": "249997498",
                 "value_src": "user_prop"
               },
               "CLK_DOMAIN": {
