@@ -50,39 +50,107 @@ module dot_product #(
     wire                    acc_axis_result_tready;
     wire                    acc_axis_result_tlast;
 
-    fp64_mult u_fp64_mult (
-        .aclk(clk),
-        .aresetn(rstn),
-        
-        .s_axis_a_tdata(s_axis_a_tdata),
-        .s_axis_a_tvalid(s_axis_a_tvalid),
-        .s_axis_a_tready(s_axis_a_tready),
-        .s_axis_a_tlast(s_axis_a_tlast),
+    generate
+        if (DATA_WIDTH == 16) begin
 
-        .s_axis_b_tdata(s_axis_b_tdata),
-        .s_axis_b_tvalid(s_axis_b_tvalid),
-        .s_axis_b_tready(s_axis_b_tready),
+            fp16_mult u_fp16_mult (
+                .aclk(clk),
+                .aresetn(rstn),
+                
+                .s_axis_a_tdata(s_axis_a_tdata),
+                .s_axis_a_tvalid(s_axis_a_tvalid),
+                .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast(s_axis_a_tlast),
 
-        .m_axis_result_tdata(fp_axis_a_tdata),
-        .m_axis_result_tvalid(fp_axis_a_tvalid),
-        .m_axis_result_tready(fp_axis_a_tready),
-        .m_axis_result_tlast(fp_axis_a_tlast)
-    );
+                .s_axis_b_tdata(s_axis_b_tdata),
+                .s_axis_b_tvalid(s_axis_b_tvalid),
+                .s_axis_b_tready(s_axis_b_tready),
 
-    fp16_to_fp64 u_fp16_to_fp64 (
-        .aclk(clk),
-        .aresetn(rstn),
+                .m_axis_result_tdata(fp_axis_a_tdata),
+                .m_axis_result_tvalid(fp_axis_a_tvalid),
+                .m_axis_result_tready(fp_axis_a_tready),
+                .m_axis_result_tlast(fp_axis_a_tlast)
+            );
 
-        .s_axis_a_tdata (fp_axis_a_tdata),
-        .s_axis_a_tvalid(fp_axis_a_tvalid),
-        .s_axis_a_tready(fp_axis_a_tready),
-        .s_axis_a_tlast (fp_axis_a_tlast),
+            fp16_to_fp64 u_fp16_to_fp64 (
+                .aclk(clk),
+                .aresetn(rstn),
 
-        .m_axis_result_tdata (acc_axis_a_tdata),
-        .m_axis_result_tvalid(acc_axis_a_tvalid),
-        .m_axis_result_tready(acc_axis_a_tready),
-        .m_axis_result_tlast (acc_tlast_prop)
-    );
+                .s_axis_a_tdata (fp_axis_a_tdata),
+                .s_axis_a_tvalid(fp_axis_a_tvalid),
+                .s_axis_a_tready(fp_axis_a_tready),
+                .s_axis_a_tlast (fp_axis_a_tlast),
+
+                .m_axis_result_tdata (acc_axis_a_tdata),
+                .m_axis_result_tvalid(acc_axis_a_tvalid),
+                .m_axis_result_tready(acc_axis_a_tready),
+                .m_axis_result_tlast (acc_tlast_prop)
+            );
+
+        end else if (DATA_WIDTH == 32) begin
+
+            fp32_mult u_fp32_mult (
+                .aclk(clk),
+                .aresetn(rstn),
+                
+                .s_axis_a_tdata(s_axis_a_tdata),
+                .s_axis_a_tvalid(s_axis_a_tvalid),
+                .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast(s_axis_a_tlast),
+
+                .s_axis_b_tdata(s_axis_b_tdata),
+                .s_axis_b_tvalid(s_axis_b_tvalid),
+                .s_axis_b_tready(s_axis_b_tready),
+
+                .m_axis_result_tdata(fp_axis_a_tdata),
+                .m_axis_result_tvalid(fp_axis_a_tvalid),
+                .m_axis_result_tready(fp_axis_a_tready),
+                .m_axis_result_tlast(fp_axis_a_tlast)
+            );
+
+            fp32_to_fp64 u_fp32_to_fp64 (
+                .aclk(clk),
+                .aresetn(rstn),
+
+                .s_axis_a_tdata (fp_axis_a_tdata),
+                .s_axis_a_tvalid(fp_axis_a_tvalid),
+                .s_axis_a_tready(fp_axis_a_tready),
+                .s_axis_a_tlast (fp_axis_a_tlast),
+
+                .m_axis_result_tdata (acc_axis_a_tdata),
+                .m_axis_result_tvalid(acc_axis_a_tvalid),
+                .m_axis_result_tready(acc_axis_a_tready),
+                .m_axis_result_tlast (acc_tlast_prop)
+            );
+
+        end else if (DATA_WIDTH == 64) begin
+
+            fp64_mult u_fp64_mult (
+                .aclk(clk),
+                .aresetn(rstn),
+                
+                .s_axis_a_tdata(s_axis_a_tdata),
+                .s_axis_a_tvalid(s_axis_a_tvalid),
+                .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast(s_axis_a_tlast),
+
+                .s_axis_b_tdata(s_axis_b_tdata),
+                .s_axis_b_tvalid(s_axis_b_tvalid),
+                .s_axis_b_tready(s_axis_b_tready),
+
+                .m_axis_result_tdata(fp_axis_a_tdata),
+                .m_axis_result_tvalid(fp_axis_a_tvalid),
+                .m_axis_result_tready(fp_axis_a_tready),
+                .m_axis_result_tlast(fp_axis_a_tlast)
+            );
+
+            assign acc_axis_a_tdata = fp_axis_a_tdata;
+            assign acc_axis_a_tvalid = fp_axis_a_tvalid;
+            assign fp_axis_a_tready = acc_axis_a_tready;
+            assign acc_tlast_prop = fp_axis_a_tlast;
+
+        end
+    endgenerate
     
     fp64_accum u_fp64_accum (
         .aclk(clk),
@@ -126,7 +194,7 @@ module dot_product #(
     assign acc_axis_a_tlast = (last_in && handshake_in) || acc_tlast_prop; // acc_tlast_prop is propogated from 
                                                                            // s_axis_a_tlast in mvm_accelerator.v
                                                                            // and is used to ensure we don't stall 
-                                                                           // on the last row if we miss an 
+                                                                           // on the last row if we missed an 
                                                                            // element somewhere.
     // Accumulator output tlast (after all rows)
     reg [$clog2(ROWS_PER_CHANNEL)-1:0] word_count_out;

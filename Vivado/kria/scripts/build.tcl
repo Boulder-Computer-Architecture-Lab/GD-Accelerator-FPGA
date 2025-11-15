@@ -5,8 +5,7 @@
 # Figure out where this script lives
 set script_dir [file normalize [file dirname [info script]]]
 
-# The project "src root" is the parent of scripts/
-# i.e. Vivado/kria
+# Project "src root" is the parent of scripts/ (i.e. Vivado/kria)
 set proj_src_root [file normalize [file join $script_dir ".."]]
 
 # Disposable build directory (created if missing)
@@ -15,12 +14,14 @@ set build_dir [file normalize [file join $proj_src_root "build"]]
 # Project name and part
 set proj_name "kria-accelerator"
 set part_name "xck26-sfvc784-2LV-c"
+set board_part "xilinx.com:kv260_som:part0:1.4"
 
 # ------------------------------------------------------------
 # Create project
 # ------------------------------------------------------------
 file mkdir $build_dir
 create_project $proj_name $build_dir -part $part_name -force
+set_property BOARD_PART $board_part [current_project]
 
 # Use external sources (don't copy into project)
 set_property source_mgmt_mode All [current_project]
@@ -81,10 +82,13 @@ foreach ext {v sv vh vhd vhdl} {
 
 if {[llength $sim_files]} {
     add_files -fileset sim_1 -norecurse $sim_files
-    # Make sure Vivado doesn’t try to synthesize them
-    set_property used_in_synthesis false [get_files $sim_files]
-    set_property used_in_simulation true  [get_files $sim_files]
+    set_property used_in_synthesis false      [get_files $sim_files]
+    set_property used_in_implementation false [get_files $sim_files]
+    set_property used_in_simulation true      [get_files $sim_files]
 }
+
+# Set tb as top for sim_1 fileset
+set_property top tb_mvm_accelerator [get_filesets sim_1]
 
 # ------------------------------------------------------------
 # Recreate block design from bd/design_1.tcl
@@ -95,16 +99,25 @@ set bd_tcl [file join $bd_dir "design_1.tcl"]
 if {![file exists $bd_tcl]} {
     error "BD Tcl file not found: $bd_tcl"
 }
-
 update_compile_order -fileset sources_1
+
+# Generate BD
 source $bd_tcl
 
 # Open the BD and generate a wrapper
 open_bd_design [get_files design_1.bd]
-
 set bd_file      [get_files -norecurse design_1.bd]
 set wrapper_path [make_wrapper -fileset sources_1 -files $bd_file -top]
 add_files -fileset sources_1 -norecurse $wrapper_path
+
+# Set BD wrapper as top module for sources_1 fileset
+set_property top design_1_wrapper        [get_filesets sources_1]
+
+# Don't use wrapper in simulation
+set wrapper_file                         [get_files $wrapper_path]
+set_property used_in_simulation false    [get_files $wrapper_file]
+set_property used_in_synthesis  true     [get_files $wrapper_file]
+set_property used_in_implementation true [get_files $wrapper_file]
 
 # Update compile order
 update_compile_order -fileset sources_1

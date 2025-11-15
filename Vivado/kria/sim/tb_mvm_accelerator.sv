@@ -2,6 +2,68 @@
 
 module tb_mvm_accelerator;
 
+    `include "axi_a_channel_bindings.svh"
+    `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
+                                     // Note: Also run ./Vivado/scripts/update_channels.py when this 
+                                     // is changed to update all the relevant header files
+
+    // --- Config ---
+    
+    parameter  real     PCLK0_FREQ_MHZ = 250.0;
+    localparam realtime PCLK0_PERIOD_NS = 1000.0 / PCLK0_FREQ_MHZ;
+
+    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
+    
+    parameter int NUM_TRANSFERS = 2;
+
+    parameter int DATA_WIDTH = 128; // Max data width for HP ports is 128
+    parameter int ADDR_WIDTH = 64;
+    parameter int ID_WIDTH   = 8;
+    parameter int STRB_WIDTH = DATA_WIDTH/8; // Unused
+    
+    parameter int ELEMENT_WIDTH = 16; // Can be 16, 32, or 64
+    parameter int RESULT_WIDTH  = 64; // Must be 64
+    
+    parameter int NUM_ACCEL_INST     = 1;
+    parameter int CHANNELS_PER_INST  = 4;
+    parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
+    parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
+    
+    parameter int ELEMENTS_PER_ROW = 17048;
+    parameter int NUM_ROWS         = 48;
+    parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
+    
+    parameter int AXI_RAM_DATA_WIDTH = 256;
+    parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
+    
+    int input_order[CHANNELS_PER_INST] = '{0, 1, 2, 3}; // Switch the order that s_axis_a channels start arriving. 
+                                                        // Set to (0, 0, 0, 0) for simultaneous start, but note that
+                                                        // the partition arbitration logic assumes an offset.
+    
+    localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
+    localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
+    
+    localparam AXI_RAM_ELEMENTS_PER_WORD = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
+    localparam ALIGN_FACTOR              = AXI_RAM_ELEMENTS_PER_WORD * NUM_RAM_PARTITIONS;
+    localparam ELEMENTS_PER_ROW_PADDED   = ((ELEMENTS_PER_ROW + ALIGN_FACTOR - 1) / ALIGN_FACTOR) * ALIGN_FACTOR;
+    localparam WORDS_PER_ROW_PADDED      = ELEMENTS_PER_ROW_PADDED / ELEMENTS_PER_WORD;
+    
+    localparam AXI_RAM_WORDS_PER_ROW       = ELEMENTS_PER_ROW_PADDED / AXI_RAM_ELEMENTS_PER_WORD;
+    localparam AXI_RAM_WORDS_PER_PARTITION = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
+    localparam AXI_RAM_BYTES_PER_PARTITION = AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH;
+    localparam AXI_RAM_ADDR_WIDTH          = $clog2(AXI_RAM_BYTES_PER_PARTITION+1);
+    localparam [ADDR_WIDTH-1:0] PARTITION_ALIGN = (1 << AXI_RAM_ADDR_WIDTH);
+    
+    localparam MAX_BURST_LEN = 128;
+    
+    // --------------
+    
+    initial assert (PCLK0_FREQ_MHZ > 0.0)                                              else $fatal(1, "PCLK0_FREQ_MHZ must be > 0");
+    initial assert (ELEMENT_WIDTH == 16 || ELEMENT_WIDTH == 32 || ELEMENT_WIDTH == 64) else $fatal(1, "ELEMENT_WIDTH must be 16, 32, or 64");
+    initial assert (RESULT_WIDTH == 64)                                                else $fatal(1, "RESULT_WIDTH must be 64");
+    
+    // --- Floating-point helpers ---
+    
     typedef logic [15:0] fp16_t;
 
     function automatic fp16_t f32_to_f16(input shortreal s);
@@ -108,57 +170,80 @@ module tb_mvm_accelerator;
         u32 = (sign << 31) | (out_exp << 23) | out_frac;
         return $bitstoshortreal(u32);
     endfunction
+    
+    typedef logic [ELEMENT_WIDTH-1:0] elem_t;
+    
+    // Pack a real into elem_t according to ELEMENT_WIDTH
+    function automatic elem_t real_to_elem(input real r);
+        elem_t result;
+        shortreal sr;
+        logic [31:0] u32;
+        longint unsigned u64;
+        begin
+            if (ELEMENT_WIDTH == 16) begin
+                // real -> shortreal -> fp16 bits
+                sr     = shortreal'(r);
+                result = elem_t'(f32_to_f16(sr));
+            end
+            else if (ELEMENT_WIDTH == 32) begin
+                // real -> shortreal -> IEEE-754 single
+                sr  = shortreal'(r);
+                u32 = $shortrealtobits(sr);
+                result = elem_t'(u32[ELEMENT_WIDTH-1:0]);
+            end
+            else if (ELEMENT_WIDTH == 64) begin
+                // real -> IEEE-754 double
+                u64    = $realtobits(r);
+                result = elem_t'(u64[ELEMENT_WIDTH-1:0]); // 64 bits
+            end
+            else begin
+                $fatal(1, "Unsupported ELEMENT_WIDTH = %0d", ELEMENT_WIDTH);
+            end
+    
+            return result;
+        end
+    endfunction
+    
+    // Unpack elem_t back into real
+    function automatic real elem_to_real(input elem_t h);
+        real r;
+        shortreal sr;
+        logic [31:0] u32;
+        longint unsigned u64;
+        begin
+            if (ELEMENT_WIDTH == 16) begin
+                // fp16 -> shortreal -> real
+                sr = f16_to_f32(fp16_t'(h));
+                r  = real'(sr);
+            end
+            else if (ELEMENT_WIDTH == 32) begin
+                // bits -> shortreal -> real
+                u32 = '0;
+                u32[ELEMENT_WIDTH-1:0] = h;
+                sr = $bitstoshortreal(u32);
+                r  = real'(sr);
+            end
+            else if (ELEMENT_WIDTH == 64) begin
+                // bits -> real
+                u64 = '0;
+                u64[ELEMENT_WIDTH-1:0] = h;
+                r  = $bitstoreal(u64);
+            end
+            else begin
+                $fatal(1, "Unsupported ELEMENT_WIDTH = %0d", ELEMENT_WIDTH);
+            end
+    
+            return r;
+        end
+    endfunction
+    
+    // ------------------------------
 
-    `include "axi_a_channel_bindings.svh"
-    `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
-                                     // Note: Also run ./Vivado/scripts/update_channels.py when this 
-                                     // is changed to update all the relevant header files
-
-    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
-    
-    parameter int NUM_TRANSFERS = 2;
-
-    parameter int DATA_WIDTH = 128;
-    parameter int ADDR_WIDTH = 64;
-    parameter int ID_WIDTH   = 8;
-    parameter int STRB_WIDTH = DATA_WIDTH/8;
-    
-    parameter int ELEMENT_WIDTH = 16;
-    parameter int RESULT_WIDTH  = 64;
-    
-    parameter int NUM_ACCEL_INST     = 1;
-    parameter int CHANNELS_PER_INST  = 4;
-    parameter int NUM_CHANNELS       = NUM_ACCEL_INST * CHANNELS_PER_INST;
-    parameter int NUM_RAM_PARTITIONS = CHANNELS_PER_INST;
-    
-    parameter int ELEMENTS_PER_ROW = 17048;
-    parameter int NUM_ROWS         = 48;
-    parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
-    
-    parameter int AXI_RAM_DATA_WIDTH = 256;
-    parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
-    
-    int input_order[CHANNELS_PER_INST] = '{3, 0, 2, 1};
-    
-    localparam ELEMENTS_PER_WORD      = DATA_WIDTH / ELEMENT_WIDTH;
-    localparam WORDS_PER_ROW          = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD;
-    
-    localparam AXI_RAM_ELEMENTS_PER_WORD = AXI_RAM_DATA_WIDTH / ELEMENT_WIDTH;
-    localparam ALIGN_FACTOR              = AXI_RAM_ELEMENTS_PER_WORD * NUM_RAM_PARTITIONS;
-    localparam ELEMENTS_PER_ROW_PADDED   = ((ELEMENTS_PER_ROW + ALIGN_FACTOR - 1) / ALIGN_FACTOR) * ALIGN_FACTOR;
-    localparam WORDS_PER_ROW_PADDED      = ELEMENTS_PER_ROW_PADDED / ELEMENTS_PER_WORD;
-    
-    localparam AXI_RAM_WORDS_PER_ROW       = ELEMENTS_PER_ROW_PADDED / AXI_RAM_ELEMENTS_PER_WORD;
-    localparam AXI_RAM_WORDS_PER_PARTITION = AXI_RAM_WORDS_PER_ROW / NUM_RAM_PARTITIONS;
-    localparam AXI_RAM_BYTES_PER_PARTITION = AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH;
-    localparam AXI_RAM_ADDR_WIDTH          = $clog2(AXI_RAM_BYTES_PER_PARTITION+1);
-    localparam [ADDR_WIDTH-1:0] PARTITION_ALIGN = (1 << AXI_RAM_ADDR_WIDTH);
-    
-    localparam MAX_BURST_LEN = 128;
-    
+    // Clock & reset signals    
     reg clk = 0, rstn = 1;
-    
     reg start_transfer = 0;
+    
+    always #(PCLK0_PERIOD_NS/2.0) clk = ~clk;
     
     // Inputs
     logic [DATA_WIDTH-1:0] s_axis_a_tdata   [NUM_CHANNELS] = '{default:'0};
@@ -173,25 +258,25 @@ module tb_mvm_accelerator;
     logic                    m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
 
     // AXI Full write interface for vector b
-    logic [ID_WIDTH-1:0]   s_axi_b_awid          [NUM_ACCEL_INST] = '{default:'0};
-    logic [ADDR_WIDTH-1:0] s_axi_b_awaddr        [NUM_ACCEL_INST] = '{default:'0};
-    logic [7:0]            s_axi_b_awlen         [NUM_ACCEL_INST] = '{default:'0};
-    logic [2:0]            s_axi_b_awsize        [NUM_ACCEL_INST] = '{default:'0};
-    logic [1:0]            s_axi_b_awburst       [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awlock        [NUM_ACCEL_INST] = '{default:'0};
-    logic [3:0]            s_axi_b_awcache       [NUM_ACCEL_INST] = '{default:'0};
-    logic [2:0]            s_axi_b_awprot        [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awvalid       [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_awready       [NUM_ACCEL_INST] = '{default:'0};
-    logic [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata [NUM_ACCEL_INST] = '{default:'0};
-    logic [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wlast         [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wvalid        [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_wready        [NUM_ACCEL_INST] = '{default:'0};
-    logic [ID_WIDTH-1:0]   s_axi_b_bid           [NUM_ACCEL_INST] = '{default:'0};
-    logic [1:0]            s_axi_b_bresp         [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_bvalid        [NUM_ACCEL_INST] = '{default:'0};
-    logic                  s_axi_b_bready        [NUM_ACCEL_INST] = '{default:'0};
+    logic [ID_WIDTH-1:0]           s_axi_b_awid    [NUM_ACCEL_INST] = '{default:'0};
+    logic [ADDR_WIDTH-1:0]         s_axi_b_awaddr  [NUM_ACCEL_INST] = '{default:'0};
+    logic [7:0]                    s_axi_b_awlen   [NUM_ACCEL_INST] = '{default:'0};
+    logic [2:0]                    s_axi_b_awsize  [NUM_ACCEL_INST] = '{default:'0};
+    logic [1:0]                    s_axi_b_awburst [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_awlock  [NUM_ACCEL_INST] = '{default:'0};
+    logic [3:0]                    s_axi_b_awcache [NUM_ACCEL_INST] = '{default:'0};
+    logic [2:0]                    s_axi_b_awprot  [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_awvalid [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_awready [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_DATA_WIDTH-1:0] s_axi_b_wdata   [NUM_ACCEL_INST] = '{default:'0};
+    logic [AXI_RAM_STRB_WIDTH-1:0] s_axi_b_wstrb   [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_wlast   [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_wvalid  [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_wready  [NUM_ACCEL_INST] = '{default:'0};
+    logic [ID_WIDTH-1:0]           s_axi_b_bid     [NUM_ACCEL_INST] = '{default:'0};
+    logic [1:0]                    s_axi_b_bresp   [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_bvalid  [NUM_ACCEL_INST] = '{default:'0};
+    logic                          s_axi_b_bready  [NUM_ACCEL_INST] = '{default:'0};
              
     logic [AXI_RAM_DATA_WIDTH-1:0] vector [AXI_RAM_WORDS_PER_ROW-1:0] = '{default:'0};
     
@@ -308,12 +393,9 @@ module tb_mvm_accelerator;
             );
         end
     endgenerate
-        
-    // Clock generation
-    always #3 clk = ~clk; // (pclk0: 167 MHz)
     
-    fp16_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW_PADDED];
-    fp16_t b_values [ELEMENTS_PER_ROW_PADDED];
+    elem_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW_PADDED];
+    elem_t b_values [ELEMENTS_PER_ROW_PADDED];
     
     reg inputs_sent      [NUM_CHANNELS-1:0];
     reg outputs_received [NUM_CHANNELS-1:0];
@@ -344,23 +426,23 @@ module tb_mvm_accelerator;
         // Initialize a_values
         for (int i = 0; i < NUM_CHANNELS; i++) begin
             for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
-                automatic shortreal a_sr = shortreal'((j+1.0) / ((i+1) * 100000.0));
-                a_values[i][j] = f32_to_f16(a_sr);
-                //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, a_values[i][j], f16_to_f32(a_values[i][j]));
+                automatic real a_r = ((j+1.0) / ((i+1) * 100000.0));
+                a_values[i][j] = real_to_elem(a_r);
+                //$display("Channel %0d : a_values[%0d] = %h (real=%f)", i, j, a_values[i][j], elem_to_real(a_values[i][j]));
             end
             for (int j = ELEMENTS_PER_ROW; j < ELEMENTS_PER_ROW_PADDED; j++) begin
-                a_values[i][j] = 16'h0000;
+                a_values[i][j] = '0;
             end
         end
         
         // Initialize b_values
         for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
-            automatic shortreal b_sr = shortreal'((j+1.0) / 10000.0);
-            b_values[j]    = f32_to_f16(b_sr);
-            //$display("b_values[%0d] = %h (real=%f)", i, b_values[j], f16_to_f32(b_values[j]));
+            automatic real b_r = ((j+1.0) / 10000.0);
+            b_values[j] = real_to_elem(b_r);
+            //$display("b_values[%0d] = %h (real=%f)", j, b_values[j], elem_to_real(b_values[j]));
         end
         for (int j = ELEMENTS_PER_ROW; j < ELEMENTS_PER_ROW_PADDED; j++) begin
-            b_values[j]    = 16'h0000;
+            b_values[j] = '0;
         end
         
         // Initialize vector (group b_values)
@@ -369,7 +451,7 @@ module tb_mvm_accelerator;
             for (int j = 0; j < AXI_RAM_ELEMENTS_PER_WORD; j++) begin
                 vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH] = b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j];
                 //$display("vector[%0d][%0d] = %h (real = %f)", 
-                //         w, j, vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], f16_to_f32(b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j]));
+                //         w, j, vector[w][j*ELEMENT_WIDTH +: ELEMENT_WIDTH], elem_to_real(b_values[w * AXI_RAM_ELEMENTS_PER_WORD + j]));
             end
         end
         
@@ -441,11 +523,11 @@ module tb_mvm_accelerator;
                             s_axis_a_tdata[ch] = '0;
                             for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
                                 automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
-                                automatic shortreal a32 = f16_to_f32(a_values[ch][abs_idx]);
-                                automatic shortreal b32 = f16_to_f32(b_values[abs_idx]);
+                                automatic real a_r = elem_to_real(a_values[ch][abs_idx]);
+                                automatic real b_r = elem_to_real(b_values[abs_idx]);
                                 
                                 s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = a_values[ch][abs_idx];
-                                expected[ch][j] += real'(a32) * real'(b32);
+                                expected[ch][j] += a_r * b_r;
                             end
                             
                             s_axis_a_tvalid[ch] = 1;
@@ -474,7 +556,7 @@ module tb_mvm_accelerator;
                 for (int i = 0; i < NUM_TRANSFERS; i++) begin
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
                         @(posedge clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
-                        $display("%0d: Ch%0d: Result=%f | Expected=%f",
+                        $display("%0d: Ch%0d: Result=%.16f | Expected=%.16f",
                             j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
                     end
                     outputs_received[ch] = 1;

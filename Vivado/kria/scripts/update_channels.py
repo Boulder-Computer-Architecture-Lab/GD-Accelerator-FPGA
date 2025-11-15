@@ -2,8 +2,8 @@
 
 import os
 
-CWD = os.getcwd()
-SOURCES_PATH = os.path.join(CWD, "../hdl")
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+SOURCES_PATH = os.path.join(SCRIPT_DIR, "../hdl")
 XBAR_WR_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_wr_channels.vh")
 XBAR_RD_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_rd_channels.vh")
 
