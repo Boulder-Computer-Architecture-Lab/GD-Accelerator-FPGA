@@ -9,7 +9,7 @@ projname="kria-accelerator"
 design_name="design_1"
 
 basedir="$(pwd)"
-projdir="$basedir/../../Vivado/kria/$projname"
+projdir="$basedir/../../Vivado/kria/build"
 boarddir="$basedir/../../Board/kria"
 targetdir="/home/ubuntu/mvm-accelerator/hw"
 

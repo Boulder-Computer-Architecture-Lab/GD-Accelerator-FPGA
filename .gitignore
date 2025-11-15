@@ -1,6 +1,11 @@
-###############################
-# Global Vivado noise
-###############################
+########################################
+# Vivado build output (disposable)
+########################################
+Vivado/kria/build/
+
+########################################
+# Common Vivado noise
+########################################
 *.jou
 *.log
 *.str
@@ -18,7 +23,7 @@
 *.pb
 *.bxml
 
-# Vivado work dirs
+# Vivado-generated work dirs
 **/.Xil/
 **/.cache/
 **/.hw/
@@ -27,61 +32,8 @@
 **/.sim/
 **/.gen/
 
-###############################
-# Project: Vivado/kria/kria-accelerator
-###############################
-
-# Ignore everything under the Vivado project by default
-Vivado/kria/kria-accelerator/*
-
-!Vivado/
-!Vivado/kria/
-!Vivado/kria/kria-accelerator/
-
 ########################################
-# 1) HDL + constraints
-########################################
-!Vivado/kria/kria-accelerator/**/*.v
-!Vivado/kria/kria-accelerator/**/*.sv
-!Vivado/kria/kria-accelerator/**/*.vh
-!Vivado/kria/kria-accelerator/**/*.vhd
-!Vivado/kria/kria-accelerator/**/*.vhdl
-!Vivado/kria/kria-accelerator/**/*.xdc
-
-########################################
-# 2) IP Definitions
-########################################
-# IP core definitions
-!Vivado/kria/kria-accelerator/**/*.xci
-!Vivado/kria/kria-accelerator/**/*.xcix
-!Vivado/kria/kria-accelerator/**/component.xml
-!Vivado/kria/kria-accelerator/**/ip_catalog/*.xml
-
-# Ignore IP build output dirs
-Vivado/kria/kria-accelerator/**/ip/*/example_design/
-Vivado/kria/kria-accelerator/**/ip/*/simulation/
-Vivado/kria/kria-accelerator/**/ip/*/synth/
-Vivado/kria/kria-accelerator/**/ip/*/impl/
-Vivado/kria/kria-accelerator/**/ip/*/ip_user_files/
-
-########################################
-# 3) Block design setup (.bd + BD Tcl)
-########################################
-# Keep BD files and any scripts that recreate them
-!Vivado/kria/kria-accelerator/**/*.bd
-!Vivado/kria/kria-accelerator/**/bd/**/*.tcl
-
-# Ignore BD-generated HDL & IP wrappers
-Vivado/kria/kria-accelerator/**/bd/*/hdl/
-Vivado/kria/kria-accelerator/**/bd/*/ip/*/
-
-########################################
-# 4) Automation scripts
-########################################
-!Vivado/kria/kria-accelerator/**/*.tcl
-
-########################################
-# Editor / misc noise
+# Editor / OS noise
 ########################################
 *.swp
 *.swo
@@ -89,4 +41,3 @@ Vivado/kria/kria-accelerator/**/bd/*/ip/*/
 .vscode/
 __pycache__/
 *.pyc
-

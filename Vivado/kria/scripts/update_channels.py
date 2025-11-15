@@ -3,7 +3,7 @@
 import os
 
 CWD = os.getcwd()
-SOURCES_PATH = os.path.join(CWD, "../kria-accelerator/kria-accelerator.srcs/sources_1/new")
+SOURCES_PATH = os.path.join(CWD, "../hdl")
 XBAR_WR_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_wr_channels.vh")
 XBAR_RD_CHANNELS_PATH = os.path.join(SOURCES_PATH, "xbar_rd_channels.vh")
 
