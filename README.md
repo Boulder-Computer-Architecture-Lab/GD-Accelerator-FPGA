@@ -1,26 +1,35 @@
 ## Overview
 
-This project provides the RTL and software implementations for a PYNQ SoC FPGA matrix-vector multiplication accelerator for the application of a Spatial Integrated Assessment Model (S-IAM).
+This project provides RTL and software implementations for a PYNQ SoC FPGA matrix–vector multiplication (MVM) accelerator used in a Spatial Integrated Assessment Model (S-IAM).
 
 ## Requirements
 
 - Software: Vivado 2023.2, Python 3.10.12
 - Hardware: Kria KV260 Vision AI Starter Kit
 
+## Quick Start
+
+**TODO**
+
 ## Repository Structure
 
-- ``Scripts``: Contains scripts for sending .bit/.hwh (``send_hw_to_board.sh``) and a random input matrix with specified dimensions (``send_matrix_to_board.sh``) to the board. Can also acquire a snapshot of the board relevant files from the board using ``backup_to_host.sh``. Note: the on-board target directory and IP need to be changed if using a different Kria KV260.
-- ``Board``: Contains the two most recent snapshots of on-board files including the .bit/.hwh exported from Vivado, and the .ipynb/.py files used to test the hardware design.
-- ``Model``: Contains two naive implementations of a MVM in C as a CPU benchmark (one for fp64 and one for fp16). Also contains a full C++ implementation of the original S-IAM.
-- ``Vivado``: 
-    - ``lib``: Contains Alex Forencich's Verilog-AXI and Verilog-AXIS open-source libraries.
-    - ``kria``: 
-        - ``bd``: Contains the exported tcl script to generate the block diagram.
-        - ``build``: Contains the Vivado project including all generated outputs.
-        - ``hdl``: Contains all .v/.sv sources used in the block diagram.
-        - ``ip``: Contains .xci files for all IPs instantiated in ``../hdl``.
-        - ``scripts``: Contains build script and a Python script for updating the header files when changing the number of input channels (default=4).
-        - ``sim``: Contains a .sv testbench for ``mvm_accelerator.v``.
+- ``Scripts/``: Contains utility scripts, including:
+    - ``send_hw_to_board.sh``: sends the .bit/.hwh files to the board.
+    - ``send_matrix_to_board.sh``: sends a randomly generated input matrix with specified dimensions.
+    - ``backup_to_host.sh``: retrieves snapshots of relevant on-board files.
+_Note: verify and update the target directory and IP address in these scripts as needed._
+
+- ``Board/``: Contains the two most recent snapshots of on-board files, including the exported .bit/.hwh files and the .ipynb/.py scripts used to test the hardware.
+- ``Model/``: Contains two naive C implementations of an MVM (fp64 and fp16) for CPU benchmarking, as well as a full C++ implementation of the original S-IAM.
+- ``Vivado/``:
+    - ``lib/``: Alex Forencich's Verilog-AXI and Verilog-AXIS libraries.
+    - ``kria/``:
+        - ``bd/``: Tcl script to regenerate the block diagram.
+        - ``build/``: Vivado project and all generated outputs.
+        - ``hdl/``: All .v/.sv sources used in the block diagram.
+        - ``ip/``: .xci files for all instantiated IP cores.
+        - ``scripts/``: Build script and Python utilities for updating header files when changing the number of input channels (default = 4).
+        - ``sim/``: SystemVerilog testbench for mvm_accelerator.v.
 
 ## Build Instructions
 
@@ -38,7 +47,15 @@ After making changes to the block diagram, execute the folliwng command from the
 write_bd_tcl -force -include_layout Vivado/kria/bd/design_1.tcl
 ``` 
 
-Equivalently, use ``Tools > Export Block Design`` and save the Tcl file as ``Vivado/kria/bd/design_1.tcl``. This ensures the changes will be reflected in subsequent builds. 
+Equivalently, use **Tools > Export Block Design** and save the Tcl file as 
+
+``Vivado/kria/bd/design_1.tcl``. 
+
+This ensures the changes will be reflected in subsequent builds. 
+
+## Architectural Diagram
+
+**TODO**
 
 ## Acknowledgments
 
