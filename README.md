@@ -46,3 +46,5 @@ This project incorporates modules from Alex Forencich’s Verilog-AXI/Verilog-AX
 - https://github.com/alexforencich/verilog-axi
 - https://github.com/alexforencich/verilog-axis
 
+The model is based on the following paper:
+- https://rossihansberg.economics.uchicago.edu/EGGW.pdf
