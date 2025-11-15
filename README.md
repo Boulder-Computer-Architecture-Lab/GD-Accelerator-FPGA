@@ -1,6 +1,7 @@
 **Specs**:
 
 Software: Vivado 2023.2, Python 3.10.12
+
 Hardware: Kria KV260 SoC FPGA
 
 **Build Instructions:**
