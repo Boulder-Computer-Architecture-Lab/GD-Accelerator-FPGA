@@ -11,7 +11,7 @@ This project provides the RTL and software implementations for a PYNQ SoC FPGA m
 
 - ``Scripts``: Contains scripts for sending .bit/.hwh (``send_hw_to_board.sh``) and a random input matrix with specified dimensions (``send_matrix_to_board.sh``) to the board. Can also acquire a snapshot of the board relevant files from the board using ``backup_to_host.sh``. Note: the on-board target directory and IP need to be changed if using a different Kria KV260.
 - ``Board``: Contains the two most recent snapshots of on-board files including the .bit/.hwh exported from Vivado, and the .ipynb/.py files used to test the hardware design.
-- ``Model``: Contains two naive implementations of a MVM in C as a CPU benchmark (one for fp64 and one for fp16). Also contains and full C++ implementation of the original S-IAM.
+- ``Model``: Contains two naive implementations of a MVM in C as a CPU benchmark (one for fp64 and one for fp16). Also contains a full C++ implementation of the original S-IAM.
 - ``Vivado``: 
     - ``lib``: Contains Alex Forencich's Verilog-AXI and Verilog-AXIS open-source libraries.
     - ``kria``: 
