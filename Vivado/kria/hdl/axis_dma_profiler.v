@@ -7,7 +7,10 @@ module axis_dma_profiler #(
     parameter AXIS_M_DATA_WIDTH = 64,
 
     parameter AXIL_ADDR_WIDTH = 12,
-    parameter AXIL_DATA_WIDTH = 32
+    parameter AXIL_DATA_WIDTH = 32,
+
+    parameter USE_BPP_CNT = 0,
+    parameter BEATS_PER_PACKET = 9124992
 )(
     input  wire                       axis_clk,
     input  wire                       axis_aresetn, 
@@ -197,9 +200,13 @@ module axis_dma_profiler #(
                         cycle_cnt[ch] <= cycle_cnt[ch] + 1;
 
                         if (hs) begin
+
                             beat_cnt[ch] <= beat_cnt[ch] + 1;
                             byte_cnt[ch] <= byte_cnt[ch] + AXIS_S_DATA_BYTES;
-                            if (s_tlast_v[ch]) begin
+
+                            if ((USE_BPP_CNT == 0 && s_tlast_v[ch]) ||
+                                (USE_BPP_CNT != 0 && beat_cnt[ch] == BEATS_PER_PACKET-1)) begin
+
                                 running[ch]     <= 1'b0;
                                 have_result[ch] <= 1'b1;
                                 pkt_cnt[ch]     <= pkt_cnt[ch] + 1;

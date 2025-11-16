@@ -415,82 +415,175 @@ MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#######
     CONFIG.PSU__AFI1_COHERENCY {0} \
     CONFIG.PSU__CAN1__PERIPHERAL__ENABLE {0} \
     CONFIG.PSU__CRF_APB__ACPU_CTRL__ACT_FREQMHZ {1333.333008} \
+    CONFIG.PSU__CRF_APB__ACPU_CTRL__DIVISOR0 {1} \
     CONFIG.PSU__CRF_APB__ACPU_CTRL__FREQMHZ {1333.333} \
     CONFIG.PSU__CRF_APB__ACPU_CTRL__SRCSEL {APLL} \
     CONFIG.PSU__CRF_APB__ACPU__FRAC_ENABLED {1} \
+    CONFIG.PSU__CRF_APB__APLL_CTRL__DIV2 {1} \
+    CONFIG.PSU__CRF_APB__APLL_CTRL__FBDIV {80} \
+    CONFIG.PSU__CRF_APB__APLL_CTRL__FRACDATA {0.000778} \
     CONFIG.PSU__CRF_APB__APLL_CTRL__FRACFREQ {1333.333} \
     CONFIG.PSU__CRF_APB__APLL_CTRL__SRCSEL {PSS_REF_CLK} \
     CONFIG.PSU__CRF_APB__APLL_FRAC_CFG__ENABLED {1} \
+    CONFIG.PSU__CRF_APB__APLL_TO_LPD_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__ACT_FREQMHZ {249.997498} \
+    CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__DIVISOR0 {5} \
     CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__ACT_FREQMHZ {249.997498} \
+    CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRF_APB__DDR_CTRL__ACT_FREQMHZ {533.328003} \
+    CONFIG.PSU__CRF_APB__DDR_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRF_APB__DDR_CTRL__FREQMHZ {1200} \
     CONFIG.PSU__CRF_APB__DDR_CTRL__SRCSEL {DPLL} \
     CONFIG.PSU__CRF_APB__DPDMA_REF_CTRL__ACT_FREQMHZ {444.444336} \
+    CONFIG.PSU__CRF_APB__DPDMA_REF_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRF_APB__DPDMA_REF_CTRL__FREQMHZ {600} \
     CONFIG.PSU__CRF_APB__DPDMA_REF_CTRL__SRCSEL {APLL} \
+    CONFIG.PSU__CRF_APB__DPLL_CTRL__DIV2 {1} \
+    CONFIG.PSU__CRF_APB__DPLL_CTRL__FBDIV {64} \
     CONFIG.PSU__CRF_APB__DPLL_CTRL__SRCSEL {PSS_REF_CLK} \
+    CONFIG.PSU__CRF_APB__DPLL_TO_LPD_CTRL__DIVISOR0 {2} \
+    CONFIG.PSU__CRF_APB__DP_AUDIO_REF_CTRL__DIVISOR0 {63} \
+    CONFIG.PSU__CRF_APB__DP_AUDIO_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__DIVISOR0 {6} \
+    CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__DIVISOR1 {10} \
+    CONFIG.PSU__CRF_APB__DP_VIDEO_REF_CTRL__DIVISOR0 {5} \
+    CONFIG.PSU__CRF_APB__DP_VIDEO_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRF_APB__GDMA_REF_CTRL__ACT_FREQMHZ {533.328003} \
+    CONFIG.PSU__CRF_APB__GDMA_REF_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRF_APB__GDMA_REF_CTRL__FREQMHZ {600} \
     CONFIG.PSU__CRF_APB__GDMA_REF_CTRL__SRCSEL {DPLL} \
     CONFIG.PSU__CRF_APB__GPU_REF_CTRL__ACT_FREQMHZ {499.994995} \
+    CONFIG.PSU__CRF_APB__GPU_REF_CTRL__DIVISOR0 {1} \
     CONFIG.PSU__CRF_APB__GPU_REF_CTRL__FREQMHZ {600} \
     CONFIG.PSU__CRF_APB__GPU_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRF_APB__PCIE_REF_CTRL__DIVISOR0 {6} \
+    CONFIG.PSU__CRF_APB__SATA_REF_CTRL__DIVISOR0 {5} \
     CONFIG.PSU__CRF_APB__TOPSW_LSBUS_CTRL__ACT_FREQMHZ {99.999001} \
+    CONFIG.PSU__CRF_APB__TOPSW_LSBUS_CTRL__DIVISOR0 {5} \
     CONFIG.PSU__CRF_APB__TOPSW_LSBUS_CTRL__FREQMHZ {100} \
     CONFIG.PSU__CRF_APB__TOPSW_LSBUS_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRF_APB__TOPSW_MAIN_CTRL__ACT_FREQMHZ {533.328003} \
+    CONFIG.PSU__CRF_APB__TOPSW_MAIN_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRF_APB__TOPSW_MAIN_CTRL__FREQMHZ {533.33} \
     CONFIG.PSU__CRF_APB__TOPSW_MAIN_CTRL__SRCSEL {DPLL} \
+    CONFIG.PSU__CRF_APB__VPLL_CTRL__DIV2 {1} \
+    CONFIG.PSU__CRF_APB__VPLL_CTRL__FBDIV {90} \
     CONFIG.PSU__CRF_APB__VPLL_CTRL__SRCSEL {PSS_REF_CLK} \
+    CONFIG.PSU__CRF_APB__VPLL_TO_LPD_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRL_APB__ADMA_REF_CTRL__ACT_FREQMHZ {499.994995} \
+    CONFIG.PSU__CRL_APB__ADMA_REF_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRL_APB__ADMA_REF_CTRL__FREQMHZ {500} \
     CONFIG.PSU__CRL_APB__ADMA_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__AFI6_REF_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRL_APB__AMS_REF_CTRL__ACT_FREQMHZ {49.999500} \
+    CONFIG.PSU__CRL_APB__AMS_REF_CTRL__DIVISOR0 {30} \
+    CONFIG.PSU__CRL_APB__AMS_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__CAN0_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__CAN0_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__CAN1_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__CAN1_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__CAN1_REF_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__CPU_R5_CTRL__ACT_FREQMHZ {499.994995} \
+    CONFIG.PSU__CRL_APB__CPU_R5_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRL_APB__CPU_R5_CTRL__FREQMHZ {533.333} \
     CONFIG.PSU__CRL_APB__CPU_R5_CTRL__SRCSEL {RPLL} \
     CONFIG.PSU__CRL_APB__DBG_LPD_CTRL__ACT_FREQMHZ {249.997498} \
+    CONFIG.PSU__CRL_APB__DBG_LPD_CTRL__DIVISOR0 {6} \
     CONFIG.PSU__CRL_APB__DBG_LPD_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRL_APB__DBG_LPD_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__DLL_REF_CTRL__ACT_FREQMHZ {1499.984985} \
+    CONFIG.PSU__CRL_APB__GEM0_REF_CTRL__DIVISOR0 {12} \
+    CONFIG.PSU__CRL_APB__GEM0_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__GEM1_REF_CTRL__DIVISOR0 {12} \
+    CONFIG.PSU__CRL_APB__GEM1_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__GEM2_REF_CTRL__DIVISOR0 {12} \
+    CONFIG.PSU__CRL_APB__GEM2_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__GEM3_REF_CTRL__DIVISOR0 {12} \
+    CONFIG.PSU__CRL_APB__GEM3_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__GEM_TSU_REF_CTRL__DIVISOR0 {4} \
+    CONFIG.PSU__CRL_APB__GEM_TSU_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__I2C0_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__I2C0_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__I2C1_REF_CTRL__ACT_FREQMHZ {99.999001} \
+    CONFIG.PSU__CRL_APB__I2C1_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__I2C1_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__I2C1_REF_CTRL__FREQMHZ {100} \
     CONFIG.PSU__CRL_APB__I2C1_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__IOPLL_CTRL__DIV2 {1} \
+    CONFIG.PSU__CRL_APB__IOPLL_CTRL__FBDIV {90} \
     CONFIG.PSU__CRL_APB__IOPLL_CTRL__SRCSEL {PSS_REF_CLK} \
+    CONFIG.PSU__CRL_APB__IOPLL_TO_FPD_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRL_APB__IOU_SWITCH_CTRL__ACT_FREQMHZ {249.997498} \
+    CONFIG.PSU__CRL_APB__IOU_SWITCH_CTRL__DIVISOR0 {6} \
     CONFIG.PSU__CRL_APB__IOU_SWITCH_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRL_APB__IOU_SWITCH_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__LPD_LSBUS_CTRL__ACT_FREQMHZ {99.999001} \
+    CONFIG.PSU__CRL_APB__LPD_LSBUS_CTRL__DIVISOR0 {15} \
     CONFIG.PSU__CRL_APB__LPD_LSBUS_CTRL__FREQMHZ {100} \
     CONFIG.PSU__CRL_APB__LPD_LSBUS_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__LPD_SWITCH_CTRL__ACT_FREQMHZ {499.994995} \
+    CONFIG.PSU__CRL_APB__LPD_SWITCH_CTRL__DIVISOR0 {3} \
     CONFIG.PSU__CRL_APB__LPD_SWITCH_CTRL__FREQMHZ {500} \
     CONFIG.PSU__CRL_APB__LPD_SWITCH_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__NAND_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__NAND_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__ACT_FREQMHZ {187.498123} \
+    CONFIG.PSU__CRL_APB__PCAP_CTRL__DIVISOR0 {8} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__FREQMHZ {200} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ {249.997498} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {250} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__DIVISOR0 {6} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {215} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ {249.997498} \
+    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__DIVISOR0 {4} \
+    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__PL2_REF_CTRL__DIVISOR0 {4} \
+    CONFIG.PSU__CRL_APB__PL2_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__PL3_REF_CTRL__DIVISOR0 {4} \
+    CONFIG.PSU__CRL_APB__PL3_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__ACT_FREQMHZ {124.998749} \
+    CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__DIVISOR0 {5} \
+    CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__FREQMHZ {125} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__RPLL_CTRL__DIV2 {1} \
+    CONFIG.PSU__CRL_APB__RPLL_CTRL__FBDIV {60} \
     CONFIG.PSU__CRL_APB__RPLL_CTRL__SRCSEL {PSS_REF_CLK} \
+    CONFIG.PSU__CRL_APB__RPLL_TO_FPD_CTRL__DIVISOR0 {2} \
     CONFIG.PSU__CRL_APB__SDIO0_REF_CTRL__ACT_FREQMHZ {199.998001} \
+    CONFIG.PSU__CRL_APB__SDIO0_REF_CTRL__DIVISOR0 {5} \
+    CONFIG.PSU__CRL_APB__SDIO0_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__SDIO1_REF_CTRL__DIVISOR0 {7} \
+    CONFIG.PSU__CRL_APB__SDIO1_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__SPI0_REF_CTRL__DIVISOR0 {7} \
+    CONFIG.PSU__CRL_APB__SPI0_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__ACT_FREQMHZ {187.498123} \
+    CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__DIVISOR0 {8} \
+    CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__DIVISOR1 {1} \
     CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__TIMESTAMP_REF_CTRL__ACT_FREQMHZ {99.999001} \
+    CONFIG.PSU__CRL_APB__TIMESTAMP_REF_CTRL__DIVISOR0 {15} \
     CONFIG.PSU__CRL_APB__TIMESTAMP_REF_CTRL__FREQMHZ {100} \
     CONFIG.PSU__CRL_APB__TIMESTAMP_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__UART0_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__UART0_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__UART1_REF_CTRL__DIVISOR0 {15} \
+    CONFIG.PSU__CRL_APB__UART1_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__USB0_BUS_REF_CTRL__DIVISOR0 {6} \
+    CONFIG.PSU__CRL_APB__USB0_BUS_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__USB1_BUS_REF_CTRL__DIVISOR0 {6} \
+    CONFIG.PSU__CRL_APB__USB1_BUS_REF_CTRL__DIVISOR1 {1} \
+    CONFIG.PSU__CRL_APB__USB3_DUAL_REF_CTRL__DIVISOR0 {5} \
+    CONFIG.PSU__CRL_APB__USB3_DUAL_REF_CTRL__DIVISOR1 {15} \
     CONFIG.PSU__CSUPMU__PERIPHERAL__VALID {1} \
     CONFIG.PSU__DDRC__BG_ADDR_COUNT {1} \
     CONFIG.PSU__DDRC__BRC_MAPPING {ROW_BANK_COL} \
@@ -553,7 +646,7 @@ MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#######
     CONFIG.PSU__LPD_SLCR__CSUPMU__ACT_FREQMHZ {100.000000} \
     CONFIG.PSU__MAXIGP0__DATA_WIDTH {128} \
     CONFIG.PSU__MAXIGP1__DATA_WIDTH {128} \
-    CONFIG.PSU__OVERRIDE__BASIC_CLOCK {0} \
+    CONFIG.PSU__OVERRIDE__BASIC_CLOCK {1} \
     CONFIG.PSU__PL_CLK0_BUF {TRUE} \
     CONFIG.PSU__PMU_COHERENCY {0} \
     CONFIG.PSU__PMU__AIBACK__ENABLE {0} \
@@ -891,94 +984,6 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_3/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP1/HPC1_LPS_OCM]
   exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_3/Data_SG] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP5/HP3_LPS_OCM]
 
-  # Perform GUI Layout
-  regenerate_bd_layout -layout_string {
-   "ActiveEmotionalView":"Default View",
-   "Addressing View_Layers":"/rst_ps8_0_99M_peripheral_aresetn:false|/zynq_ultra_ps_e_0_pl_clk0:false|/zynq_ultra_ps_e_0_pl_resetn0:false|",
-   "Addressing View_ScaleFactor":"1.88125",
-   "Addressing View_TopLeft":"10,-124",
-   "Color Coded_ScaleFactor":"1.75185",
-   "Color Coded_TopLeft":"10,-58",
-   "Default View_Layers":"/rst_ps8_0_99M_peripheral_aresetn:true|/zynq_ultra_ps_e_0_pl_clk0:true|/zynq_ultra_ps_e_0_pl_resetn0:true|",
-   "Default View_ScaleFactor":"1.16079",
-   "Default View_TopLeft":"-230,-986",
-   "Display-PortTypeClock":"true",
-   "Display-PortTypeReset":"true",
-   "ExpandedHierarchyInLayout":"",
-   "Grouping and No Loops_ScaleFactor":"1.29187",
-   "Grouping and No Loops_TopLeft":"-321,3",
-   "Interfaces View_Layers":"/rst_ps8_0_99M_peripheral_aresetn:false|/zynq_ultra_ps_e_0_pl_clk0:false|/zynq_ultra_ps_e_0_pl_resetn0:false|",
-   "Interfaces View_ScaleFactor":"1.93626",
-   "Interfaces View_TopLeft":"10,-155",
-   "No Loops_ScaleFactor":"1.3128",
-   "No Loops_TopLeft":"-331,3",
-   "PinnedBlocks":"/zynq_ultra_ps_e_0|/axi_dma_0|/ps8_0_axi_periph|/rst_ps8_0_99M|/axi_smc|/mvm_accelerator_0|/axi_cdma_0|/axi_smc1|/ps8_0_axi_periph1|/smartconnect_0|/axi_dma_1|/smartconnect_1|/smartconnect_2|/axi_dma_2|/axi_dma_3|/smartconnect_3|/smartconnect_4|",
-   "Reduced Jogs_Layers":"/rst_ps8_0_99M_peripheral_aresetn:true|/zynq_ultra_ps_e_0_pl_clk0:true|/zynq_ultra_ps_e_0_pl_resetn0:true|",
-   "Reduced Jogs_ScaleFactor":"1.3128",
-   "Reduced Jogs_TopLeft":"-251,3",
-   "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0
-#  -string -flagsOSRD
-preplace inst zynq_ultra_ps_e_0 -pg 1 -lvl 1 -x 540 -y -210 -defaultsOSRD
-preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1700 -y -410 -defaultsOSRD
-preplace inst ps8_0_axi_periph -pg 1 -lvl 2 -x 1090 -y -270 -defaultsOSRD
-preplace inst rst_ps8_0_99M -pg 1 -lvl 1 -x 540 -y 60 -defaultsOSRD
-preplace inst axi_smc -pg 1 -lvl 1 -x 540 -y -1030 -defaultsOSRD -orient R180
-preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 2200 -y -360 -defaultsOSRD
-preplace inst axi_cdma_0 -pg 1 -lvl 3 -x 1700 -y -610 -defaultsOSRD
-preplace inst axi_smc1 -pg 1 -lvl 4 -x 2200 -y -600 -defaultsOSRD
-preplace inst ps8_0_axi_periph1 -pg 1 -lvl 2 -x 1090 -y 30 -defaultsOSRD
-preplace inst smartconnect_0 -pg 1 -lvl 4 -x 2200 -y -100 -defaultsOSRD -orient R180
-preplace inst axi_dma_1 -pg 1 -lvl 3 -x 1700 -y -170 -defaultsOSRD
-preplace inst smartconnect_1 -pg 1 -lvl 1 -x 540 -y -860 -defaultsOSRD -orient R180
-preplace inst smartconnect_2 -pg 1 -lvl 4 -x 2200 -y 80 -defaultsOSRD -orient R180
-preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1700 -y 70 -defaultsOSRD
-preplace inst axi_dma_3 -pg 1 -lvl 3 -x 1700 -y 310 -defaultsOSRD
-preplace inst smartconnect_3 -pg 1 -lvl 1 -x 540 -y -660 -defaultsOSRD -orient R180
-preplace inst smartconnect_4 -pg 1 -lvl 1 -x 540 -y -500 -defaultsOSRD -orient R180
-preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 930J -750 1470J -770 2020 -690 2340
-preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 230 -400 920 -710 1510 -720 2010 -680 2390
-preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 0 2 250 160 830
-preplace netloc S00_AXI_1 1 1 1 840 -220n
-preplace netloc axi_cdma_0_M_AXI 1 3 1 N -620
-preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1950J -450n
-preplace netloc axi_dma_0_M_AXI_MM2S 1 1 3 NJ -990 NJ -990 1890
-preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1940 -510 2370
-preplace netloc axi_dma_0_M_AXI_SG 1 1 3 NJ -1030 NJ -1030 1900
-preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1960 -430n
-preplace netloc axi_dma_1_M_AXI_MM2S 1 1 3 NJ -830 N -830 1870
-preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 NJ -200 2350J
-preplace netloc axi_dma_1_M_AXI_SG 1 1 3 NJ -850 N -850 1880
-preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1970 -410n
-preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 830J -760 NJ -760 1930
-preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1990J -10 2350J
-preplace netloc axi_dma_2_M_AXI_SG 1 1 3 840J -740 1480J -750 1920
-preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 2030 -390n
-preplace netloc axi_dma_3_M_AXI_MM2S 1 1 3 940J -730 1490J -740 1910
-preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 2050 170 2340J
-preplace netloc axi_dma_3_M_AXI_SG 1 1 3 950J -720 1500J -730 1860
-preplace netloc axi_smc1_M00_AXI 1 1 4 NJ -1010 NJ -1010 NJ -1010 2350
-preplace netloc axi_smc1_M01_AXI 1 3 2 2060 -520 2350
-preplace netloc axi_smc_M00_AXI 1 0 1 250 -1030n
-preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1540 -710 NJ -710 2400J
-preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1530 470 NJ 470 2400J
-preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1480 480 NJ 480 2380J
-preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1540 450 NJ 450 2360J
-preplace netloc ps8_0_axi_periph1_M00_AXI 1 2 1 1520 10n
-preplace netloc ps8_0_axi_periph1_M01_AXI 1 2 1 1230 40n
-preplace netloc ps8_0_axi_periph_M00_AXI 1 2 1 1500 -640n
-preplace netloc ps8_0_axi_periph_M01_AXI 1 2 2 1480 -700 1980J
-preplace netloc ps8_0_axi_periph_M02_AXI 1 2 1 1530 -470n
-preplace netloc ps8_0_axi_periph_M03_AXI 1 2 1 1480 -240n
-preplace netloc smartconnect_0_M00_AXI 1 0 4 190 460 NJ 460 NJ 460 2040
-preplace netloc smartconnect_1_M00_AXI 1 0 1 200 -860n
-preplace netloc smartconnect_2_M00_AXI 1 0 4 240 440 N 440 N 440 2060
-preplace netloc smartconnect_3_M00_AXI 1 0 1 210 -660n
-preplace netloc smartconnect_4_M00_AXI 1 0 1 220 -500n
-preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 1 1 950J -390n
-levelinfo -pg 1 -20 540 1090 1700 2200 2420
-pagesize -pg 1 -db -bbox -sgen -20 -1370 2820 940
-"
-}
 
   # Restore current instance
   current_bd_instance $oldCurInst

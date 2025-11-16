@@ -183,12 +183,20 @@ module mvm_accelerator #(
     
     generate
         if (PROFILE) begin
+
+            localparam BEATS_PER_PACKET = WORDS_PER_ROW * ROWS_PER_CHANNEL;
+
             axis_dma_profiler #(
                 .NUM_DMAS(NUM_CHANNELS),
+
                 .AXIS_S_DATA_WIDTH(DATA_WIDTH),
                 .AXIS_M_DATA_WIDTH(RESULT_WIDTH),
+
                 .AXIL_ADDR_WIDTH(AXIL_ADDR_WIDTH),
-                .AXIL_DATA_WIDTH(AXIL_DATA_WIDTH)
+                .AXIL_DATA_WIDTH(AXIL_DATA_WIDTH),
+
+                .USE_BPP_CNT(1),
+                .BEATS_PER_PACKET(BEATS_PER_PACKET)
             ) prof (
                 .axis_clk       (clk),
                 .axis_aresetn   (rstn),
