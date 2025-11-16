@@ -245,6 +245,7 @@ module mvm_accelerator #(
                 .s_axis_a_tdata (s_axis_a_tdata),
                 .s_axis_a_tvalid(s_axis_a_tvalid),
                 .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast (s_axis_a_tlast),
             
                 // Output channels
                 .m_axis_tdata (m_axis_tdata),

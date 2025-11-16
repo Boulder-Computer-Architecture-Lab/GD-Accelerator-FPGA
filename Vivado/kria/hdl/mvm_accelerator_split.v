@@ -98,9 +98,9 @@ module mvm_accelerator_split #(
     localparam ROWS_PER_CHANNEL_WIDTH = $clog2(ROWS_PER_CHANNEL+1);
 
     reg                               ch_start            [NUM_CHANNELS-1:0];
-    reg                               ch_init             [NUM_CHANNELS-1:0];
     reg  [NUM_PARTITIONS_WIDTH-1:0]   ch_pidx             [NUM_CHANNELS-1:0];
     wire                              ch_pdone            [NUM_CHANNELS-1:0];
+    wire                              ch_wants_part       [NUM_CHANNELS-1:0];
     reg                               ch_seen_a_data      [NUM_CHANNELS-1:0];
     reg  [ROWS_PER_CHANNEL_WIDTH-1:0] ch_num_rows_fetched [NUM_CHANNELS-1:0];
     wire                              ch_all_rows_fetched [NUM_CHANNELS-1:0];
@@ -111,6 +111,9 @@ module mvm_accelerator_split #(
     generate
         for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1) begin : assign_fetched
             assign ch_all_rows_fetched[ch] = (ch_num_rows_fetched[ch] == ROWS_PER_CHANNEL);
+            assign ch_wants_part[ch]       = !ch_all_rows_fetched[ch]
+                                          &&  ch_seen_a_data[ch]
+                                          && !ch_start[ch];
         end
     endgenerate
 
@@ -119,30 +122,18 @@ module mvm_accelerator_split #(
         if (!rstn || !done_rstn) begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 ch_pidx[p]             <= 0;
-                ch_start[p]            <= 1'b0;
                 ch_seen_a_data[p]      <= 1'b0;
                 ch_num_rows_fetched[p] <= 0;
-                part_in_use[p]         <= 1'b0;
             end
         end else begin
             for (p = 0; p < NUM_CHANNELS; p = p + 1) begin
                 if (s_axis_a_tvalid[p])
                     ch_seen_a_data[p] <= 1'b1;
 
-                if (!ch_start[p]) begin
-                    ch_start[p] <= !part_in_use[ch_pidx[p]]
-                                && !ch_all_rows_fetched[p]
-                                &&  ch_seen_a_data[p];
-                end else begin
-                    ch_start[p] <= 1'b0;
-                    part_in_use[ch_pidx[p]] <= 1'b1;
-                end
-
                 if (ch_pdone[p]) begin
-                    part_in_use[ch_pidx[p]] <= 1'b0;
                     if (ch_pidx[p] == NUM_RAM_PARTITIONS-1) begin
-                        ch_pidx[p] <= 0;
                         ch_num_rows_fetched[p] <= ch_num_rows_fetched[p] + 1;
+                        ch_pidx[p] <= 0;
                     end else begin
                         ch_pidx[p] <= ch_pidx[p] + 1;
                     end
@@ -151,6 +142,40 @@ module mvm_accelerator_split #(
         end
     end
     
+    integer q, r;
+    always @(posedge clk) begin
+        if (!rstn || !done_rstn) begin
+            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                ch_start[r] <= 1'b0;
+            end
+            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+                part_in_use[q] <= 1'b0;
+            end
+        end else begin
+            for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                ch_start[r] <= 1'b0; // clear by default
+            end
+            for (q = 0; q < NUM_RAM_PARTITIONS; q = q + 1) begin
+
+                if (part_in_use[q]) begin
+                    for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                        if (ch_pdone[r] && ch_pidx[r] == q)
+                            part_in_use[q] <= 1'b0;
+                    end
+
+                end else begin : GRANT_LOOP
+                    for (r = 0; r < NUM_CHANNELS; r = r + 1) begin
+                        if (ch_wants_part[r] && ch_pidx[r] == q) begin
+                            ch_start[r] <= 1'b1;
+                            part_in_use[q] <= 1'b1;
+                            disable GRANT_LOOP; // only grant to one waiting channel
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     // =============================================================
     //                  GENERATE CHANNELS
     // =============================================================

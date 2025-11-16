@@ -36,6 +36,7 @@ module tb_mvm_accelerator;
     parameter int AXI_RAM_DATA_WIDTH = 256;
     parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
     
+    int OFFSET_CYCLES = 128;
     int input_order[CHANNELS_PER_INST] = '{0, 1, 2, 3}; // Switch the order that s_axis_a channels start arriving. 
                                                         // Set to (0, 0, 0, 0) for simultaneous start, but note that
                                                         // the partition arbitration logic assumes an offset.
@@ -508,7 +509,7 @@ module tb_mvm_accelerator;
                     wait(start_transfer);
                     
                     // Stagger first input
-                    repeat(5000 * input_order[ch]) @(posedge clk);
+                    repeat(OFFSET_CYCLES * input_order[ch]) @(posedge clk);
 
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
                         expected[ch][j] = 0.0;

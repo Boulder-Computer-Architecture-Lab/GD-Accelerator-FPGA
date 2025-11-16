@@ -41,6 +41,7 @@ This usually takes about 2 hours.
     - ``send_matrix_to_board.sh``: sends a randomly generated input matrix with specified dimensions.
     - ``backup_to_host.sh``: retrieves snapshots of relevant on-board files.
     - ``restore_from_backup.sh``: overwrites the corresponding on-board directories with most recent backup.
+
 _Note: verify and update the target directory and IP address in these scripts as needed._
 
 - ``Board/``: Contains the two most recent snapshots of on-board files, including the exported .bit/.hwh files and the .ipynb/.py scripts used to test the hardware.
@@ -65,15 +66,17 @@ source Vivado/kria/scripts/build.tcl
 
 This should create the Vivado project, add sources, generate output products for the IPs, and build the block diagram. The design should then be ready for implementation. 
 
-After making changes to the block diagram, execute the folliwng command from the Tcl Console while in the root directory of the repository:
+After making changes to the block diagram, execute the following command from the Tcl Console while in the root directory of the repository:
 
 ```bash
 write_bd_tcl -force -include_layout Vivado/kria/bd/design_1.tcl
 ``` 
 
-Equivalently, use **Tools > Export Block Design** and save the Tcl file as 
+Equivalently, use **Tools > Export Block Design** and save the Tcl file as:
 
-``Vivado/kria/bd/design_1.tcl``. 
+```
+Vivado/kria/bd/design_1.tcl
+```
 
 This ensures the changes will be reflected in subsequent builds. 
 
@@ -87,5 +90,5 @@ This project incorporates modules from Alex Forencich’s Verilog-AXI/Verilog-AX
 - https://github.com/alexforencich/verilog-axi
 - https://github.com/alexforencich/verilog-axis
 
-The model is based on the following paper:
+The model implementation is based on the following paper:
 - https://rossihansberg.economics.uchicago.edu/EGGW.pdf
