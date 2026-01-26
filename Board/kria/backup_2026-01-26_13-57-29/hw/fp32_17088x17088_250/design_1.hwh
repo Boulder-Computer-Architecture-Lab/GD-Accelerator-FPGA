@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Wed Nov 12 18:32:43 2025" VIVADOVERSION="2023.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Wed Nov 19 20:55:50 2025" VIVADOVERSION="2023.2">
 
   <SYSTEMINFO ARCH="zynquplus" BOARD="xilinx.com:kv260_som:part0:1.4" DEVICE="xck26" NAME="design_1" PACKAGE="sfvc784" SPEEDGRADE="-2LV"/>
 
@@ -3301,7 +3301,7 @@
         <PARAMETER NAME="C_S_AXIS_S2MM_TDATA_WIDTH" VALUE="64"/>
         <PARAMETER NAME="C_S_AXI_LITE_ADDR_WIDTH" VALUE="10"/>
         <PARAMETER NAME="C_S_AXI_LITE_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_0_1"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_1_0"/>
         <PARAMETER NAME="c_addr_width" VALUE="64"/>
         <PARAMETER NAME="c_dlytmr_resolution" VALUE="125"/>
         <PARAMETER NAME="c_enable_multi_channel" VALUE="0"/>
@@ -4897,7 +4897,7 @@
         <PARAMETER NAME="C_S_AXIS_S2MM_TDATA_WIDTH" VALUE="64"/>
         <PARAMETER NAME="C_S_AXI_LITE_ADDR_WIDTH" VALUE="10"/>
         <PARAMETER NAME="C_S_AXI_LITE_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_1_0"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_2_0"/>
         <PARAMETER NAME="c_addr_width" VALUE="64"/>
         <PARAMETER NAME="c_dlytmr_resolution" VALUE="125"/>
         <PARAMETER NAME="c_enable_multi_channel" VALUE="0"/>
@@ -6493,7 +6493,7 @@
         <PARAMETER NAME="C_S_AXIS_S2MM_TDATA_WIDTH" VALUE="64"/>
         <PARAMETER NAME="C_S_AXI_LITE_ADDR_WIDTH" VALUE="10"/>
         <PARAMETER NAME="C_S_AXI_LITE_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_1_1"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_dma_3_0"/>
         <PARAMETER NAME="c_addr_width" VALUE="64"/>
         <PARAMETER NAME="c_dlytmr_resolution" VALUE="125"/>
         <PARAMETER NAME="c_enable_multi_channel" VALUE="0"/>
@@ -8108,15 +8108,15 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE BD="design_1_axi_smc_1" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/axi_smc1" HWVERSION="1.0" INSTANCE="axi_smc1" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_axi_smc_1" VLNV="xilinx.com:ip:smartconnect:1.0">
+    <MODULE BD="design_1_axi_smc1_0" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/axi_smc1" HWVERSION="1.0" INSTANCE="axi_smc1" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_axi_smc1_0" VLNV="xilinx.com:ip:smartconnect:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=smartconnect;v=v1_0;d=pg247-smartconnect.pdf"/>
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="HAS_RESET" VALUE="1"/>
-        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_axi_smc_1"/>
+        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_axi_smc1_0"/>
         <PARAMETER NAME="ADVANCED_PROPERTIES" VALUE="0"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_smc_1"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_axi_smc1_0"/>
         <PARAMETER NAME="HAS_ARESETN" VALUE="1"/>
         <PARAMETER NAME="NUM_CLKS" VALUE="1"/>
         <PARAMETER NAME="NUM_MI" VALUE="2"/>
@@ -8788,7 +8788,7 @@
         <PARAMETER NAME="AXI_RAM_DATA_WIDTH" VALUE="256"/>
         <PARAMETER NAME="DATA_WIDTH" VALUE="128"/>
         <PARAMETER NAME="ELEMENTS_PER_ROW" VALUE="17088"/>
-        <PARAMETER NAME="ELEMENT_WIDTH" VALUE="16"/>
+        <PARAMETER NAME="ELEMENT_WIDTH" VALUE="32"/>
         <PARAMETER NAME="ID_WIDTH" VALUE="8"/>
         <PARAMETER NAME="NUM_CHANNELS" VALUE="4"/>
         <PARAMETER NAME="NUM_ROWS" VALUE="17088"/>
@@ -10438,7 +10438,7 @@
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=axi_interconnect;v=v2_1;d=pg059-axi-interconnect.pdf"/>
       </DOCUMENTS>
       <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_ps8_0_axi_periph_1"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_ps8_0_axi_periph1_0"/>
         <PARAMETER NAME="ENABLE_ADVANCED_OPTIONS" VALUE="0"/>
         <PARAMETER NAME="ENABLE_PROTOCOL_CHECKERS" VALUE="0"/>
         <PARAMETER NAME="M00_HAS_DATA_FIFO" VALUE="0"/>
@@ -12749,15 +12749,15 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE BD="design_1_smartconnect_1_1" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/smartconnect_3" HWVERSION="1.0" INSTANCE="smartconnect_3" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_smartconnect_1_1" VLNV="xilinx.com:ip:smartconnect:1.0">
+    <MODULE BD="design_1_smartconnect_3_0" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/smartconnect_3" HWVERSION="1.0" INSTANCE="smartconnect_3" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_smartconnect_3_0" VLNV="xilinx.com:ip:smartconnect:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=smartconnect;v=v1_0;d=pg247-smartconnect.pdf"/>
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="HAS_RESET" VALUE="1"/>
-        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_smartconnect_1_1"/>
+        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_smartconnect_3_0"/>
         <PARAMETER NAME="ADVANCED_PROPERTIES" VALUE="0"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_smartconnect_1_1"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_smartconnect_3_0"/>
         <PARAMETER NAME="HAS_ARESETN" VALUE="1"/>
         <PARAMETER NAME="NUM_CLKS" VALUE="1"/>
         <PARAMETER NAME="NUM_MI" VALUE="1"/>
@@ -13334,15 +13334,15 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE BD="design_1_smartconnect_1_2" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/smartconnect_4" HWVERSION="1.0" INSTANCE="smartconnect_4" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_smartconnect_1_2" VLNV="xilinx.com:ip:smartconnect:1.0">
+    <MODULE BD="design_1_smartconnect_4_0" BDTYPE="SBD" COREREVISION="21" DRIVERMODE="CORE" FULLNAME="/smartconnect_4" HWVERSION="1.0" INSTANCE="smartconnect_4" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="smartconnect" SIM_BD="design_1_smartconnect_4_0" VLNV="xilinx.com:ip:smartconnect:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=smartconnect;v=v1_0;d=pg247-smartconnect.pdf"/>
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="HAS_RESET" VALUE="1"/>
-        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_smartconnect_1_2"/>
+        <PARAMETER NAME="TLM_COMPONENT_NAME" VALUE="design_1_smartconnect_4_0"/>
         <PARAMETER NAME="ADVANCED_PROPERTIES" VALUE="0"/>
-        <PARAMETER NAME="Component_Name" VALUE="design_1_smartconnect_1_2"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_smartconnect_4_0"/>
         <PARAMETER NAME="HAS_ARESETN" VALUE="1"/>
         <PARAMETER NAME="NUM_CLKS" VALUE="1"/>
         <PARAMETER NAME="NUM_MI" VALUE="1"/>
@@ -14600,7 +14600,7 @@
         <PARAMETER NAME="PSU__CRF_APB__DPDMA_REF_CTRL__SRCSEL" VALUE="APLL"/>
         <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__DIV2" VALUE="1"/>
         <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__FBDIV" VALUE="64"/>
-        <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__FRACDATA" VALUE="0.000000"/>
+        <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__FRACDATA" VALUE="0"/>
         <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__FRACFREQ" VALUE="27.138"/>
         <PARAMETER NAME="PSU__CRF_APB__DPLL_CTRL__SRCSEL" VALUE="PSS_REF_CLK"/>
         <PARAMETER NAME="PSU__CRF_APB__DPLL_FRAC_CFG__ENABLED" VALUE="0"/>
@@ -14653,7 +14653,7 @@
         <PARAMETER NAME="PSU__CRF_APB__TOPSW_MAIN_CTRL__SRCSEL" VALUE="DPLL"/>
         <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__DIV2" VALUE="1"/>
         <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__FBDIV" VALUE="90"/>
-        <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__FRACDATA" VALUE="0.000000"/>
+        <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__FRACDATA" VALUE="0"/>
         <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__FRACFREQ" VALUE="27.138"/>
         <PARAMETER NAME="PSU__CRF_APB__VPLL_CTRL__SRCSEL" VALUE="PSS_REF_CLK"/>
         <PARAMETER NAME="PSU__CRF_APB__VPLL_FRAC_CFG__ENABLED" VALUE="0"/>
@@ -14738,7 +14738,7 @@
         <PARAMETER NAME="PSU__CRL_APB__I2C1_REF_CTRL__SRCSEL" VALUE="IOPLL"/>
         <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__DIV2" VALUE="1"/>
         <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__FBDIV" VALUE="90"/>
-        <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__FRACDATA" VALUE="0.000000"/>
+        <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__FRACDATA" VALUE="0"/>
         <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__FRACFREQ" VALUE="27.138"/>
         <PARAMETER NAME="PSU__CRL_APB__IOPLL_CTRL__SRCSEL" VALUE="PSS_REF_CLK"/>
         <PARAMETER NAME="PSU__CRL_APB__IOPLL_FRAC_CFG__ENABLED" VALUE="0"/>
@@ -14771,7 +14771,7 @@
         <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ" VALUE="249.997498"/>
         <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__DIVISOR0" VALUE="6"/>
         <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__DIVISOR1" VALUE="1"/>
-        <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ" VALUE="250"/>
+        <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ" VALUE="215"/>
         <PARAMETER NAME="PSU__CRL_APB__PL0_REF_CTRL__SRCSEL" VALUE="IOPLL"/>
         <PARAMETER NAME="PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ" VALUE="249.997498"/>
         <PARAMETER NAME="PSU__CRL_APB__PL1_REF_CTRL__DIVISOR0" VALUE="4"/>
@@ -14795,7 +14795,7 @@
         <PARAMETER NAME="PSU__CRL_APB__QSPI_REF_CTRL__SRCSEL" VALUE="IOPLL"/>
         <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__DIV2" VALUE="1"/>
         <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__FBDIV" VALUE="60"/>
-        <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__FRACDATA" VALUE="0.000000"/>
+        <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__FRACDATA" VALUE="0"/>
         <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__FRACFREQ" VALUE="27.138"/>
         <PARAMETER NAME="PSU__CRL_APB__RPLL_CTRL__SRCSEL" VALUE="PSS_REF_CLK"/>
         <PARAMETER NAME="PSU__CRL_APB__RPLL_FRAC_CFG__ENABLED" VALUE="0"/>
@@ -15281,7 +15281,7 @@
         <PARAMETER NAME="PSU__OCM_BANK2__POWER__ON" VALUE="1"/>
         <PARAMETER NAME="PSU__OCM_BANK3__POWER__ON" VALUE="1"/>
         <PARAMETER NAME="PSU__OVERRIDE_HPX_QOS" VALUE="0"/>
-        <PARAMETER NAME="PSU__OVERRIDE__BASIC_CLOCK" VALUE="0"/>
+        <PARAMETER NAME="PSU__OVERRIDE__BASIC_CLOCK" VALUE="1"/>
         <PARAMETER NAME="PSU__PCIE__ACS_VIOLAION" VALUE="0"/>
         <PARAMETER NAME="PSU__PCIE__ACS_VIOLATION" VALUE="0"/>
         <PARAMETER NAME="PSU__PCIE__AER_CAPABILITY" VALUE="0"/>

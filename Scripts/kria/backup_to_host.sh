@@ -19,10 +19,8 @@ mkdir -p "$destdir"
 
 # Use rsync to get all files (except matrix)
 rsync -avz \
-	--exclude="matrix.npy" \
-	--exclude="trmult_reduced.bin" \
-	--exclude="trmult_reduced16.bin" \
-	--exclude="trmult_reduced64.bin" \
+    --exclude='*matrix*' \
+    --exclude='*trmult*' \
 	--exclude="*.un~" \
     -e ssh \
     "$targetdev:$remotedir/" \
