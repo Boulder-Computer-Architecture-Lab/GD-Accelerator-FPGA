@@ -230,21 +230,75 @@ module mvm_accelerator #(
 
         if (ARCH_TYPE == 0) begin
             mvm_accelerator_split #(
-                .DATA_WIDTH(DATA_WIDTH),
-                .ADDR_WIDTH(ADDR_WIDTH),
-                .STRB_WIDTH(STRB_WIDTH),
-                .ID_WIDTH(ID_WIDTH),
-                .ELEMENT_WIDTH(ELEMENT_WIDTH),
-                .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
-                .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
-                .WORDS_PER_ROW(WORDS_PER_ROW),
-                .NUM_ROWS(NUM_ROWS),
-                .NUM_CHANNELS(NUM_CHANNELS),
-                .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
-                .AXI_RAM_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
-                .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
-                .RESULT_WIDTH(RESULT_WIDTH)
+                .DATA_WIDTH         (DATA_WIDTH),
+                .ADDR_WIDTH         (ADDR_WIDTH),
+                .STRB_WIDTH         (STRB_WIDTH),
+                .ID_WIDTH           (ID_WIDTH),
+                .ELEMENT_WIDTH      (ELEMENT_WIDTH),
+                .ELEMENTS_PER_WORD  (ELEMENTS_PER_WORD),
+                .ELEMENTS_PER_ROW   (ELEMENTS_PER_ROW),
+                .WORDS_PER_ROW      (WORDS_PER_ROW),
+                .NUM_ROWS           (NUM_ROWS),
+                .NUM_CHANNELS       (NUM_CHANNELS),
+                .NUM_RAM_PARTITIONS (NUM_RAM_PARTITIONS),
+                .ROWS_PER_CHANNEL   (ROWS_PER_CHANNEL),
+                .AXI_RAM_DATA_WIDTH (AXI_RAM_DATA_WIDTH),
+                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR),
+                .RESULT_WIDTH       (RESULT_WIDTH)
+            ) mvm (
+                .clk(clk),
+                .rstn(rstn),
+                
+                // Input channels
+                .s_axis_a_tdata (s_axis_a_tdata),
+                .s_axis_a_tvalid(s_axis_a_tvalid),
+                .s_axis_a_tready(s_axis_a_tready),
+                .s_axis_a_tlast (s_axis_a_tlast),
+            
+                // Output channels
+                .m_axis_tdata (m_axis_tdata),
+                .m_axis_tvalid(m_axis_tvalid),
+                .m_axis_tready(m_axis_tready),
+                .m_axis_tlast (m_axis_tlast),
+            
+                // AXI slave interface
+                .s_axi_b_awid   (s_axi_b_awid),
+                .s_axi_b_awaddr (s_axi_b_awaddr),
+                .s_axi_b_awlen  (s_axi_b_awlen),
+                .s_axi_b_awsize (s_axi_b_awsize),
+                .s_axi_b_awburst(s_axi_b_awburst),
+                .s_axi_b_awlock (s_axi_b_awlock),
+                .s_axi_b_awcache(s_axi_b_awcache),
+                .s_axi_b_awprot (s_axi_b_awprot),
+                .s_axi_b_awvalid(s_axi_b_awvalid),
+                .s_axi_b_awready(s_axi_b_awready),
+                .s_axi_b_wdata  (s_axi_b_wdata),
+                .s_axi_b_wstrb  (s_axi_b_wstrb),
+                .s_axi_b_wlast  (s_axi_b_wlast),
+                .s_axi_b_wvalid (s_axi_b_wvalid),
+                .s_axi_b_wready (s_axi_b_wready),
+                .s_axi_b_bid    (s_axi_b_bid),
+                .s_axi_b_bresp  (s_axi_b_bresp),
+                .s_axi_b_bvalid (s_axi_b_bvalid),
+                .s_axi_b_bready (s_axi_b_bready)
+            );
+        end else if (ARCH_TYPE == 1) begin
+            mvm_accelerator_sym #(
+                .DATA_WIDTH         (DATA_WIDTH),
+                .ADDR_WIDTH         (ADDR_WIDTH),
+                .STRB_WIDTH         (STRB_WIDTH),
+                .ID_WIDTH           (ID_WIDTH),
+                .ELEMENT_WIDTH      (ELEMENT_WIDTH),
+                .ELEMENTS_PER_WORD  (ELEMENTS_PER_WORD),
+                .ELEMENTS_PER_ROW   (ELEMENTS_PER_ROW),
+                .WORDS_PER_ROW      (WORDS_PER_ROW),
+                .NUM_ROWS           (NUM_ROWS),
+                .NUM_CHANNELS       (NUM_CHANNELS),
+                .NUM_RAM_PARTITIONS (NUM_RAM_PARTITIONS),
+                .ROWS_PER_CHANNEL   (ROWS_PER_CHANNEL),
+                .AXI_RAM_DATA_WIDTH (AXI_RAM_DATA_WIDTH),
+                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR),
+                .RESULT_WIDTH       (RESULT_WIDTH)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),

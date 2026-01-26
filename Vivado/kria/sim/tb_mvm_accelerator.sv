@@ -15,13 +15,14 @@ module tb_mvm_accelerator;
     parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
     
     parameter int NUM_TRANSFERS = 2;
+    parameter int BATCHES_PER_TRANSFER = 2;
 
     parameter int DATA_WIDTH = 128; // Max data width for HP ports is 128
     parameter int ADDR_WIDTH = 64;
     parameter int ID_WIDTH   = 8;
     parameter int STRB_WIDTH = DATA_WIDTH/8; // Unused
     
-    parameter int ELEMENT_WIDTH = 16; // Can be 16, 32, or 64
+    parameter int ELEMENT_WIDTH = 32; // Can be 16, 32, or 64
     parameter int RESULT_WIDTH  = 64; // Must be 64
     
     parameter int NUM_ACCEL_INST     = 1;
@@ -32,12 +33,13 @@ module tb_mvm_accelerator;
     parameter int ELEMENTS_PER_ROW = 17048;
     parameter int NUM_ROWS         = 48;
     parameter int ROWS_PER_CHANNEL = NUM_ROWS / NUM_CHANNELS;
-    
+    parameter int ROWS_PER_CHANNEL_PER_BATCH = ROWS_PER_CHANNEL / BATCHES_PER_TRANSFER;
+         
     parameter int AXI_RAM_DATA_WIDTH = 256;
     parameter int AXI_RAM_STRB_WIDTH = AXI_RAM_DATA_WIDTH/8;
     
-    int OFFSET_CYCLES = 128;
-    int input_order[CHANNELS_PER_INST] = '{0, 1, 2, 3}; // Switch the order that s_axis_a channels start arriving. 
+    int OFFSET_CYCLES = 1000;
+    int input_order[CHANNELS_PER_INST] = '{1, 2, 3, 4}; // Switch the order that s_axis_a channels start arriving. 
                                                         // Set to (0, 0, 0, 0) for simultaneous start, but note that
                                                         // the partition arbitration logic assumes an offset.
     
@@ -62,6 +64,7 @@ module tb_mvm_accelerator;
     initial assert (PCLK0_FREQ_MHZ > 0.0)                                              else $fatal(1, "PCLK0_FREQ_MHZ must be > 0");
     initial assert (ELEMENT_WIDTH == 16 || ELEMENT_WIDTH == 32 || ELEMENT_WIDTH == 64) else $fatal(1, "ELEMENT_WIDTH must be 16, 32, or 64");
     initial assert (RESULT_WIDTH == 64)                                                else $fatal(1, "RESULT_WIDTH must be 64");
+    initial assert (ROWS_PER_CHANNEL % BATCHES_PER_TRANSFER == 0)                      else $fatal(1, "ROWS_PER_CHANNEL must be divisible by BATCHES_PER_TRANSFER");
     
     // --- Floating-point helpers ---
     
@@ -398,9 +401,10 @@ module tb_mvm_accelerator;
     elem_t a_values [NUM_CHANNELS][ELEMENTS_PER_ROW_PADDED];
     elem_t b_values [ELEMENTS_PER_ROW_PADDED];
     
-    reg inputs_sent      [NUM_CHANNELS-1:0];
-    reg outputs_received [NUM_CHANNELS-1:0];
-
+    logic [NUM_CHANNELS-1:0] inputs_sent       = '{default:'0};
+    logic [NUM_CHANNELS-1:0] inputs_sent_batch = '{default:'0};
+    logic [NUM_CHANNELS-1:0] outputs_received  = '{default:'0};
+    
     real expected [NUM_CHANNELS-1:0][ROWS_PER_CHANNEL-1:0];    
     
     logic [ADDR_WIDTH-1:0] base_addr, part_base, vec_base_offset, burst_offset;
@@ -508,40 +512,54 @@ module tb_mvm_accelerator;
                 
                     wait(start_transfer);
                     
-                    // Stagger first input
-                    repeat(OFFSET_CYCLES * input_order[ch]) @(posedge clk);
+                    for (int b = 0; b < BATCHES_PER_TRANSFER; b++) begin
+                        inputs_sent_batch[ch] = 0;
+                    
+                        // Stagger first input
+                        repeat(OFFSET_CYCLES * input_order[ch]) @(posedge clk);
 
-                    for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin  
-                        expected[ch][j] = 0.0;
+                        for (int j = 0; j < ROWS_PER_CHANNEL_PER_BATCH; j++) begin  
                         
-                        // Send inputs
-                        for (int word_idx = 0; word_idx < WORDS_PER_ROW_PADDED; word_idx++) begin
-                        
-                            // Random delays
-                            //automatic bit rand_bool = ($urandom_range(0, 999) < 1); // 0.1% chance
-                            //if (rand_bool) repeat(256) @(posedge clk);
-                        
-                            s_axis_a_tdata[ch] = '0;
-                            for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
-                                automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
-                                automatic real a_r = elem_to_real(a_values[ch][abs_idx]);
-                                automatic real b_r = elem_to_real(b_values[abs_idx]);
+                            automatic int row = b*ROWS_PER_CHANNEL_PER_BATCH + j;
+                            expected[ch][row] = 0.0;
+                            
+                            // Send inputs
+                            for (int word_idx = 0; word_idx < WORDS_PER_ROW_PADDED; word_idx++) begin
+                            
+                                // Random delays
+                                //automatic bit rand_bool = ($urandom_range(0, 999) < 1); // 0.1% chance
+                                //if (rand_bool) repeat(256) @(posedge clk);
+                            
+                                s_axis_a_tdata[ch] = '0;
+                                for (int k = 0; k < ELEMENTS_PER_WORD; k++) begin
+                                    automatic int abs_idx = word_idx * ELEMENTS_PER_WORD + k;
+                                    automatic real a_r = elem_to_real(a_values[ch][abs_idx]);
+                                    automatic real b_r = elem_to_real(b_values[abs_idx]);
+                                    
+                                    s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = a_values[ch][abs_idx];
+                                    expected[ch][row] += a_r * b_r;
+                                end
                                 
-                                s_axis_a_tdata[ch][k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = a_values[ch][abs_idx];
-                                expected[ch][j] += a_r * b_r;
+                                s_axis_a_tvalid[ch] = 1;
+                                s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW_PADDED-1) 
+                                                   && (j == ROWS_PER_CHANNEL_PER_BATCH-1);
+        
+                                do begin
+                                    @(posedge clk);
+                                end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
+                                
+                                s_axis_a_tvalid[ch] = 0;
+                                s_axis_a_tlast[ch]  = 0;
                             end
-                            
-                            s_axis_a_tvalid[ch] = 1;
-                            s_axis_a_tlast[ch]  = (word_idx == WORDS_PER_ROW_PADDED-1) && (j == ROWS_PER_CHANNEL-1);
-    
-                            do begin
-                                @(posedge clk);
-                            end while (!(s_axis_a_tvalid[ch] && s_axis_a_tready[ch]));
-                            
-                            s_axis_a_tvalid[ch] = 0;
-                            s_axis_a_tlast[ch]  = 0;
+                            $display("%0d: Channel %0d: All inputs sent.", row, ch);
                         end
-                        $display("%0d: Channel %0d: All inputs sent.", j, ch);
+                        
+                        // Batch synchronization barrier
+                        inputs_sent_batch[ch] = 1;
+                        wait(inputs_sent_batch == {NUM_CHANNELS{1'b1}});
+                        @(posedge clk);
+                        if (ch == 0 && b < BATCHES_PER_TRANSFER-1) 
+                            $display("\nTransfer %0d: Batch %0d sent.\n", finished_count, b);
                     end
                     
                     inputs_sent[ch] = 1;

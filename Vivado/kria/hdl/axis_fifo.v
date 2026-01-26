@@ -1,38 +1,7 @@
-/*
-
-Copyright (c) 2013-2023 Alex Forencich
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-*/
-
-// Language: Verilog 2001
-
-`resetall
 `timescale 1ns / 1ps
-`default_nettype none
 
-/*
- * AXI4-Stream FIFO
- */
-module axis_fifo #
-(
+module axis_fifo #(
+
     // FIFO depth in words
     // KEEP_WIDTH words per cycle if KEEP_ENABLE set
     // Rounded up to nearest power of 2 cycles
@@ -88,11 +57,9 @@ module axis_fifo #
     // Enable pause request input
     parameter PAUSE_ENABLE = 0,
     // Pause between frames
-    parameter FRAME_PAUSE = FRAME_FIFO,
-    // 0=BRAM, 1=URAM
-    parameter RAM_TYPE = 0
-)
-(
+    parameter FRAME_PAUSE = FRAME_FIFO
+) (
+
     input  wire                   clk,
     input  wire                   rstn,
 
@@ -190,7 +157,7 @@ reg [ADDR_WIDTH:0] wr_ptr_reg = {ADDR_WIDTH+1{1'b0}};
 reg [ADDR_WIDTH:0] wr_ptr_commit_reg = {ADDR_WIDTH+1{1'b0}};
 reg [ADDR_WIDTH:0] rd_ptr_reg = {ADDR_WIDTH+1{1'b0}};
 
-(* ram_style = (RAM_TYPE == 0) ? "block" : "ultra", ramstyle = "no_rw_check" *)
+(* ramstyle = "no_rw_check" *)
 reg [WIDTH-1:0] mem[(2**ADDR_WIDTH)-1:0];
 reg mem_read_data_valid_reg = 1'b0;
 

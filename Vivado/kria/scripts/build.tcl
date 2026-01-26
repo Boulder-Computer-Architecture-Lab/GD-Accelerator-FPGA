@@ -6,12 +6,13 @@
 set script_dir [file normalize [file dirname [info script]]]
 set proj_src_root [file normalize [file join $script_dir ".."]]
 set build_dir [file normalize [file join $proj_src_root "build"]]
+puts "script_dir: '$script_dir'"
 
 proc build_project {{run_impl 0}} {
 
     # Usage:
-    # build_project 0   ;# just (re)create project, no runs
-    # build_project 1   ;# create project + run synth+impl
+    # build_project 0   # just (re)create project, no runs
+    # build_project 1   # create project + run synth+impl
 
     global proj_src_root build_dir
 
@@ -129,29 +130,30 @@ proc build_project {{run_impl 0}} {
     update_compile_order -fileset sources_1
 
     # --------------------------------------
-    # Run: synth + impl (if run_impl == 1)
+    # Run: synth + impl + bitstream
     # --------------------------------------
     if { $run_impl } {
         puts ">>> Running synthesis..."
         launch_runs synth_1 -jobs 5
         wait_on_run synth_1
-
+    
         puts ">>> Running implementation..."
         launch_runs impl_1 -to_step write_bitstream -jobs 5
         wait_on_run impl_1
-
-        puts ">>> Implementation complete. Bitstream located in:"
+    
+        puts ">>> Writing bitstream..."
+        write_bitstream -force ../build/kria-accelerator.runs/impl_1/design_1_wrapper.bit
+    
+        puts ">>> Done. Bitstream located at:"
         puts "    [get_property OUTPUT_DIR [get_runs impl_1]]"
-    } else {
-        puts ">>> Skipping synthesis/implementation (run_impl=0)"
     }
 
-    # ------------------------------------------------------------
-    # Done
-    # ------------------------------------------------------------
-    puts "Project '$proj_name' created in: $build_dir"
+        # ------------------------------------------------------------
+        # Done
+        # ------------------------------------------------------------
+        puts "Project '$proj_name' created in: $build_dir"
 
-}
+    }
 
 # ------------------------------------------------------------
 # Auto-run when called in batch with -tclargs

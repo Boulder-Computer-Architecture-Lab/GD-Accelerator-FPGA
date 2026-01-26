@@ -30,7 +30,7 @@ This usually takes about 2 hours.
 
 - Update the paths in``Scripts/send_hw_to_board.sh`` and run it (from outside of Vivado) to transfer the relevant hardware files to the Kria board.
 
-- Run ``./send_matrix_to_board.sh 4 4272 17088`` to provide an example input.
+- Run ``./send_matrix_to_board.sh 4 4272 17088 "fp16"`` to provide an example input.
 
 - ``ssh`` into the board and run the cells in ``sw/test.ipynb``.
 

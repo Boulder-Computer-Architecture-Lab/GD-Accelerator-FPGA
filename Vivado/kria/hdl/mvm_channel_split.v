@@ -32,7 +32,7 @@ module mvm_channel_split #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
-    output wire                  s_axis_a_tlast,
+    input  wire                  s_axis_a_tlast,
     
     // Output result stream
     output wire [RESULT_WIDTH-1:0] m_axis_tdata,
@@ -65,6 +65,8 @@ module mvm_channel_split #(
 
     // Reset handling
     input  wire done_rstn,
+    output wire has_room,
+    output wire is_a_data,
     output reg  channel_done
 );
 
@@ -96,8 +98,6 @@ module mvm_channel_split #(
     localparam RAM_FIFO_B_DEPTH   = (1 << $clog2(AXI_RAM_WORDS_PER_PARTITION));
     localparam OUTPUT_FIFO_DEPTH  = 64;
 
-    localparam BRAM = 0;
-    localparam URAM = 1;
     localparam SKID = 2;
         
     // ------------- Input Buffers ------------
@@ -122,6 +122,8 @@ module mvm_channel_split #(
     wire                  pipe_a_tvalid;
     wire                  pipe_a_tready;
     wire                  pipe_a_tlast;
+
+    wire [$clog2(INPUT_FIFO_A_DEPTH):0] fifo_a_status_depth;
 
     assign fifo_a_s_axis_tdata = gate_a_tdata;
     assign fifo_a_s_axis_tvalid = gate_a_tvalid;
@@ -159,8 +161,7 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0),
-        .RAM_TYPE(BRAM) 
+        .PAUSE_ENABLE(0)
     ) axis_data_fifo_in (
         .clk(clk),
         .rstn(rstn),
@@ -186,12 +187,14 @@ module mvm_channel_split #(
         .pause_req(1'b0),
         .pause_ack(),
     
-        .status_depth(),
+        .status_depth(fifo_a_status_depth),
         .status_depth_commit(),
         .status_overflow(),
         .status_bad_frame(),
         .status_good_frame()
     );
+
+    assign is_a_data = (fifo_a_status_depth > 0);
     
     axis_register #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -273,8 +276,7 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0),
-        .RAM_TYPE(URAM)
+        .PAUSE_ENABLE(0)
     ) axis_data_fifo_b (
         .clk(clk),
         .rstn(rstn),
@@ -366,8 +368,7 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0),
-        .RAM_TYPE(BRAM)
+        .PAUSE_ENABLE(0)
     ) axis_data_fifo_out (
         .clk(clk),
         .rstn(rstn),
@@ -414,6 +415,8 @@ module mvm_channel_split #(
     wire                          s_axis_wconv_tready;
     wire                          s_axis_wconv_tlast;
 
+    wire [$clog2(RAM_FIFO_B_DEPTH):0] ram_fifo_b_status_depth;
+
     axis_fifo #(
         .DEPTH(RAM_FIFO_B_DEPTH),
         .DATA_WIDTH(AXI_RAM_DATA_WIDTH),
@@ -429,8 +432,7 @@ module mvm_channel_split #(
         .DROP_BAD_FRAME(0),
         .DROP_WHEN_FULL(0),
         .MARK_WHEN_FULL(0),
-        .PAUSE_ENABLE(0),
-        .RAM_TYPE(BRAM)
+        .PAUSE_ENABLE(0)
     ) ram_fifo (
         .clk(clk),
         .rstn(rstn),
@@ -456,13 +458,13 @@ module mvm_channel_split #(
         .pause_req(1'b0),
         .pause_ack(),
     
-        .status_depth(),
+        .status_depth(ram_fifo_b_status_depth),
         .status_depth_commit(),
         .status_overflow(),
         .status_bad_frame(),
         .status_good_frame()
     );
-
+                                          
     axis_wconv wconv_inst (
         .aclk(clk),
         .aresetn(rstn),
@@ -477,6 +479,19 @@ module mvm_channel_split #(
         .m_axis_tdata(s_axis_b_tdata),
         .m_axis_tlast(s_axis_b_tlast)
     );
+
+    // ========================================
+    //   HAS ROOM IN FIFOS FOR FULL PARTITION
+    // ========================================
+
+    localparam TOTAL_B_FIFO_BYTES = INPUT_FIFO_B_DEPTH*STRB_WIDTH + RAM_FIFO_B_DEPTH*AXI_RAM_STRB_WIDTH;
+    localparam MAX_USED_BYTES     = TOTAL_B_FIFO_BYTES - BYTES_PER_PARTITION;
+    localparam B_FIFO_BYTES_WIDTH = $clog2(TOTAL_B_FIFO_BYTES+1);
+    
+    wire [B_FIFO_BYTES_WIDTH-1:0] used_bytes;
+
+    assign used_bytes = fifo_b_status_depth*STRB_WIDTH + ram_fifo_b_status_depth*AXI_RAM_STRB_WIDTH;
+    assign has_room   = used_bytes <= MAX_USED_BYTES;
 
     // ========================================
     //   MM2S DMA (REQ VEC FROM RAM VIA XBAR)

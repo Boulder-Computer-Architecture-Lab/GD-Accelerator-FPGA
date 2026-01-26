@@ -984,6 +984,76 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_3/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP1/HPC1_LPS_OCM]
   exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_3/Data_SG] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP5/HP3_LPS_OCM]
 
+  # Perform GUI Layout
+  regenerate_bd_layout -layout_string {
+   "ActiveEmotionalView":"Default View",
+   "Default View_ScaleFactor":"1.52123",
+   "Default View_TopLeft":"-575,-340",
+   "ExpandedHierarchyInLayout":"",
+   "PinnedBlocks":"/zynq_ultra_ps_e_0|/axi_dma_0|/ps8_0_axi_periph|/rst_ps8_0_99M|/axi_smc|/mvm_accelerator_0|/axi_cdma_0|/axi_smc1|/ps8_0_axi_periph1|/smartconnect_0|/axi_dma_1|/smartconnect_1|/smartconnect_2|/axi_dma_2|/axi_dma_3|/smartconnect_3|/smartconnect_4|",
+   "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0
+#  -string -flagsOSRD
+preplace inst zynq_ultra_ps_e_0 -pg 1 -lvl 1 -x 360 -y 530 -defaultsOSRD
+preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1320 -y 30 -defaultsOSRD
+preplace inst ps8_0_axi_periph -pg 1 -lvl 2 -x 920 -y 260 -defaultsOSRD
+preplace inst rst_ps8_0_99M -pg 1 -lvl 1 -x 360 -y 800 -defaultsOSRD
+preplace inst axi_smc -pg 1 -lvl 1 -x 360 -y 260 -defaultsOSRD -orient R180
+preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 1770 -y 500 -defaultsOSRD
+preplace inst axi_cdma_0 -pg 1 -lvl 3 -x 1320 -y 1010 -defaultsOSRD
+preplace inst axi_smc1 -pg 1 -lvl 4 -x 1770 -y 1020 -defaultsOSRD
+preplace inst ps8_0_axi_periph1 -pg 1 -lvl 2 -x 920 -y 560 -defaultsOSRD
+preplace inst smartconnect_0 -pg 1 -lvl 4 -x 1770 -y 130 -defaultsOSRD -orient R180
+preplace inst axi_dma_1 -pg 1 -lvl 3 -x 1320 -y 290 -defaultsOSRD
+preplace inst smartconnect_1 -pg 1 -lvl 1 -x 360 -y 90 -defaultsOSRD -orient R180
+preplace inst smartconnect_2 -pg 1 -lvl 4 -x 1770 -y -30 -defaultsOSRD -orient R180
+preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1320 -y 550 -defaultsOSRD
+preplace inst axi_dma_3 -pg 1 -lvl 3 -x 1320 -y 810 -defaultsOSRD
+preplace inst smartconnect_3 -pg 1 -lvl 1 -x 360 -y -230 -defaultsOSRD -orient R180
+preplace inst smartconnect_4 -pg 1 -lvl 1 -x 360 -y -70 -defaultsOSRD -orient R180
+preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 780 -170 1090 -170 1590 -140 1910
+preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 60 900 760 -180 1130 -180 1600 -150 1920
+preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 0 2 40 910 650
+preplace netloc S00_AXI_1 1 1 1 770 480n
+preplace netloc axi_cdma_0_M_AXI 1 3 1 NJ 1000
+preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1630 20n
+preplace netloc axi_dma_0_M_AXI_MM2S 1 1 3 660 70 1080 -100 1480
+preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1570 -120 1900
+preplace netloc axi_dma_0_M_AXI_SG 1 1 3 670 -160 N -160 1540
+preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1560 280n
+preplace netloc axi_dma_1_M_AXI_MM2S 1 1 3 680 -150 N -150 1530
+preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 N 260 1910
+preplace netloc axi_dma_1_M_AXI_SG 1 1 3 770 80 1070 -120 1520
+preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1620 450n
+preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 N -200 N -200 1550
+preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1610 330 1930
+preplace netloc axi_dma_2_M_AXI_SG 1 1 3 N -220 N -220 1500
+preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 1630 470n
+preplace netloc axi_dma_3_M_AXI_MM2S 1 1 3 660 -140 N -140 1510
+preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 N 780 1940
+preplace netloc axi_dma_3_M_AXI_SG 1 1 3 N -60 1060 -110 1490
+preplace netloc axi_smc1_M00_AXI 1 1 4 650 -130 N -130 N -130 1950J
+preplace netloc axi_smc1_M01_AXI 1 3 2 1640 340 1920
+preplace netloc axi_smc_M00_AXI 1 0 1 70 260n
+preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1150 680 N 680 1910
+preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1160 420 1620J 350 1900
+preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1160 1100 NJ 1100 1930
+preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1150 1110 NJ 1110 1900
+preplace netloc ps8_0_axi_periph1_M00_AXI 1 2 1 1060 490n
+preplace netloc ps8_0_axi_periph1_M01_AXI 1 2 1 1100 570n
+preplace netloc ps8_0_axi_periph_M00_AXI 1 2 1 1110 230n
+preplace netloc ps8_0_axi_periph_M01_AXI 1 2 2 1140 160 1570
+preplace netloc ps8_0_axi_periph_M02_AXI 1 2 1 1060 -30n
+preplace netloc ps8_0_axi_periph_M03_AXI 1 2 1 1120 230n
+preplace netloc smartconnect_0_M00_AXI 1 0 4 40 -330 N -330 N -330 1640
+preplace netloc smartconnect_1_M00_AXI 1 0 1 50 90n
+preplace netloc smartconnect_2_M00_AXI 1 0 4 60 -320 N -320 N -320 1630
+preplace netloc smartconnect_3_M00_AXI 1 0 1 20 -230n
+preplace netloc smartconnect_4_M00_AXI 1 0 1 30 -70n
+preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 1 1 680 140n
+levelinfo -pg 1 -390 360 920 1320 1770 2130
+pagesize -pg 1 -db -bbox -sgen -390 -640 3440 1260
+"
+}
 
   # Restore current instance
   current_bd_instance $oldCurInst

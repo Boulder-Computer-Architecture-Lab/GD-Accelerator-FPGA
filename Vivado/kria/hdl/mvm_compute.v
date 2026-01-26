@@ -16,7 +16,7 @@ module mvm_compute #(
     input  wire [DATA_WIDTH-1:0] s_axis_a_tdata,
     input  wire                  s_axis_a_tvalid,
     output wire                  s_axis_a_tready,
-    output wire                  s_axis_a_tlast,
+    input  wire                  s_axis_a_tlast,
 
     input  wire [DATA_WIDTH-1:0] s_axis_b_tdata,
     input  wire                  s_axis_b_tvalid,

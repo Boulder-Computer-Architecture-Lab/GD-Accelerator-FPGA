@@ -171,7 +171,7 @@ module dot_product #(
     //             TLAST HANDLING
     // ========================================
     
-    // Accumulator input tlast (per row);
+    // Accumulator input tlast (per row).
     // Used to reset the accumulated value
     reg [$clog2(WORDS_PER_ROW)-1:0] word_count_in;
     
@@ -191,11 +191,13 @@ module dot_product #(
         end
     end
     
-    assign acc_axis_a_tlast = (last_in && handshake_in) || acc_tlast_prop; // acc_tlast_prop is propogated from 
-                                                                           // s_axis_a_tlast in mvm_accelerator.v
-                                                                           // and is used to ensure we don't stall 
-                                                                           // on the last row if we missed an 
-                                                                           // element somewhere.
+    assign acc_axis_a_tlast = (last_in && handshake_in);
+    //assign acc_axis_a_tlast = (last_in && handshake_in) || acc_tlast_prop; // acc_tlast_prop is propogated from 
+    //                                                                       // s_axis_a_tlast in mvm_accelerator.v
+    //                                                                       // and is used to ensure we don't stall 
+    //                                                                       // on the last row if we missed an 
+    //                                                                       // element somewhere.
+
     // Accumulator output tlast (after all rows)
     reg [$clog2(ROWS_PER_CHANNEL)-1:0] word_count_out;
     
