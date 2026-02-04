@@ -41,3 +41,10 @@ Vivado/kria/build/
 .vscode/
 __pycache__/
 *.pyc
+
+
+########################################
+# Big model files
+########################################
+*trmult*
+Model/Output/
