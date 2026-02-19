@@ -27,8 +27,8 @@ def model(H, T, state):
     popdens[np.isnan(popdens)] = 0
 
     # Parameter values
-    lbar = 5.9174e+09  # Total population
-    lambda_ = 0.32     # Congestion externalities
+    lbar = 5.9174e+09 # Total population
+    lambda_ = 0.32    # Congestion externalities
     gamma1 = 0.319    # Elasticity of tomorrow's productivity w.r.t. today's innovation
     gamma2 = 0.99246  # Elasticity of tomorrow's productivity w.r.t. today's productivity
     eta = 1           # Parameter driving scale of technology diffusion
@@ -95,7 +95,7 @@ def model(H, T, state):
             input_integral_inner[uhat_loop == 0] = 0
             
             # Matrix product
-            rhs = np.dot(trmult_reduced, input_integral_inner)
+            rhs = state.mvm(input_integral_inner)
             eps_val = 1e-12
             rhs = np.maximum(rhs, eps_val)
             

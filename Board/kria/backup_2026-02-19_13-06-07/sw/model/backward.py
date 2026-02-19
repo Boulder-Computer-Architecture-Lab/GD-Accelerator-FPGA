@@ -110,7 +110,7 @@ def backward(H, T, state):
             input_integral_inner[~np.isfinite(input_integral_inner)] = 0
             
             # Matrix product
-            rhs = np.dot(trmult_reduced, input_integral_inner)
+            rhs = state.mvm(input_integral_inner)
             rhs = np.maximum(rhs, eps_val)
             
             l_loop = aa2 * input_l_inner * rhs ** (1 / ((khi + Omega * (1 + theta) / (1 + 2 * theta) + theta / (1 + 2 * theta) * gamma1 / (ksi * gamma2)) * theta))

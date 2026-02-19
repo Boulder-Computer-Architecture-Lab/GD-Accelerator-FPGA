@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.io as sio
-import matplotlib.pyplot as plt
 from pathlib import Path
 
 from init import initialize
@@ -8,22 +7,18 @@ from results import results
 from backward import backward
 from plots import plots
 
-
-global H0, a, a_norm, m2, C_vect, tau0, pop0, pop5, pop5_fertadj, popminus5, popminus10, ubar, trmult_reduced, n, earth_indices, indicator_sea, subs, subs_vect, beta, tail_bands, ind_islands, alpha, theta, Omega
-
 # Initialize model
-vars = initialize(1)
-H0, a, a_norm, m2, C_vect, tau0, pop0, pop5, pop5_fertadj, popminus5, popminus10, ubar, trmult_reduced, n, earth_indices, indicator_sea, subs, subs_vect, beta, tail_bands, ind_islands, alpha, theta, Omega = vars
+state = initialize()
 
 # Distribution of land for simulation
-H0_arr = np.asarray(H0).reshape(-1)
-H = H0_arr[earth_indices]
+H0_arr = np.asarray(state.H0).reshape(-1)
+H = H0_arr[state.earth_indices]
 
 # Number of periods
 nb_per = 600
 
 # Run the model and obtain summary statistics
-results_data = results(H, nb_per, vars)
+results_data = results(H, nb_per, state)
 realgdp_w, u_w, u2_w, prod_w, phi_w, PDV_u_w, PDV_u2_w, PDV_realgdp_w, migr_cell, migr_ctry, l, u, u2, tau, realgdp = results_data
 
 # Plot time series and maps, and save them
@@ -33,11 +28,16 @@ plots(H, realgdp_w, u_w, u2_w, prod_w, l, u, tau, realgdp)
 nb_back = 180
 
 # Run model backwards
-l_b, u_b, w_b, tau_b, phi_b, realgdp_b = backward(H, nb_back, vars)
+l_b, u_b, w_b, tau_b, phi_b, realgdp_b = backward(H, nb_back, state)
 
 # Calculate correlations
 def calculate_correlation(x, y):
     return np.corrcoef(x, y)[0, 1]
+
+pop0 = state.pop0
+popminus5 = state.popminus5
+popminus10 = state.popminus10
+earth_indices = state.earth_indices
 
 print('CORRELATIONS WITH 1995 DATA - CELL LEVEL')
 print(calculate_correlation(popminus5[earth_indices], H0_arr[earth_indices] * l_b[:, 4]))
@@ -52,7 +52,7 @@ print(calculate_correlation(pop0[earth_indices] - popminus10[earth_indices], pop
 print(calculate_correlation(np.log(pop0[earth_indices]) - np.log(popminus10[earth_indices]), np.log(pop0[earth_indices]) - np.log(H0_arr[earth_indices] * l_b[:, 9])))
 
 print('CORRELATIONS WITH 1995 DATA - COUNTRY LEVEL')
-ctry_idx = C_vect.astype(int) - 1
+ctry_idx = state.C_vect.astype(int) - 1
 popminus5_ctry_d = np.bincount(ctry_idx, weights=popminus5[earth_indices])
 popminus5_ctry_m = np.bincount(ctry_idx, weights=H0_arr[earth_indices] * l_b[:, 4])
 pop0_ctry = np.bincount(ctry_idx, weights=pop0[earth_indices])
