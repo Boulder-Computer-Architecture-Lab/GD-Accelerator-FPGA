@@ -46,7 +46,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# mvm_accelerator
+# accelerator
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -167,7 +167,7 @@ xilinx.com:ip:axi_cdma:4.1\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-mvm_accelerator\
+accelerator\
 "
 
    set list_mods_missing ""
@@ -744,11 +744,9 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.c_include_s2mm_dre {1} \
     CONFIG.c_include_sg {1} \
     CONFIG.c_m_axi_mm2s_data_width {128} \
-    CONFIG.c_m_axi_s2mm_data_width {64} \
     CONFIG.c_m_axis_mm2s_tdata_width {128} \
     CONFIG.c_mm2s_burst_size {256} \
     CONFIG.c_s2mm_burst_size {4} \
-    CONFIG.c_s_axis_s2mm_tdata_width {64} \
     CONFIG.c_sg_include_stscntrl_strm {0} \
     CONFIG.c_sg_length_width {26} \
   ] $axi_dma_0
@@ -768,26 +766,6 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.NUM_MI {1} \
     CONFIG.NUM_SI {3} \
   ] $axi_smc
-
-
-  # Create instance: mvm_accelerator_0, and set properties
-  set block_name mvm_accelerator
-  set block_cell_name mvm_accelerator_0
-  if { [catch {set mvm_accelerator_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $mvm_accelerator_0 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-    set_property -dict [list \
-    CONFIG.ADDR_WIDTH {64} \
-    CONFIG.DATA_WIDTH {128} \
-    CONFIG.ELEMENTS_PER_ROW {17088} \
-    CONFIG.ELEMENT_WIDTH {16} \
-    CONFIG.NUM_CHANNELS {4} \
-    CONFIG.NUM_ROWS {17088} \
-  ] $mvm_accelerator_0
 
 
   # Create instance: axi_cdma_0, and set properties
@@ -828,11 +806,9 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.c_include_s2mm_dre {1} \
     CONFIG.c_include_sg {1} \
     CONFIG.c_m_axi_mm2s_data_width {128} \
-    CONFIG.c_m_axi_s2mm_data_width {64} \
     CONFIG.c_m_axis_mm2s_tdata_width {128} \
     CONFIG.c_mm2s_burst_size {256} \
     CONFIG.c_s2mm_burst_size {4} \
-    CONFIG.c_s_axis_s2mm_tdata_width {64} \
     CONFIG.c_sg_include_stscntrl_strm {0} \
     CONFIG.c_sg_length_width {26} \
   ] $axi_dma_1
@@ -855,11 +831,9 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.c_include_s2mm_dre {1} \
     CONFIG.c_include_sg {1} \
     CONFIG.c_m_axi_mm2s_data_width {128} \
-    CONFIG.c_m_axi_s2mm_data_width {64} \
     CONFIG.c_m_axis_mm2s_tdata_width {128} \
     CONFIG.c_mm2s_burst_size {256} \
     CONFIG.c_s2mm_burst_size {4} \
-    CONFIG.c_s_axis_s2mm_tdata_width {64} \
     CONFIG.c_sg_include_stscntrl_strm {0} \
     CONFIG.c_sg_length_width {26} \
   ] $axi_dma_2
@@ -874,11 +848,9 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.c_include_s2mm_dre {1} \
     CONFIG.c_include_sg {1} \
     CONFIG.c_m_axi_mm2s_data_width {128} \
-    CONFIG.c_m_axi_s2mm_data_width {64} \
     CONFIG.c_m_axis_mm2s_tdata_width {128} \
     CONFIG.c_mm2s_burst_size {256} \
     CONFIG.c_s2mm_burst_size {4} \
-    CONFIG.c_s_axis_s2mm_tdata_width {64} \
     CONFIG.c_sg_include_stscntrl_strm {0} \
     CONFIG.c_sg_length_width {26} \
   ] $axi_dma_3
@@ -890,36 +862,53 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   # Create instance: smartconnect_4, and set properties
   set smartconnect_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_4 ]
 
+  # Create instance: accelerator_0, and set properties
+  set block_name accelerator
+  set block_cell_name accelerator_0
+  if { [catch {set accelerator_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $accelerator_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [list \
+    CONFIG.ELEMENTS_PER_ROW {17088} \
+    CONFIG.ELEMENT_WIDTH {64} \
+    CONFIG.NUM_ROWS {17088} \
+  ] $accelerator_0
+
+
   # Create interface connections
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins ps8_0_axi_periph1/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM1_FPD]
+  connect_bd_intf_net -intf_net accelerator_0_m_axis_0 [get_bd_intf_pins accelerator_0/m_axis_0] [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
+  connect_bd_intf_net -intf_net accelerator_0_m_axis_1 [get_bd_intf_pins accelerator_0/m_axis_1] [get_bd_intf_pins axi_dma_1/S_AXIS_S2MM]
+  connect_bd_intf_net -intf_net accelerator_0_m_axis_2 [get_bd_intf_pins accelerator_0/m_axis_2] [get_bd_intf_pins axi_dma_2/S_AXIS_S2MM]
+  connect_bd_intf_net -intf_net accelerator_0_m_axis_3 [get_bd_intf_pins accelerator_0/m_axis_3] [get_bd_intf_pins axi_dma_3/S_AXIS_S2MM]
   connect_bd_intf_net -intf_net axi_cdma_0_M_AXI [get_bd_intf_pins axi_cdma_0/M_AXI] [get_bd_intf_pins axi_smc1/S00_AXI]
-  connect_bd_intf_net -intf_net axi_dma_0_M_AXIS_MM2S [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] [get_bd_intf_pins mvm_accelerator_0/s_axis_a_0]
+  connect_bd_intf_net -intf_net axi_dma_0_M_AXIS_MM2S [get_bd_intf_pins accelerator_0/s_axis_a_0] [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXI_MM2S [get_bd_intf_pins axi_dma_0/M_AXI_MM2S] [get_bd_intf_pins axi_smc/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXI_S2MM [get_bd_intf_pins axi_dma_0/M_AXI_S2MM] [get_bd_intf_pins smartconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXI_SG [get_bd_intf_pins axi_dma_0/M_AXI_SG] [get_bd_intf_pins axi_smc/S02_AXI]
-  connect_bd_intf_net -intf_net axi_dma_1_M_AXIS_MM2S [get_bd_intf_pins axi_dma_1/M_AXIS_MM2S] [get_bd_intf_pins mvm_accelerator_0/s_axis_a_1]
+  connect_bd_intf_net -intf_net axi_dma_1_M_AXIS_MM2S [get_bd_intf_pins accelerator_0/s_axis_a_1] [get_bd_intf_pins axi_dma_1/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net axi_dma_1_M_AXI_MM2S [get_bd_intf_pins smartconnect_1/S00_AXI] [get_bd_intf_pins axi_dma_1/M_AXI_MM2S]
   connect_bd_intf_net -intf_net axi_dma_1_M_AXI_S2MM [get_bd_intf_pins axi_dma_1/M_AXI_S2MM] [get_bd_intf_pins smartconnect_0/S01_AXI]
   connect_bd_intf_net -intf_net axi_dma_1_M_AXI_SG [get_bd_intf_pins smartconnect_1/S01_AXI] [get_bd_intf_pins axi_dma_1/M_AXI_SG]
-  connect_bd_intf_net -intf_net axi_dma_2_M_AXIS_MM2S [get_bd_intf_pins axi_dma_2/M_AXIS_MM2S] [get_bd_intf_pins mvm_accelerator_0/s_axis_a_2]
+  connect_bd_intf_net -intf_net axi_dma_2_M_AXIS_MM2S [get_bd_intf_pins accelerator_0/s_axis_a_2] [get_bd_intf_pins axi_dma_2/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net axi_dma_2_M_AXI_MM2S [get_bd_intf_pins axi_dma_2/M_AXI_MM2S] [get_bd_intf_pins smartconnect_3/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_2_M_AXI_S2MM [get_bd_intf_pins axi_dma_2/M_AXI_S2MM] [get_bd_intf_pins smartconnect_2/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_2_M_AXI_SG [get_bd_intf_pins axi_dma_2/M_AXI_SG] [get_bd_intf_pins smartconnect_3/S01_AXI]
-  connect_bd_intf_net -intf_net axi_dma_3_M_AXIS_MM2S [get_bd_intf_pins axi_dma_3/M_AXIS_MM2S] [get_bd_intf_pins mvm_accelerator_0/s_axis_a_3]
+  connect_bd_intf_net -intf_net axi_dma_3_M_AXIS_MM2S [get_bd_intf_pins accelerator_0/s_axis_a_3] [get_bd_intf_pins axi_dma_3/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net axi_dma_3_M_AXI_MM2S [get_bd_intf_pins axi_dma_3/M_AXI_MM2S] [get_bd_intf_pins smartconnect_4/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_3_M_AXI_S2MM [get_bd_intf_pins axi_dma_3/M_AXI_S2MM] [get_bd_intf_pins smartconnect_2/S01_AXI]
   connect_bd_intf_net -intf_net axi_dma_3_M_AXI_SG [get_bd_intf_pins axi_dma_3/M_AXI_SG] [get_bd_intf_pins smartconnect_4/S01_AXI]
   connect_bd_intf_net -intf_net axi_smc1_M00_AXI [get_bd_intf_pins axi_smc1/M00_AXI] [get_bd_intf_pins axi_smc/S01_AXI]
-  connect_bd_intf_net -intf_net axi_smc1_M01_AXI [get_bd_intf_pins axi_smc1/M01_AXI] [get_bd_intf_pins mvm_accelerator_0/s_axi_b]
+  connect_bd_intf_net -intf_net axi_smc1_M01_AXI [get_bd_intf_pins axi_smc1/M01_AXI] [get_bd_intf_pins accelerator_0/s_axi_b]
   connect_bd_intf_net -intf_net axi_smc_M00_AXI [get_bd_intf_pins axi_smc/M00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HP0_FPD]
-  connect_bd_intf_net -intf_net mvm_accelerator_0_m_axis_0 [get_bd_intf_pins mvm_accelerator_0/m_axis_0] [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
-  connect_bd_intf_net -intf_net mvm_accelerator_0_m_axis_1 [get_bd_intf_pins mvm_accelerator_0/m_axis_1] [get_bd_intf_pins axi_dma_1/S_AXIS_S2MM]
-  connect_bd_intf_net -intf_net mvm_accelerator_0_m_axis_2 [get_bd_intf_pins mvm_accelerator_0/m_axis_2] [get_bd_intf_pins axi_dma_2/S_AXIS_S2MM]
-  connect_bd_intf_net -intf_net mvm_accelerator_0_m_axis_3 [get_bd_intf_pins mvm_accelerator_0/m_axis_3] [get_bd_intf_pins axi_dma_3/S_AXIS_S2MM]
   connect_bd_intf_net -intf_net ps8_0_axi_periph1_M00_AXI [get_bd_intf_pins axi_dma_2/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph1/M00_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph1_M01_AXI [get_bd_intf_pins axi_dma_3/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph1/M01_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins ps8_0_axi_periph/M00_AXI] [get_bd_intf_pins axi_cdma_0/S_AXI_LITE]
-  connect_bd_intf_net -intf_net ps8_0_axi_periph_M01_AXI [get_bd_intf_pins mvm_accelerator_0/s_axil] [get_bd_intf_pins ps8_0_axi_periph/M01_AXI]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M01_AXI [get_bd_intf_pins accelerator_0/s_axil] [get_bd_intf_pins ps8_0_axi_periph/M01_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M02_AXI [get_bd_intf_pins axi_dma_0/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph/M02_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins axi_dma_1/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph/M03_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M00_AXI [get_bd_intf_pins smartconnect_0/M00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HPC0_FPD]
@@ -930,24 +919,24 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD] [get_bd_intf_pins ps8_0_axi_periph/S00_AXI]
 
   # Create port connections
-  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins rst_ps8_0_99M/peripheral_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axi_smc1/aresetn] [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph1/M00_ARESETN] [get_bd_pins ps8_0_axi_periph1/S00_ARESETN] [get_bd_pins ps8_0_axi_periph1/ARESETN] [get_bd_pins smartconnect_0/aresetn] [get_bd_pins axi_cdma_0/s_axi_lite_aresetn] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins smartconnect_2/aresetn] [get_bd_pins smartconnect_1/aresetn] [get_bd_pins axi_dma_1/axi_resetn] [get_bd_pins ps8_0_axi_periph1/M01_ARESETN] [get_bd_pins smartconnect_3/aresetn] [get_bd_pins smartconnect_4/aresetn] [get_bd_pins axi_dma_2/axi_resetn] [get_bd_pins axi_dma_3/axi_resetn] [get_bd_pins ps8_0_axi_periph/M02_ARESETN] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins mvm_accelerator_0/rstn] [get_bd_pins mvm_accelerator_0/s_axil_aresetn]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axi_cdma_0/m_axi_aclk] [get_bd_pins axi_smc1/aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph1/ACLK] [get_bd_pins ps8_0_axi_periph1/S00_ACLK] [get_bd_pins ps8_0_axi_periph1/M00_ACLK] [get_bd_pins smartconnect_0/aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_cdma_0/s_axi_lite_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihpc0_fpd_aclk] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins axi_dma_0/m_axi_sg_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihpc1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp2_fpd_aclk] [get_bd_pins smartconnect_2/aclk] [get_bd_pins smartconnect_1/aclk] [get_bd_pins axi_dma_1/m_axi_s2mm_aclk] [get_bd_pins axi_dma_1/m_axi_mm2s_aclk] [get_bd_pins axi_dma_1/m_axi_sg_aclk] [get_bd_pins axi_dma_1/s_axi_lite_aclk] [get_bd_pins ps8_0_axi_periph1/M01_ACLK] [get_bd_pins zynq_ultra_ps_e_0/saxihp1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp3_fpd_aclk] [get_bd_pins smartconnect_3/aclk] [get_bd_pins smartconnect_4/aclk] [get_bd_pins axi_dma_2/s_axi_lite_aclk] [get_bd_pins axi_dma_2/m_axi_sg_aclk] [get_bd_pins axi_dma_2/m_axi_mm2s_aclk] [get_bd_pins axi_dma_2/m_axi_s2mm_aclk] [get_bd_pins axi_dma_3/s_axi_lite_aclk] [get_bd_pins axi_dma_3/m_axi_sg_aclk] [get_bd_pins axi_dma_3/m_axi_mm2s_aclk] [get_bd_pins axi_dma_3/m_axi_s2mm_aclk] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins mvm_accelerator_0/clk] [get_bd_pins mvm_accelerator_0/s_axil_aclk]
+  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins rst_ps8_0_99M/peripheral_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axi_smc1/aresetn] [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph1/M00_ARESETN] [get_bd_pins ps8_0_axi_periph1/S00_ARESETN] [get_bd_pins ps8_0_axi_periph1/ARESETN] [get_bd_pins smartconnect_0/aresetn] [get_bd_pins axi_cdma_0/s_axi_lite_aresetn] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins smartconnect_2/aresetn] [get_bd_pins smartconnect_1/aresetn] [get_bd_pins axi_dma_1/axi_resetn] [get_bd_pins ps8_0_axi_periph1/M01_ARESETN] [get_bd_pins smartconnect_3/aresetn] [get_bd_pins smartconnect_4/aresetn] [get_bd_pins axi_dma_2/axi_resetn] [get_bd_pins axi_dma_3/axi_resetn] [get_bd_pins ps8_0_axi_periph/M02_ARESETN] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins accelerator_0/rstn] [get_bd_pins accelerator_0/s_axil_aresetn]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axi_cdma_0/m_axi_aclk] [get_bd_pins axi_smc1/aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph1/ACLK] [get_bd_pins ps8_0_axi_periph1/S00_ACLK] [get_bd_pins ps8_0_axi_periph1/M00_ACLK] [get_bd_pins smartconnect_0/aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_cdma_0/s_axi_lite_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihpc0_fpd_aclk] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins axi_dma_0/m_axi_sg_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihpc1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp2_fpd_aclk] [get_bd_pins smartconnect_2/aclk] [get_bd_pins smartconnect_1/aclk] [get_bd_pins axi_dma_1/m_axi_s2mm_aclk] [get_bd_pins axi_dma_1/m_axi_mm2s_aclk] [get_bd_pins axi_dma_1/m_axi_sg_aclk] [get_bd_pins axi_dma_1/s_axi_lite_aclk] [get_bd_pins ps8_0_axi_periph1/M01_ACLK] [get_bd_pins zynq_ultra_ps_e_0/saxihp1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/saxihp3_fpd_aclk] [get_bd_pins smartconnect_3/aclk] [get_bd_pins smartconnect_4/aclk] [get_bd_pins axi_dma_2/s_axi_lite_aclk] [get_bd_pins axi_dma_2/m_axi_sg_aclk] [get_bd_pins axi_dma_2/m_axi_mm2s_aclk] [get_bd_pins axi_dma_2/m_axi_s2mm_aclk] [get_bd_pins axi_dma_3/s_axi_lite_aclk] [get_bd_pins axi_dma_3/m_axi_sg_aclk] [get_bd_pins axi_dma_3/m_axi_mm2s_aclk] [get_bd_pins axi_dma_3/m_axi_s2mm_aclk] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins accelerator_0/clk] [get_bd_pins accelerator_0/s_axil_aclk]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0] [get_bd_pins rst_ps8_0_99M/ext_reset_in]
 
   # Create address segments
+  assign_bd_address -offset 0xA00C0000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs accelerator_0/s_axil/reg0] -force
   assign_bd_address -offset 0xA0000000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_cdma_0/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0xA0040000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_dma_0/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0xA0080000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_dma_1/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0xB0000000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_dma_2/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0xB0040000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_dma_3/S_AXI_LITE/Reg] -force
-  assign_bd_address -offset 0xA00C0000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs mvm_accelerator_0/s_axil/reg0] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP0/HPC0_DDR_HIGH] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP0/HPC0_DDR_LOW] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_SG] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_SG] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
-  assign_bd_address -offset 0x80000000 -range 0x00040000 -target_address_space [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs mvm_accelerator_0/s_axi_b/reg0] -force
+  assign_bd_address -offset 0x80000000 -range 0x00400000 -target_address_space [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs accelerator_0/s_axi_b/reg0] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_1/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP3/HP1_DDR_HIGH] -force
@@ -987,10 +976,10 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   # Perform GUI Layout
   regenerate_bd_layout -layout_string {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"1.52123",
-   "Default View_TopLeft":"-575,-340",
+   "Default View_ScaleFactor":"1.18814",
+   "Default View_TopLeft":"112,-290",
    "ExpandedHierarchyInLayout":"",
-   "PinnedBlocks":"/zynq_ultra_ps_e_0|/axi_dma_0|/ps8_0_axi_periph|/rst_ps8_0_99M|/axi_smc|/mvm_accelerator_0|/axi_cdma_0|/axi_smc1|/ps8_0_axi_periph1|/smartconnect_0|/axi_dma_1|/smartconnect_1|/smartconnect_2|/axi_dma_2|/axi_dma_3|/smartconnect_3|/smartconnect_4|",
+   "PinnedBlocks":"/zynq_ultra_ps_e_0|/axi_dma_0|/ps8_0_axi_periph|/rst_ps8_0_99M|/axi_smc|/axi_cdma_0|/axi_smc1|/ps8_0_axi_periph1|/smartconnect_0|/axi_dma_1|/smartconnect_1|/smartconnect_2|/axi_dma_2|/axi_dma_3|/smartconnect_3|/smartconnect_4|",
    "guistr":"# # String gsaved with Nlview 7.5.8 2022-09-21 7111 VDI=41 GEI=38 GUI=JA:10.0
 #  -string -flagsOSRD
 preplace inst zynq_ultra_ps_e_0 -pg 1 -lvl 1 -x 360 -y 530 -defaultsOSRD
@@ -998,7 +987,6 @@ preplace inst axi_dma_0 -pg 1 -lvl 3 -x 1320 -y 30 -defaultsOSRD
 preplace inst ps8_0_axi_periph -pg 1 -lvl 2 -x 920 -y 260 -defaultsOSRD
 preplace inst rst_ps8_0_99M -pg 1 -lvl 1 -x 360 -y 800 -defaultsOSRD
 preplace inst axi_smc -pg 1 -lvl 1 -x 360 -y 260 -defaultsOSRD -orient R180
-preplace inst mvm_accelerator_0 -pg 1 -lvl 4 -x 1770 -y 500 -defaultsOSRD
 preplace inst axi_cdma_0 -pg 1 -lvl 3 -x 1320 -y 1010 -defaultsOSRD
 preplace inst axi_smc1 -pg 1 -lvl 4 -x 1770 -y 1020 -defaultsOSRD
 preplace inst ps8_0_axi_periph1 -pg 1 -lvl 2 -x 920 -y 560 -defaultsOSRD
@@ -1010,46 +998,47 @@ preplace inst axi_dma_2 -pg 1 -lvl 3 -x 1320 -y 550 -defaultsOSRD
 preplace inst axi_dma_3 -pg 1 -lvl 3 -x 1320 -y 810 -defaultsOSRD
 preplace inst smartconnect_3 -pg 1 -lvl 1 -x 360 -y -230 -defaultsOSRD -orient R180
 preplace inst smartconnect_4 -pg 1 -lvl 1 -x 360 -y -70 -defaultsOSRD -orient R180
-preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 780 -170 1090 -170 1590 -140 1910
-preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 60 900 760 -180 1130 -180 1600 -150 1920
+preplace inst accelerator_0 -pg 1 -lvl 4 -x 1770 -y 410 -defaultsOSRD
+preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 4 780 -180 1120 -180 1580 -140 1900
+preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 5 60 900 760 -170 1130 -200 1610 -150 1930
 preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 0 2 40 910 650
 preplace netloc S00_AXI_1 1 1 1 770 480n
 preplace netloc axi_cdma_0_M_AXI 1 3 1 NJ 1000
-preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1630 20n
 preplace netloc axi_dma_0_M_AXI_MM2S 1 1 3 660 70 1080 -100 1480
-preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1570 -120 1900
+preplace netloc axi_dma_0_M_AXI_S2MM 1 3 2 1600 -120 1910
 preplace netloc axi_dma_0_M_AXI_SG 1 1 3 670 -160 N -160 1540
-preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1560 280n
 preplace netloc axi_dma_1_M_AXI_MM2S 1 1 3 680 -150 N -150 1530
-preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 N 260 1910
+preplace netloc axi_dma_1_M_AXI_S2MM 1 3 2 N 260 1900
 preplace netloc axi_dma_1_M_AXI_SG 1 1 3 770 80 1070 -120 1520
-preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1620 450n
-preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 N -200 N -200 1550
-preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1610 330 1930
-preplace netloc axi_dma_2_M_AXI_SG 1 1 3 N -220 N -220 1500
-preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 1630 470n
+preplace netloc axi_dma_2_M_AXI_MM2S 1 1 3 660 -190 N -190 1550
+preplace netloc axi_dma_2_M_AXI_S2MM 1 3 2 1540 570 1940
+preplace netloc axi_dma_2_M_AXI_SG 1 1 3 N -220 1060 -210 1500
 preplace netloc axi_dma_3_M_AXI_MM2S 1 1 3 660 -140 N -140 1510
-preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 N 780 1940
+preplace netloc axi_dma_3_M_AXI_S2MM 1 3 2 N 780 1960
 preplace netloc axi_dma_3_M_AXI_SG 1 1 3 N -60 1060 -110 1490
-preplace netloc axi_smc1_M00_AXI 1 1 4 650 -130 N -130 N -130 1950J
-preplace netloc axi_smc1_M01_AXI 1 3 2 1640 340 1920
+preplace netloc axi_smc1_M00_AXI 1 1 4 650 -130 N -130 N -130 1970J
 preplace netloc axi_smc_M00_AXI 1 0 1 70 260n
-preplace netloc mvm_accelerator_0_m_axis_0 1 2 3 1150 680 N 680 1910
-preplace netloc mvm_accelerator_0_m_axis_1 1 2 3 1160 420 1620J 350 1900
-preplace netloc mvm_accelerator_0_m_axis_2 1 2 3 1160 1100 NJ 1100 1930
-preplace netloc mvm_accelerator_0_m_axis_3 1 2 3 1150 1110 NJ 1110 1900
 preplace netloc ps8_0_axi_periph1_M00_AXI 1 2 1 1060 490n
-preplace netloc ps8_0_axi_periph1_M01_AXI 1 2 1 1100 570n
-preplace netloc ps8_0_axi_periph_M00_AXI 1 2 1 1110 230n
-preplace netloc ps8_0_axi_periph_M01_AXI 1 2 2 1140 160 1570
+preplace netloc ps8_0_axi_periph1_M01_AXI 1 2 1 1060 570n
+preplace netloc ps8_0_axi_periph_M00_AXI 1 2 1 1070 230n
 preplace netloc ps8_0_axi_periph_M02_AXI 1 2 1 1060 -30n
-preplace netloc ps8_0_axi_periph_M03_AXI 1 2 1 1120 230n
+preplace netloc ps8_0_axi_periph_M03_AXI 1 2 1 1080 230n
 preplace netloc smartconnect_0_M00_AXI 1 0 4 40 -330 N -330 N -330 1640
 preplace netloc smartconnect_1_M00_AXI 1 0 1 50 90n
 preplace netloc smartconnect_2_M00_AXI 1 0 4 60 -320 N -320 N -320 1630
 preplace netloc smartconnect_3_M00_AXI 1 0 1 20 -230n
 preplace netloc smartconnect_4_M00_AXI 1 0 1 30 -70n
 preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 1 1 680 140n
+preplace netloc axi_dma_0_M_AXIS_MM2S 1 3 1 1630 20n
+preplace netloc accelerator_0_m_axis_0 1 2 3 1150 -220 NJ -220 1920
+preplace netloc accelerator_0_m_axis_1 1 2 3 1160 -170 NJ -170 1950
+preplace netloc accelerator_0_m_axis_2 1 2 3 1150 420 1560J 560 1910
+preplace netloc accelerator_0_m_axis_3 1 2 3 1160 680 NJ 680 1920
+preplace netloc axi_dma_1_M_AXIS_MM2S 1 3 1 1590 280n
+preplace netloc axi_dma_2_M_AXIS_MM2S 1 3 1 1620 360n
+preplace netloc axi_dma_3_M_AXIS_MM2S 1 3 1 1630 380n
+preplace netloc ps8_0_axi_periph_M01_AXI 1 2 2 1140J 160 1600
+preplace netloc axi_smc1_M01_AXI 1 3 2 1640 580 1900
 levelinfo -pg 1 -390 360 920 1320 1770 2130
 pagesize -pg 1 -db -bbox -sgen -390 -640 3440 1260
 "

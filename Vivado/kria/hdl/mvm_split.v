@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module mvm_accelerator_split #(
+module mvm_split #(
     parameter MAX_CH = 4,
 
     parameter DATA_WIDTH         = 128,

@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module tb_mvm_accelerator;
+module tb_accelerator;
 
     `include "axi_a_channel_bindings.svh"
     `define GET_CHANNELS `CHANNELS_4 // <------------ `CHANNELS_{CHANNELS_PER_INST} (must match the parameter)
@@ -12,7 +12,7 @@ module tb_mvm_accelerator;
     parameter  real     PCLK0_FREQ_MHZ = 250.0;
     localparam realtime PCLK0_PERIOD_NS = 1000.0 / PCLK0_FREQ_MHZ;
 
-    parameter ARCH_TYPE = 0; // Select accelerator type (0=split)
+    parameter ARCH_TYPE = 0; // Select accelerator type (0=mvm_split, 1=mvm_sym, 2=ile_iter)
     
     parameter int NUM_TRANSFERS = 2;
     parameter int BATCHES_PER_TRANSFER = 2;
@@ -354,7 +354,7 @@ module tb_mvm_accelerator;
         for (genvar inst = 0; inst < NUM_ACCEL_INST; inst++) begin : gen_accel
             localparam int base_idx = inst * CHANNELS_PER_INST;
         
-            mvm_accelerator #(
+            accelerator #(
                 .ARCH_TYPE(ARCH_TYPE),
                 .DATA_WIDTH(DATA_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),

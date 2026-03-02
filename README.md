@@ -80,10 +80,6 @@ Vivado/kria/bd/design_1.tcl
 
 This ensures the changes will be reflected in subsequent builds. 
 
-## Architectural Diagram
-
-**TODO**
-
 ## Acknowledgments
 
 This project incorporates modules from Alex Forencich’s Verilog-AXI/Verilog-AXIS libraries:

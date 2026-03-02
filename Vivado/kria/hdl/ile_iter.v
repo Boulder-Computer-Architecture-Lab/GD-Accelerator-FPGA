@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module mvm_accelerator_sym #(
+module ile_iter #(
     parameter MAX_CH = 4,
 
     parameter DATA_WIDTH         = 128,
@@ -59,7 +59,7 @@ module mvm_accelerator_sym #(
     output wire [1:0]                    s_axi_b_bresp,
     output wire                          s_axi_b_bvalid,
     input  wire                          s_axi_b_bready
-);
+);  
 
     // =============================================================
     //                      LOCAL RESET
@@ -442,5 +442,5 @@ module mvm_accelerator_sym #(
             );
         end
     endgenerate
-
+    
 endmodule
