@@ -72,19 +72,39 @@ module dot_product #(
                 .m_axis_result_tlast(fp_axis_a_tlast)
             );
 
-            fp16_to_fp64 u_fp16_to_fp64 (
+            //fp16_to_fp64 u_fp16_to_fp64 (
+            //    .aclk(clk),
+            //    .aresetn(rstn),
+            //
+            //    .s_axis_a_tdata (fp_axis_a_tdata),
+            //    .s_axis_a_tvalid(fp_axis_a_tvalid),
+            //    .s_axis_a_tready(fp_axis_a_tready),
+            //    .s_axis_a_tlast (fp_axis_a_tlast),
+            //
+            //    .m_axis_result_tdata (acc_axis_a_tdata),
+            //    .m_axis_result_tvalid(acc_axis_a_tvalid),
+            //    .m_axis_result_tready(acc_axis_a_tready),
+            //    .m_axis_result_tlast (acc_tlast_prop)
+            //);
+
+            assign acc_axis_a_tdata = fp_axis_a_tdata;
+            assign acc_axis_a_tvalid = fp_axis_a_tvalid;
+            assign fp_axis_a_tready = acc_axis_a_tready;
+            assign acc_tlast_prop = fp_axis_a_tlast;
+
+            fp16_accum u_fp16_accum (
                 .aclk(clk),
                 .aresetn(rstn),
-
-                .s_axis_a_tdata (fp_axis_a_tdata),
-                .s_axis_a_tvalid(fp_axis_a_tvalid),
-                .s_axis_a_tready(fp_axis_a_tready),
-                .s_axis_a_tlast (fp_axis_a_tlast),
-
-                .m_axis_result_tdata (acc_axis_a_tdata),
-                .m_axis_result_tvalid(acc_axis_a_tvalid),
-                .m_axis_result_tready(acc_axis_a_tready),
-                .m_axis_result_tlast (acc_tlast_prop)
+            
+                .s_axis_a_tdata (acc_axis_a_tdata),
+                .s_axis_a_tvalid(acc_axis_a_tvalid),
+                .s_axis_a_tready(acc_axis_a_tready),
+                .s_axis_a_tlast (acc_axis_a_tlast),
+            
+                .m_axis_result_tdata (acc_axis_result_tdata),
+                .m_axis_result_tvalid(acc_axis_result_tvalid),
+                .m_axis_result_tready(acc_axis_result_tready),
+                .m_axis_result_tlast (acc_axis_result_tlast)
             );
 
         end else if (DATA_WIDTH == 32) begin
@@ -108,19 +128,39 @@ module dot_product #(
                 .m_axis_result_tlast(fp_axis_a_tlast)
             );
 
-            fp32_to_fp64 u_fp32_to_fp64 (
+            //fp32_to_fp64 u_fp32_to_fp64 (
+            //    .aclk(clk),
+            //    .aresetn(rstn),
+            //
+            //    .s_axis_a_tdata (fp_axis_a_tdata),
+            //    .s_axis_a_tvalid(fp_axis_a_tvalid),
+            //    .s_axis_a_tready(fp_axis_a_tready),
+            //    .s_axis_a_tlast (fp_axis_a_tlast),
+            //
+            //    .m_axis_result_tdata (acc_axis_a_tdata),
+            //    .m_axis_result_tvalid(acc_axis_a_tvalid),
+            //    .m_axis_result_tready(acc_axis_a_tready),
+            //    .m_axis_result_tlast (acc_tlast_prop)
+            //);
+            
+            assign acc_axis_a_tdata = fp_axis_a_tdata;
+            assign acc_axis_a_tvalid = fp_axis_a_tvalid;
+            assign fp_axis_a_tready = acc_axis_a_tready;
+            assign acc_tlast_prop = fp_axis_a_tlast;
+
+            fp32_accum u_fp32_accum (
                 .aclk(clk),
                 .aresetn(rstn),
-
-                .s_axis_a_tdata (fp_axis_a_tdata),
-                .s_axis_a_tvalid(fp_axis_a_tvalid),
-                .s_axis_a_tready(fp_axis_a_tready),
-                .s_axis_a_tlast (fp_axis_a_tlast),
-
-                .m_axis_result_tdata (acc_axis_a_tdata),
-                .m_axis_result_tvalid(acc_axis_a_tvalid),
-                .m_axis_result_tready(acc_axis_a_tready),
-                .m_axis_result_tlast (acc_tlast_prop)
+            
+                .s_axis_a_tdata (acc_axis_a_tdata),
+                .s_axis_a_tvalid(acc_axis_a_tvalid),
+                .s_axis_a_tready(acc_axis_a_tready),
+                .s_axis_a_tlast (acc_axis_a_tlast),
+            
+                .m_axis_result_tdata (acc_axis_result_tdata),
+                .m_axis_result_tvalid(acc_axis_result_tvalid),
+                .m_axis_result_tready(acc_axis_result_tready),
+                .m_axis_result_tlast (acc_axis_result_tlast)
             );
 
         end else if (DATA_WIDTH == 64) begin
@@ -149,23 +189,38 @@ module dot_product #(
             assign fp_axis_a_tready = acc_axis_a_tready;
             assign acc_tlast_prop = fp_axis_a_tlast;
 
+            fp64_accum u_fp64_accum (
+                .aclk(clk),
+                .aresetn(rstn),
+            
+                .s_axis_a_tdata (acc_axis_a_tdata),
+                .s_axis_a_tvalid(acc_axis_a_tvalid),
+                .s_axis_a_tready(acc_axis_a_tready),
+                .s_axis_a_tlast (acc_axis_a_tlast),
+            
+                .m_axis_result_tdata (acc_axis_result_tdata),
+                .m_axis_result_tvalid(acc_axis_result_tvalid),
+                .m_axis_result_tready(acc_axis_result_tready),
+                .m_axis_result_tlast (acc_axis_result_tlast)
+            );
+
         end
     endgenerate
     
-    fp64_accum u_fp64_accum (
-        .aclk(clk),
-        .aresetn(rstn),
-
-        .s_axis_a_tdata (acc_axis_a_tdata),
-        .s_axis_a_tvalid(acc_axis_a_tvalid),
-        .s_axis_a_tready(acc_axis_a_tready),
-        .s_axis_a_tlast (acc_axis_a_tlast),
-
-        .m_axis_result_tdata (acc_axis_result_tdata),
-        .m_axis_result_tvalid(acc_axis_result_tvalid),
-        .m_axis_result_tready(acc_axis_result_tready),
-        .m_axis_result_tlast (acc_axis_result_tlast)
-    );
+    //fp64_accum u_fp64_accum (
+    //    .aclk(clk),
+    //    .aresetn(rstn),
+    //
+    //    .s_axis_a_tdata (acc_axis_a_tdata),
+    //    .s_axis_a_tvalid(acc_axis_a_tvalid),
+    //    .s_axis_a_tready(acc_axis_a_tready),
+    //    .s_axis_a_tlast (acc_axis_a_tlast),
+    //
+    //    .m_axis_result_tdata (acc_axis_result_tdata),
+    //    .m_axis_result_tvalid(acc_axis_result_tvalid),
+    //    .m_axis_result_tready(acc_axis_result_tready),
+    //    .m_axis_result_tlast (acc_axis_result_tlast)
+    //);
     
     // ========================================
     //             TLAST HANDLING

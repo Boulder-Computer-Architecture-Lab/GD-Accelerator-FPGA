@@ -27,8 +27,8 @@ def model(H, T, state):
     popdens[np.isnan(popdens)] = 0
 
     # Parameter values
-    lbar = 5.9174e+09  # Total population
-    lambda_ = 0.32     # Congestion externalities
+    lbar = 5.9174e+09 # Total population
+    lambda_ = 0.32    # Congestion externalities
     gamma1 = 0.319    # Elasticity of tomorrow's productivity w.r.t. today's innovation
     gamma2 = 0.99246  # Elasticity of tomorrow's productivity w.r.t. today's productivity
     eta = 1           # Parameter driving scale of technology diffusion
@@ -66,7 +66,8 @@ def model(H, T, state):
                 (gamma1 / (nu * (gamma1 + mu * ksi)) * popdens[earth_indices]) ** (gamma1 * theta / ksi)
 
     # Initial guess for uhat
-    uhat_loop = np.ones(n) / n
+    #uhat_loop = np.ones(n) / n
+    uhat_loop = np.ones(n) * 1000000000
 
     # Calculate equilibrium distribution for each period
     for t in range(T):
@@ -93,10 +94,9 @@ def model(H, T, state):
             uhat_old = uhat_loop.copy()
             input_integral_inner = input_integral_outer * uhat_loop ** (exponent_l / Omega - theta ** 2 / (1 + 2 * theta))
             input_integral_inner[uhat_loop == 0] = 0
-            
+
             # Matrix product
-            print(input_integral_inner)
-            rhs = np.dot(trmult_reduced, input_integral_inner)
+            rhs = state.mvm(input_integral_inner)
             eps_val = 1e-12
             rhs = np.maximum(rhs, eps_val)
             
@@ -129,16 +129,16 @@ def model(H, T, state):
         # Calculate trade to GDP ratio in periods 1 and T
         if t == 0 or t == T - 1:
             print('TOTAL IMPORTS TO WORLD GDP')
-            trsharesum = np.dot(trmult_reduced, (tau[:, t] * l[:, t] ** (alpha - (1 - mu - gamma1 / ksi) * theta) * w[:, t] ** (-theta)))
+            trsharesum = state.mvm(tau[:, t] * l[:, t] ** (alpha - (1 - mu - gamma1 / ksi) * theta) * w[:, t] ** (-theta))
             eps_val = 1e-12
             trsharesum = np.maximum(trsharesum, eps_val)
             domtrade = 0
-            for i in range(n):
-                for j in range(n):
-                    if C_vect[i] == C_vect[j]:
-                        domtrade += (tau[j, t] * l[j, t] ** (alpha - (1 - mu - gamma1 / ksi) * theta) * w[j, t] ** (-theta) *
-                                     trmult_reduced[i, j] / trsharesum[i] * w[i, t] * H[i] * l[i, t])
-            print(1 - domtrade / np.sum(w[:, t] * H * l[:, t]))
+            #for i in range(n):
+            #    for j in range(n):
+            #        if C_vect[i] == C_vect[j]:
+            #            domtrade += (tau[j, t] * l[j, t] ** (alpha - (1 - mu - gamma1 / ksi) * theta) * w[j, t] ** (-theta) *
+            #                         trmult_reduced[i, j] / trsharesum[i] * w[i, t] * H[i] * l[i, t])
+            #print(1 - domtrade / np.sum(w[:, t] * H * l[:, t]))
         
         # Update productivity according to equation (8)
         if t < T - 1:

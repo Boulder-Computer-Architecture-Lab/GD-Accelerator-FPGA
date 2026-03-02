@@ -22,8 +22,7 @@ module tb_mvm_accelerator;
     parameter int ID_WIDTH   = 8;
     parameter int STRB_WIDTH = DATA_WIDTH/8; // Unused
     
-    parameter int ELEMENT_WIDTH = 32; // Can be 16, 32, or 64
-    parameter int RESULT_WIDTH  = 64; // Must be 64
+    parameter int ELEMENT_WIDTH = 16; // Can be 16, 32, or 64
     
     parameter int NUM_ACCEL_INST     = 1;
     parameter int CHANNELS_PER_INST  = 4;
@@ -63,7 +62,6 @@ module tb_mvm_accelerator;
     
     initial assert (PCLK0_FREQ_MHZ > 0.0)                                              else $fatal(1, "PCLK0_FREQ_MHZ must be > 0");
     initial assert (ELEMENT_WIDTH == 16 || ELEMENT_WIDTH == 32 || ELEMENT_WIDTH == 64) else $fatal(1, "ELEMENT_WIDTH must be 16, 32, or 64");
-    initial assert (RESULT_WIDTH == 64)                                                else $fatal(1, "RESULT_WIDTH must be 64");
     initial assert (ROWS_PER_CHANNEL % BATCHES_PER_TRANSFER == 0)                      else $fatal(1, "ROWS_PER_CHANNEL must be divisible by BATCHES_PER_TRANSFER");
     
     // --- Floating-point helpers ---
@@ -256,10 +254,10 @@ module tb_mvm_accelerator;
     logic                  s_axis_a_tlast   [NUM_CHANNELS] = '{default:1'b0};
     
     // Outputs
-    logic [RESULT_WIDTH-1:0] m_axis_tdata     [NUM_CHANNELS] = '{default:'0};
-    logic                    m_axis_tvalid    [NUM_CHANNELS] = '{default:1'b0};
-    logic                    m_axis_tready    [NUM_CHANNELS] = '{default:1'b0};
-    logic                    m_axis_tlast     [NUM_CHANNELS] = '{default:1'b0};
+    logic [ELEMENT_WIDTH-1:0] m_axis_tdata [NUM_CHANNELS] = '{default:'0};
+    logic                    m_axis_tvalid [NUM_CHANNELS] = '{default:1'b0};
+    logic                    m_axis_tready [NUM_CHANNELS] = '{default:1'b0};
+    logic                    m_axis_tlast  [NUM_CHANNELS] = '{default:1'b0};
 
     // AXI Full write interface for vector b
     logic [ID_WIDTH-1:0]           s_axi_b_awid    [NUM_ACCEL_INST] = '{default:'0};
@@ -366,8 +364,7 @@ module tb_mvm_accelerator;
                 .NUM_ROWS(NUM_ROWS),
                 .NUM_CHANNELS(CHANNELS_PER_INST),
                 .AXI_RAM_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
-                .AXI_RAM_BASE_ADDR(BASE_ADDR + STRIDE * inst),
-                .RESULT_WIDTH(RESULT_WIDTH)
+                .AXI_RAM_BASE_ADDR(BASE_ADDR + STRIDE * inst)
             ) dut (
                 .clk(clk), 
                 .rstn(rstn),
@@ -443,6 +440,7 @@ module tb_mvm_accelerator;
         // Initialize b_values
         for (int j = 0; j < ELEMENTS_PER_ROW; j++) begin
             automatic real b_r = ((j+1.0) / 10000.0);
+            //automatic real b_r = ((j+1.0));
             b_values[j] = real_to_elem(b_r);
             //$display("b_values[%0d] = %h (real=%f)", j, b_values[j], elem_to_real(b_values[j]));
         end
@@ -576,7 +574,7 @@ module tb_mvm_accelerator;
                     for (int j = 0; j < ROWS_PER_CHANNEL; j++) begin
                         @(posedge clk iff (m_axis_tvalid[ch] && m_axis_tready[ch]));
                         $display("%0d: Ch%0d: Result=%.16f | Expected=%.16f",
-                            j, ch, $bitstoreal(m_axis_tdata[ch]), expected[ch][j]);
+                            j, ch, elem_to_real(m_axis_tdata[ch]), expected[ch][j]);
                     end
                     outputs_received[ch] = 1;
                 end

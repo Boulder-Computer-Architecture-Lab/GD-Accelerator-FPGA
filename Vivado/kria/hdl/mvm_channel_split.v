@@ -8,7 +8,6 @@ module mvm_channel_split #(
     parameter TAG                = 0,
 
     parameter ELEMENT_WIDTH      = 16,
-    parameter RESULT_WIDTH       = 64,
 
     parameter NUM_ROWS           = 17048,
     parameter ELEMENTS_PER_ROW   = 17048,
@@ -35,10 +34,10 @@ module mvm_channel_split #(
     input  wire                  s_axis_a_tlast,
     
     // Output result stream
-    output wire [RESULT_WIDTH-1:0] m_axis_tdata,
-    output wire                    m_axis_tvalid,
-    input  wire                    m_axis_tready,
-    output wire                    m_axis_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_tdata,
+    output wire                     m_axis_tvalid,
+    input  wire                     m_axis_tready,
+    output wire                     m_axis_tlast,
     
     // AXI master read interface (to crossbar)
     output wire [ID_WIDTH-1:0]           m_axi_arid,
@@ -327,18 +326,18 @@ module mvm_channel_split #(
     
     // ------------ Output Buffer -------------
     
-    wire [RESULT_WIDTH-1:0] pipe_out_tdata;
-    wire                    pipe_out_tvalid;
-    wire                    pipe_out_tready;
-    wire                    pipe_out_tlast;
+    wire [ELEMENT_WIDTH-1:0] pipe_out_tdata;
+    wire                     pipe_out_tvalid;
+    wire                     pipe_out_tready;
+    wire                     pipe_out_tlast;
 
-    wire [RESULT_WIDTH-1:0] fifo_out_s_axis_tdata;
-    wire                    fifo_out_s_axis_tvalid;
-    wire                    fifo_out_s_axis_tready;
-    wire                    fifo_out_s_axis_tlast;
+    wire [ELEMENT_WIDTH-1:0] fifo_out_s_axis_tdata;
+    wire                     fifo_out_s_axis_tvalid;
+    wire                     fifo_out_s_axis_tready;
+    wire                     fifo_out_s_axis_tlast;
         
     axis_register #(
-        .DATA_WIDTH(RESULT_WIDTH),
+        .DATA_WIDTH(ELEMENT_WIDTH),
         .KEEP_ENABLE(0), .LAST_ENABLE(1), .ID_ENABLE(0), .DEST_ENABLE(0), .USER_ENABLE(0),
         .REG_TYPE(SKID)
     ) out_skid (
@@ -355,7 +354,7 @@ module mvm_channel_split #(
 
     axis_fifo #(
         .DEPTH(OUTPUT_FIFO_DEPTH),
-        .DATA_WIDTH(RESULT_WIDTH),
+        .DATA_WIDTH(ELEMENT_WIDTH),
         .KEEP_ENABLE(0),
         .LAST_ENABLE(1),
         .ID_ENABLE(0),
@@ -606,8 +605,6 @@ module mvm_channel_split #(
     mvm_compute #(
         .DATA_WIDTH(DATA_WIDTH),
         .ELEMENT_WIDTH(ELEMENT_WIDTH),
-        .RESULT_WIDTH(RESULT_WIDTH),
-
         .ELEMENTS_PER_WORD(ELEMENTS_PER_WORD),
         .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW),
         .WORDS_PER_ROW(WORDS_PER_ROW),

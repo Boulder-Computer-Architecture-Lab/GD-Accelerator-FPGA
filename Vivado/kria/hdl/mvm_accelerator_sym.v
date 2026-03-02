@@ -9,7 +9,6 @@ module mvm_accelerator_sym #(
     parameter ID_WIDTH           = 8,
     
     parameter ELEMENT_WIDTH      = 16,
-    parameter RESULT_WIDTH       = 64,
 
     parameter NUM_ROWS           = 17048,
     parameter ELEMENTS_PER_ROW   = 17048,
@@ -35,10 +34,10 @@ module mvm_accelerator_sym #(
     input  wire [MAX_CH-1:0]            s_axis_a_tlast,
     
     // Output stream arrays
-    output wire [RESULT_WIDTH*MAX_CH-1:0] m_axis_tdata,
-    output wire [MAX_CH-1:0]              m_axis_tvalid,
-    input  wire [MAX_CH-1:0]              m_axis_tready,
-    output wire [MAX_CH-1:0]              m_axis_tlast,
+    output wire [ELEMENT_WIDTH*MAX_CH-1:0] m_axis_tdata,
+    output wire [MAX_CH-1:0]               m_axis_tvalid,
+    input  wire [MAX_CH-1:0]               m_axis_tready,
+    output wire [MAX_CH-1:0]               m_axis_tlast,
     
     // S-AXI interface
     input  wire [ID_WIDTH-1:0]           s_axi_b_awid,
@@ -227,8 +226,7 @@ module mvm_accelerator_sym #(
                 .AXI_RAM_BASE_ADDR(AXI_RAM_BASE_ADDR),
                 .NUM_CHANNELS(NUM_CHANNELS),
                 .NUM_RAM_PARTITIONS(NUM_RAM_PARTITIONS),
-                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL),
-                .RESULT_WIDTH(RESULT_WIDTH)
+                .ROWS_PER_CHANNEL(ROWS_PER_CHANNEL)
             ) channel_inst (
                 .clk(clk),
                 .rstn(rstn),
@@ -237,7 +235,7 @@ module mvm_accelerator_sym #(
                 .s_axis_a_tvalid(s_axis_a_tvalid[ch]),
                 .s_axis_a_tready(s_axis_a_tready[ch]),
                 .s_axis_a_tlast (s_axis_a_tlast [ch]),
-                .m_axis_tdata   (m_axis_tdata   [RESULT_WIDTH*ch +: RESULT_WIDTH]),
+                .m_axis_tdata   (m_axis_tdata   [ELEMENT_WIDTH*ch +: ELEMENT_WIDTH]),
                 .m_axis_tvalid  (m_axis_tvalid  [ch]),
                 .m_axis_tready  (m_axis_tready  [ch]),
                 .m_axis_tlast   (m_axis_tlast   [ch]),

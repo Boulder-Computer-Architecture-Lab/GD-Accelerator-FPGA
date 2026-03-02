@@ -15,7 +15,6 @@ module mvm_accelerator #(
     parameter NUM_CHANNELS       = 4,
 
     parameter AXI_RAM_DATA_WIDTH = 256,
-    parameter RESULT_WIDTH       = 64,
 
     // Profiler
     parameter AXIL_ADDR_WIDTH = 12,
@@ -47,25 +46,25 @@ module mvm_accelerator #(
     input  wire                  s_axis_a_3_tlast,
 
     // Output streams
-    output wire [RESULT_WIDTH-1:0] m_axis_0_tdata,
-    output wire                    m_axis_0_tvalid,
-    input  wire                    m_axis_0_tready,
-    output wire                    m_axis_0_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_0_tdata,
+    output wire                     m_axis_0_tvalid,
+    input  wire                     m_axis_0_tready,
+    output wire                     m_axis_0_tlast,
     
-    output wire [RESULT_WIDTH-1:0] m_axis_1_tdata,
-    output wire                    m_axis_1_tvalid,
-    input  wire                    m_axis_1_tready,
-    output wire                    m_axis_1_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_1_tdata,
+    output wire                     m_axis_1_tvalid,
+    input  wire                     m_axis_1_tready,
+    output wire                     m_axis_1_tlast,
     
-    output wire [RESULT_WIDTH-1:0] m_axis_2_tdata,
-    output wire                    m_axis_2_tvalid,
-    input  wire                    m_axis_2_tready,
-    output wire                    m_axis_2_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_2_tdata,
+    output wire                     m_axis_2_tvalid,
+    input  wire                     m_axis_2_tready,
+    output wire                     m_axis_2_tlast,
 
-    output wire [RESULT_WIDTH-1:0] m_axis_3_tdata,
-    output wire                    m_axis_3_tvalid,
-    input  wire                    m_axis_3_tready,
-    output wire                    m_axis_3_tlast,
+    output wire [ELEMENT_WIDTH-1:0] m_axis_3_tdata,
+    output wire                     m_axis_3_tvalid,
+    input  wire                     m_axis_3_tready,
+    output wire                     m_axis_3_tlast,
 
     // S-AXI interface for writing vector b
     input  wire [ID_WIDTH-1:0]   s_axi_b_awid,
@@ -152,15 +151,15 @@ module mvm_accelerator #(
     assign s_axis_a_tlast[3]  = s_axis_a_3_tlast;
 
     // Output stream arrays
-    wire [RESULT_WIDTH*MAX_CH-1:0] m_axis_tdata;
-    wire [MAX_CH-1:0]              m_axis_tvalid;
-    wire [MAX_CH-1:0]              m_axis_tready;
-    wire [MAX_CH-1:0]              m_axis_tlast;
+    wire [ELEMENT_WIDTH*MAX_CH-1:0] m_axis_tdata;
+    wire [MAX_CH-1:0]               m_axis_tvalid;
+    wire [MAX_CH-1:0]               m_axis_tready;
+    wire [MAX_CH-1:0]               m_axis_tlast;
 
-    assign m_axis_0_tdata   = m_axis_tdata[RESULT_WIDTH*0 +: RESULT_WIDTH];
-    assign m_axis_1_tdata   = m_axis_tdata[RESULT_WIDTH*1 +: RESULT_WIDTH];
-    assign m_axis_2_tdata   = m_axis_tdata[RESULT_WIDTH*2 +: RESULT_WIDTH];
-    assign m_axis_3_tdata   = m_axis_tdata[RESULT_WIDTH*3 +: RESULT_WIDTH];
+    assign m_axis_0_tdata   = m_axis_tdata[ELEMENT_WIDTH*0 +: ELEMENT_WIDTH];
+    assign m_axis_1_tdata   = m_axis_tdata[ELEMENT_WIDTH*1 +: ELEMENT_WIDTH];
+    assign m_axis_2_tdata   = m_axis_tdata[ELEMENT_WIDTH*2 +: ELEMENT_WIDTH];
+    assign m_axis_3_tdata   = m_axis_tdata[ELEMENT_WIDTH*3 +: ELEMENT_WIDTH];
     
     assign m_axis_0_tvalid  = m_axis_tvalid[0];
     assign m_axis_1_tvalid  = m_axis_tvalid[1];
@@ -190,7 +189,7 @@ module mvm_accelerator #(
                 .NUM_DMAS(NUM_CHANNELS),
 
                 .AXIS_S_DATA_WIDTH(DATA_WIDTH),
-                .AXIS_M_DATA_WIDTH(RESULT_WIDTH),
+                .AXIS_M_DATA_WIDTH(ELEMENT_WIDTH),
 
                 .AXIL_ADDR_WIDTH(AXIL_ADDR_WIDTH),
                 .AXIL_DATA_WIDTH(AXIL_DATA_WIDTH),
@@ -243,8 +242,7 @@ module mvm_accelerator #(
                 .NUM_RAM_PARTITIONS (NUM_RAM_PARTITIONS),
                 .ROWS_PER_CHANNEL   (ROWS_PER_CHANNEL),
                 .AXI_RAM_DATA_WIDTH (AXI_RAM_DATA_WIDTH),
-                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR),
-                .RESULT_WIDTH       (RESULT_WIDTH)
+                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),
@@ -297,8 +295,7 @@ module mvm_accelerator #(
                 .NUM_RAM_PARTITIONS (NUM_RAM_PARTITIONS),
                 .ROWS_PER_CHANNEL   (ROWS_PER_CHANNEL),
                 .AXI_RAM_DATA_WIDTH (AXI_RAM_DATA_WIDTH),
-                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR),
-                .RESULT_WIDTH       (RESULT_WIDTH)
+                .AXI_RAM_BASE_ADDR  (AXI_RAM_BASE_ADDR)
             ) mvm (
                 .clk(clk),
                 .rstn(rstn),
