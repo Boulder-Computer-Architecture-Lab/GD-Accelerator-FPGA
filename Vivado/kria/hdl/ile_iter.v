@@ -164,9 +164,9 @@ module ile_iter #(
     localparam MATRIX_ADDR_WIDTH          = $clog2(MATRIX_BYTES_PER_PARTITION);
     localparam MATRIX_ID_WIDTH            = ID_WIDTH;
 
-    localparam DMA_LEN_WIDTH = $clog2(MATRIX_BYTES_PER_PARTITION+1);
-    localparam DMA_BURST_LEN = 256;
-    localparam DMA_TAG_WIDTH = 8;
+    localparam MATRIX_DMA_LEN_WIDTH = $clog2(MATRIX_BYTES_PER_PARTITION+1);
+    localparam MATRIX_DMA_BURST_LEN = 256;
+    localparam MATRIX_DMA_TAG_WIDTH = 8;
 
     // Indicates next iteration.
     // Generated when vec_in s2mm
@@ -215,17 +215,17 @@ module ile_iter #(
     wire                         ram_m_axi_rready  [MAX_CH-1:0];
 
     // DMA desc
-    reg  [MATRIX_ADDR_WIDTH-1:0] dma_wr_desc_addr  [MAX_CH-1:0];
-    reg  [DMA_LEN_WIDTH-1:0]     dma_wr_desc_len   [MAX_CH-1:0];
-    reg  [DMA_TAG_WIDTH-1:0]     dma_wr_desc_tag   [MAX_CH-1:0];
-    reg                          dma_wr_desc_valid [MAX_CH-1:0];
-    wire                         dma_wr_desc_ready [MAX_CH-1:0];
+    reg  [MATRIX_ADDR_WIDTH-1:0]    dma_wr_desc_addr  [MAX_CH-1:0];
+    reg  [MATRIX_DMA_LEN_WIDTH-1:0] dma_wr_desc_len   [MAX_CH-1:0];
+    reg  [MATRIX_DMA_TAG_WIDTH-1:0] dma_wr_desc_tag   [MAX_CH-1:0];
+    reg                             dma_wr_desc_valid [MAX_CH-1:0];
+    wire                            dma_wr_desc_ready [MAX_CH-1:0];
     
-    reg  [MATRIX_ADDR_WIDTH-1:0] dma_rd_desc_addr  [MAX_CH-1:0];
-    reg  [DMA_LEN_WIDTH-1:0]     dma_rd_desc_len   [MAX_CH-1:0];
-    reg  [DMA_TAG_WIDTH-1:0]     dma_rd_desc_tag   [MAX_CH-1:0];
-    reg                          dma_rd_desc_valid [MAX_CH-1:0];
-    wire                         dma_rd_desc_ready [MAX_CH-1:0];
+    reg  [MATRIX_ADDR_WIDTH-1:0]    dma_rd_desc_addr  [MAX_CH-1:0];
+    reg  [MATRIX_DMA_LEN_WIDTH-1:0] dma_rd_desc_len   [MAX_CH-1:0];
+    reg  [MATRIX_DMA_TAG_WIDTH-1:0] dma_rd_desc_tag   [MAX_CH-1:0];
+    reg                             dma_rd_desc_valid [MAX_CH-1:0];
+    wire                            dma_rd_desc_ready [MAX_CH-1:0];
     
     wire dma_wr_status_valid [MAX_CH-1:0];
     wire dma_rd_status_valid [MAX_CH-1:0];
@@ -237,12 +237,12 @@ module ile_iter #(
                 // Configure write descriptor
                 dma_wr_desc_addr[i] <= {MATRIX_ADDR_WIDTH{1'b0}};
                 dma_wr_desc_len [i] <= MATRIX_BYTES_PER_PARTITION;
-                dma_wr_desc_tag [i] <= i[DMA_TAG_WIDTH-1:0];
+                dma_wr_desc_tag [i] <= i[MATRTIX_DMA_TAG_WIDTH-1:0];
     
                 // Configure read descriptor
                 dma_rd_desc_addr[i] <= {MATRIX_ADDR_WIDTH{1'b0}};
                 dma_rd_desc_len [i] <= MATRIX_BYTES_PER_PARTITION;
-                dma_rd_desc_tag [i] <= i[DMA_TAG_WIDTH-1:0];
+                dma_rd_desc_tag [i] <= i[MATRIX_DMA_TAG_WIDTH-1:0];
             end
         end
     end
@@ -325,9 +325,9 @@ module ile_iter #(
                 .AXI_ADDR_WIDTH   (MATRIX_ADDR_WIDTH),
                 .AXI_STRB_WIDTH   (MATRIX_STRB_WIDTH),
                 .AXI_ID_WIDTH     (MATRIX_ID_WIDTH),
-                .AXI_MAX_BURST_LEN(DMA_BURST_LEN),
-                .LEN_WIDTH        (DMA_LEN_WIDTH),
-                .TAG_WIDTH        (DMA_TAG_WIDTH),
+                .AXI_MAX_BURST_LEN(MATRIX_DMA_BURST_LEN),
+                .LEN_WIDTH        (MATRIX_DMA_LEN_WIDTH),
+                .TAG_WIDTH        (MATRIX_DMA_TAG_WIDTH),
                 .AXIS_USER_ENABLE (0),
                 .AXIS_ID_WIDTH    (MATRIX_ID_WIDTH)
             ) dma (
@@ -427,390 +427,473 @@ module ile_iter #(
     endgenerate
 
     // ========================================
-    //          AXI_B INPUT PORT
+    //          AXI_B SHARED BUFFER
     // ========================================
 
-    localparam AXI_B_S_COUNT    = 1;
-    localparam AXI_B_M_COUNT    = 3;
+    localparam AXI_B_NUM_REGIONS      = 3;
+    localparam AXI_B_WORDS_PER_REGION = WORDS_PER_ROW;
+    localparam AXI_B_BYTES_PER_REGION = AXI_B_WORDS_PER_REGION * AXI_B_STRB_WIDTH;
+    localparam AXI_B_TOTAL_WORDS      = AXI_B_WORDS_PER_REGION * AXI_B_NUM_REGIONS;
+    localparam AXI_B_TOTAL_BYTES      = AXI_B_BYTES_PER_REGION * AXI_B_NUM_REGIONS;
+    localparam AXI_B_ADDR_WIDTH       = $clog2(AXI_B_TOTAL_BYTES);
 
-    localparam AXI_B_S_ID_WIDTH = ID_WIDTH;
-    localparam AXI_B_M_ID_WIDTH = AXI_B_S_ID_WIDTH + $clog2(AXI_B_S_COUNT);
+    wire [ID_WIDTH-1:0]          axi_b_ram_awid;
+    wire [AXI_B_ADDR_WIDTH-1:0]  axi_b_ram_awaddr;
+    wire [7:0]                   axi_b_ram_awlen;
+    wire [2:0]                   axi_b_ram_awsize;
+    wire [1:0]                   axi_b_ram_awburst;
+    wire                         axi_b_ram_awlock;
+    wire [3:0]                   axi_b_ram_awcache;
+    wire [2:0]                   axi_b_ram_awprot;
+    wire                         axi_b_ram_awvalid;
+    wire                         axi_b_ram_awready;
 
-    function automatic [AXI_B_M_COUNT*ADDR_WIDTH-1:0] gen_m_base_addr;
-        input [ADDR_WIDTH-1:0] base;
-        input [ADDR_WIDTH-1:0] stride;
-        integer i;
-        begin
-            for (i = 0; i < AXI_B_M_COUNT; i = i + 1) begin
-                gen_m_base_addr[i*ADDR_WIDTH +: ADDR_WIDTH] = base + ( ( {ADDR_WIDTH{1'b0}} | stride ) * i );
-            end
-        end
-    endfunction
+    wire [AXI_B_DATA_WIDTH-1:0]  axi_b_ram_wdata;
+    wire [AXI_B_STRB_WIDTH-1:0]  axi_b_ram_wstrb;
+    wire                         axi_b_ram_wlast;
+    wire                         axi_b_ram_wvalid;
+    wire                         axi_b_ram_wready;
 
-    localparam AXI_B_WORDS_PER_PORT = WORDS_PER_ROW;
-    localparam AXI_B_BYTES_PER_PORT = AXI_B_WORDS_PER_PORT * AXI_B_STRB_WIDTH;
-    localparam AXI_B_ADDR_WIDTH     = $clog2(AXI_B_BYTES_PER_PORT);
+    wire [ID_WIDTH-1:0]          axi_b_ram_bid;
+    wire [1:0]                   axi_b_ram_bresp;
+    wire                         axi_b_ram_bvalid;
+    wire                         axi_b_ram_bready;
 
-    localparam [ADDR_WIDTH-1:0] AXI_B_STRIDE = (1 << AXI_B_ADDR_WIDTH);
-    localparam [AXI_B_M_COUNT*ADDR_WIDTH-1:0] AXI_B_M_BASE_ADDR = gen_m_base_addr(AXI_B_BASE_ADDR, AXI_B_STRIDE);
-    localparam [AXI_B_M_COUNT*32-1:0] AXI_B_M_ADDR_WIDTH = {AXI_B_M_COUNT{AXI_B_ADDR_WIDTH}};
+    wire [ID_WIDTH-1:0]          axi_b_ram_arid;
+    wire [AXI_B_ADDR_WIDTH-1:0]  axi_b_ram_araddr;
+    wire [7:0]                   axi_b_ram_arlen;
+    wire [2:0]                   axi_b_ram_arsize;
+    wire [1:0]                   axi_b_ram_arburst;
+    wire                         axi_b_ram_arlock;
+    wire [3:0]                   axi_b_ram_arcache;
+    wire [2:0]                   axi_b_ram_arprot;
+    wire                         axi_b_ram_arvalid;
+    wire                         axi_b_ram_arready;
 
-    wire [AXI_B_M_ID_WIDTH-1:0] axi_b_ram_m_axi_awid    [AXI_B_M_COUNT-1:0];
-    wire [ADDR_WIDTH-1:0]       axi_b_ram_m_axi_awaddr  [AXI_B_M_COUNT-1:0];
-    wire [7:0]                  axi_b_ram_m_axi_awlen   [AXI_B_M_COUNT-1:0];
-    wire [2:0]                  axi_b_ram_m_axi_awsize  [AXI_B_M_COUNT-1:0];
-    wire [1:0]                  axi_b_ram_m_axi_awburst [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_awlock  [AXI_B_M_COUNT-1:0];
-    wire [3:0]                  axi_b_ram_m_axi_awcache [AXI_B_M_COUNT-1:0];
-    wire [2:0]                  axi_b_ram_m_axi_awprot  [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_awvalid [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_awready [AXI_B_M_COUNT-1:0];
+    wire [ID_WIDTH-1:0]          axi_b_ram_rid;
+    wire [AXI_B_DATA_WIDTH-1:0]  axi_b_ram_rdata;
+    wire [1:0]                   axi_b_ram_rresp;
+    wire                         axi_b_ram_rlast;
+    wire                         axi_b_ram_rvalid;
+    wire                         axi_b_ram_rready;
 
-    wire [AXI_B_DATA_WIDTH-1:0] axi_b_ram_m_axi_wdata   [AXI_B_M_COUNT-1:0];
-    wire [AXI_B_STRB_WIDTH-1:0] axi_b_ram_m_axi_wstrb   [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_wlast   [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_wvalid  [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_wready  [AXI_B_M_COUNT-1:0];
+    assign axi_b_ram_awid    = s_axi_b_awid;
+    assign axi_b_ram_awaddr  = s_axi_b_awaddr[AXI_B_ADDR_WIDTH-1:0];
+    assign axi_b_ram_awlen   = s_axi_b_awlen;
+    assign axi_b_ram_awsize  = s_axi_b_awsize;
+    assign axi_b_ram_awburst = s_axi_b_awburst;
+    assign axi_b_ram_awlock  = s_axi_b_awlock;
+    assign axi_b_ram_awcache = s_axi_b_awcache;
+    assign axi_b_ram_awprot  = s_axi_b_awprot;
+    assign axi_b_ram_awvalid = s_axi_b_awvalid;
+    assign s_axi_b_awready   = axi_b_ram_awready;
 
-    wire [AXI_B_ID_WIDTH-1:0]   axi_b_ram_m_axi_bid     [AXI_B_M_COUNT-1:0];
-    wire [1:0]                  axi_b_ram_m_axi_bresp   [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_bvalid  [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_bready  [AXI_B_M_COUNT-1:0];
-    
-    wire [AXI_B_ID_WIDTH-1:0]   axi_b_ram_m_axi_arid    [AXI_B_M_COUNT-1:0];
-    wire [ADDR_WIDTH-1:0]       axi_b_ram_m_axi_araddr  [AXI_B_M_COUNT-1:0];
-    wire [7:0]                  axi_b_ram_m_axi_arlen   [AXI_B_M_COUNT-1:0];
-    wire [2:0]                  axi_b_ram_m_axi_arsize  [AXI_B_M_COUNT-1:0];
-    wire [1:0]                  axi_b_ram_m_axi_arburst [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_arlock  [AXI_B_M_COUNT-1:0];
-    wire [3:0]                  axi_b_ram_m_axi_arcache [AXI_B_M_COUNT-1:0];
-    wire [2:0]                  axi_b_ram_m_axi_arprot  [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_arvalid [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_arready [AXI_B_M_COUNT-1:0];
+    assign axi_b_ram_wdata   = s_axi_b_wdata;
+    assign axi_b_ram_wstrb   = s_axi_b_wstrb;
+    assign axi_b_ram_wlast   = s_axi_b_wlast;
+    assign axi_b_ram_wvalid  = s_axi_b_wvalid;
+    assign s_axi_b_wready    = axi_b_ram_wready;
 
-    wire [AXI_B_M_ID_WIDTH-1:0] axi_b_ram_m_axi_rid     [AXI_B_M_COUNT-1:0];
-    wire [AXI_B_DATA_WIDTH-1:0] axi_b_ram_m_axi_rdata   [AXI_B_M_COUNT-1:0];
-    wire [1:0]                  axi_b_ram_m_axi_rresp   [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_rlast   [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_rvalid  [AXI_B_M_COUNT-1:0];
-    wire                        axi_b_ram_m_axi_rready  [AXI_B_M_COUNT-1:0];
+    assign s_axi_b_bid       = axi_b_ram_bid;
+    assign s_axi_b_bresp     = axi_b_ram_bresp;
+    assign s_axi_b_bvalid    = axi_b_ram_bvalid;
+    assign axi_b_ram_bready  = s_axi_b_bready;
 
-    // Crossbar:
-    //   - Input port: S_AXI_B
-    //   - Output ports:
-    //      0. vec_init (to mm2s -> chk)
-    //      1. input_integral_outer (to BRAM)
-    //      2. aa2*input_uhat_inner (to BRAM)
-
-    axi_crossbar_wr #(
-        .S_COUNT   (AXI_B_S_COUNT   ),
-        .M_COUNT   (AXI_B_M_COUNT   ),
+    axi_ram #(
         .DATA_WIDTH(AXI_B_DATA_WIDTH),
-        .ADDR_WIDTH(ADDR_WIDTH      ),
-        .S_ID_WIDTH(AXI_B_S_ID_WIDTH),
-        .M_ID_WIDTH(AXI_B_M_ID_WIDTH),
+        .ADDR_WIDTH(AXI_B_ADDR_WIDTH),
+        .STRB_WIDTH(AXI_B_STRB_WIDTH),
+        .ID_WIDTH  (ID_WIDTH),
+        .NUM_WORDS (AXI_B_TOTAL_WORDS)
+    ) axi_b_ram_inst (
+        .clk(clk),
+        .rstn(rstn),
 
-        .M_BASE_ADDR (AXI_B_M_BASE_ADDR ),
-        .M_ADDR_WIDTH(AXI_B_M_ADDR_WIDTH),
-    
-        .S_AW_REG_TYPE(2'd2),
-        .S_W_REG_TYPE (2'd2),
-        .S_B_REG_TYPE (2'd2),
-        .M_AW_REG_TYPE({AXI_B_M_COUNT{2'd2}}),
-        .M_W_REG_TYPE ({AXI_B_M_COUNT{2'd2}}),
-        .M_B_REG_TYPE ({AXI_B_M_COUNT{2'd2}})
-    ) xbar_wr_inst (
-        .clk(clk), .rstn(rstn),
+        .s_axi_awid   (axi_b_ram_awid),
+        .s_axi_awaddr (axi_b_ram_awaddr),
+        .s_axi_awlen  (axi_b_ram_awlen),
+        .s_axi_awsize (axi_b_ram_awsize),
+        .s_axi_awburst(axi_b_ram_awburst),
+        .s_axi_awlock (axi_b_ram_awlock),
+        .s_axi_awcache(axi_b_ram_awcache),
+        .s_axi_awprot (axi_b_ram_awprot),
+        .s_axi_awvalid(axi_b_ram_awvalid),
+        .s_axi_awready(axi_b_ram_awready),
 
-        .s_axi_awid   (s_axi_b_awid   ),
-        .s_axi_awaddr (s_axi_b_awaddr ),
-        .s_axi_awlen  (s_axi_b_awlen  ),
-        .s_axi_awsize (s_axi_b_awsize ),
-        .s_axi_awburst(s_axi_b_awburst),
-        .s_axi_awlock (s_axi_b_awlock ),
-        .s_axi_awcache(s_axi_b_awcache),
-        .s_axi_awprot (s_axi_b_awprot ),
-        .s_axi_awvalid(s_axi_b_awvalid),
-        .s_axi_awready(s_axi_b_awready),
-        .s_axi_wdata  (s_axi_b_wdata  ),
-        .s_axi_wstrb  (s_axi_b_wstrb  ),
-        .s_axi_wlast  (s_axi_b_wlast  ),
-        .s_axi_wvalid (s_axi_b_wvalid ),
-        .s_axi_wready (s_axi_b_wready ),
-        .s_axi_bid    (s_axi_b_bid    ),
-        .s_axi_bresp  (s_axi_b_bresp  ),
-        .s_axi_bvalid (s_axi_b_bvalid ),
-        .s_axi_bready (s_axi_b_bready ),
-        .s_axi_awqos  (4'b0),
-        .s_axi_awuser (1'b0),
-        .s_axi_wuser  (1'b0),
+        .s_axi_wdata  (axi_b_ram_wdata),
+        .s_axi_wstrb  (axi_b_ram_wstrb),
+        .s_axi_wlast  (axi_b_ram_wlast),
+        .s_axi_wvalid (axi_b_ram_wvalid),
+        .s_axi_wready (axi_b_ram_wready),
 
-        .m_axi_awid   ({axi_b_ram_m_axi_awid   [2], axi_b_ram_m_axi_awid   [1], axi_b_ram_m_axi_awid   [0]}),
-        .m_axi_awaddr ({axi_b_ram_m_axi_awaddr [2], axi_b_ram_m_axi_awaddr [1], axi_b_ram_m_axi_awaddr [0]}),
-        .m_axi_awlen  ({axi_b_ram_m_axi_awlen  [2], axi_b_ram_m_axi_awlen  [1], axi_b_ram_m_axi_awlen  [0]}),
-        .m_axi_awsize ({axi_b_ram_m_axi_awsize [2], axi_b_ram_m_axi_awsize [1], axi_b_ram_m_axi_awsize [0]}),
-        .m_axi_awburst({axi_b_ram_m_axi_awburst[2], axi_b_ram_m_axi_awburst[1], axi_b_ram_m_axi_awburst[0]}),
-        .m_axi_awlock ({axi_b_ram_m_axi_awlock [2], axi_b_ram_m_axi_awlock [1], axi_b_ram_m_axi_awlock [0]}),
-        .m_axi_awcache({axi_b_ram_m_axi_awcache[2], axi_b_ram_m_axi_awcache[1], axi_b_ram_m_axi_awcache[0]}),
-        .m_axi_awprot ({axi_b_ram_m_axi_awprot [2], axi_b_ram_m_axi_awprot [1], axi_b_ram_m_axi_awprot [0]}),
-        .m_axi_awvalid({axi_b_ram_m_axi_awvalid[2], axi_b_ram_m_axi_awvalid[1], axi_b_ram_m_axi_awvalid[0]}),
-        .m_axi_awready({axi_b_ram_m_axi_awready[2], axi_b_ram_m_axi_awready[1], axi_b_ram_m_axi_awready[0]}),
-        .m_axi_wdata  ({axi_b_ram_m_axi_wdata  [2], axi_b_ram_m_axi_wdata  [1], axi_b_ram_m_axi_wdata  [0]}),
-        .m_axi_wstrb  ({axi_b_ram_m_axi_wstrb  [2], axi_b_ram_m_axi_wstrb  [1], axi_b_ram_m_axi_wstrb  [0]}),
-        .m_axi_wlast  ({axi_b_ram_m_axi_wlast  [2], axi_b_ram_m_axi_wlast  [1], axi_b_ram_m_axi_wlast  [0]}),
-        .m_axi_wvalid ({axi_b_ram_m_axi_wvalid [2], axi_b_ram_m_axi_wvalid [1], axi_b_ram_m_axi_wvalid [0]}),
-        .m_axi_wready ({axi_b_ram_m_axi_wready [2], axi_b_ram_m_axi_wready [1], axi_b_ram_m_axi_wready [0]}),
-        .m_axi_bid    ({axi_b_ram_m_axi_bid    [2], axi_b_ram_m_axi_bid    [1], axi_b_ram_m_axi_bid    [0]}),
-        .m_axi_bresp  ({axi_b_ram_m_axi_bresp  [2], axi_b_ram_m_axi_bresp  [1], axi_b_ram_m_axi_bresp  [0]}),
-        .m_axi_bvalid ({axi_b_ram_m_axi_bvalid [2], axi_b_ram_m_axi_bvalid [1], axi_b_ram_m_axi_bvalid [0]}),
-        .m_axi_bready ({axi_b_ram_m_axi_bready [2], axi_b_ram_m_axi_bready [1], axi_b_ram_m_axi_bready [0]}),
-        .m_axi_wuser(),
-        .m_axi_buser()
+        .s_axi_bid    (axi_b_ram_bid),
+        .s_axi_bresp  (axi_b_ram_bresp),
+        .s_axi_bvalid (axi_b_ram_bvalid),
+        .s_axi_bready (axi_b_ram_bready),
+
+        .s_axi_arid   (axi_b_ram_arid),
+        .s_axi_araddr (axi_b_ram_araddr),
+        .s_axi_arlen  (axi_b_ram_arlen),
+        .s_axi_arsize (axi_b_ram_arsize),
+        .s_axi_arburst(axi_b_ram_arburst),
+        .s_axi_arlock (axi_b_ram_arlock),
+        .s_axi_arcache(axi_b_ram_arcache),
+        .s_axi_arprot (axi_b_ram_arprot),
+        .s_axi_arvalid(axi_b_ram_arvalid),
+        .s_axi_arready(axi_b_ram_arready),
+
+        .s_axi_rid    (axi_b_ram_rid),
+        .s_axi_rdata  (axi_b_ram_rdata),
+        .s_axi_rresp  (axi_b_ram_rresp),
+        .s_axi_rlast  (axi_b_ram_rlast),
+        .s_axi_rvalid (axi_b_ram_rvalid),
+        .s_axi_rready (axi_b_ram_rready)
     );
 
     // ========================================
-    //          AXI_B OUTPUT BUFFERS
+    //         SHARED BUFFER OUTPUT
     // ========================================
 
-    genvar b;
-    generate
-        for (b = 0; b < AXI_B_M_COUNT; b = b + 1) begin : axi_b_ram_gen
-            axi_ram #(
-                .DATA_WIDTH(AXI_B_DATA_WIDTH    ),
-                .ADDR_WIDTH(AXI_B_ADDR_WIDTH    ),
-                .STRB_WIDTH(AXI_B_STRB_WIDTH    ),
-                .ID_WIDTH  (AXI_B_M_ID_WIDTH    ),
-                .NUM_WORDS (AXI_B_WORDS_PER_PORT)
-            ) axi_b_ram_inst (
-                .clk(clk), .rstn(rstn),
+    // Regions
+    localparam REGION_VEC_INIT  = 2'd0; // Holds vec_init
+    localparam REGION_OUTER     = 2'd1; // Holds input_integral_outer
+    localparam REGION_INNER     = 2'd2; // Holds aa2 * input_uhat_inner
 
-                .s_axi_awid   (axi_b_ram_m_axi_awid   [b]),
-                .s_axi_awaddr (axi_b_ram_m_axi_awaddr [b][AXI_B_ADDR_WIDTH-1:0]),
-                .s_axi_awlen  (axi_b_ram_m_axi_awlen  [b]),
-                .s_axi_awsize (axi_b_ram_m_axi_awsize [b]),
-                .s_axi_awburst(axi_b_ram_m_axi_awburst[b]),
-                .s_axi_awlock (axi_b_ram_m_axi_awlock [b]),
-                .s_axi_awcache(axi_b_ram_m_axi_awcache[b]),
-                .s_axi_awprot (axi_b_ram_m_axi_awprot [b]),
-                .s_axi_awvalid(axi_b_ram_m_axi_awvalid[b]),
-                .s_axi_awready(axi_b_ram_m_axi_awready[b]),
-                
-                .s_axi_wdata  (axi_b_ram_m_axi_wdata  [b]),
-                .s_axi_wstrb  (axi_b_ram_m_axi_wstrb  [b]),
-                .s_axi_wlast  (axi_b_ram_m_axi_wlast  [b]),
-                .s_axi_wvalid (axi_b_ram_m_axi_wvalid [b]),
-                .s_axi_wready (axi_b_ram_m_axi_wready [b]),
-                
-                .s_axi_bid    (axi_b_ram_m_axi_bid    [b]),
-                .s_axi_bresp  (axi_b_ram_m_axi_bresp  [b]),
-                .s_axi_bvalid (axi_b_ram_m_axi_bvalid [b]),
-                .s_axi_bready (axi_b_ram_m_axi_bready [b]),
+    localparam [AXI_B_ADDR_WIDTH-1:0] VEC_INIT_OFFSET  = REGION_VEC_INIT * AXI_B_BYTES_PER_REGION;
+    localparam [AXI_B_ADDR_WIDTH-1:0] VEC_OUTER_OFFSET = REGION_OUTER    * AXI_B_BYTES_PER_REGION;
+    localparam [AXI_B_ADDR_WIDTH-1:0] VEC_INNER_OFFSET = REGION_INNER    * AXI_B_BYTES_PER_REGION;
 
-                .s_axi_arid   (axi_b_ram_m_axi_arid   [b]),
-                .s_axi_araddr (axi_b_ram_m_axi_araddr [b][AXI_B_ADDR_WIDTH-1:0]),
-                .s_axi_arlen  (axi_b_ram_m_axi_arlen  [b]),
-                .s_axi_arsize (axi_b_ram_m_axi_arsize [b]),
-                .s_axi_arburst(axi_b_ram_m_axi_arburst[b]),
-                .s_axi_arlock (axi_b_ram_m_axi_arlock [b]),
-                .s_axi_arcache(axi_b_ram_m_axi_arcache[b]),
-                .s_axi_arprot (axi_b_ram_m_axi_arprot [b]),
-                .s_axi_arvalid(axi_b_ram_m_axi_arvalid[b]),
-                .s_axi_arready(axi_b_ram_m_axi_arready[b]),
-            
-                .s_axi_rid    (axi_b_ram_m_axi_rid    [b]),
-                .s_axi_rdata  (axi_b_ram_m_axi_rdata  [b]),
-                .s_axi_rresp  (axi_b_ram_m_axi_rresp  [b]),
-                .s_axi_rlast  (axi_b_ram_m_axi_rlast  [b]),
-                .s_axi_rvalid (axi_b_ram_m_axi_rvalid [b]),
-                .s_axi_rready (axi_b_ram_m_axi_rready [b])
-            );
-        end
-    endgenerate
+    reg  [1:0] axi_b_region_sel; // driven elsewhere
+    reg        start_axi_b_mm2s; // driven elsewhere
 
+    // Descriptor
+    wire [AXI_B_ADDR_WIDTH-1:0]    axi_b_rd_desc_addr;
+    wire [AXI_B_DMA_LEN_WIDTH-1:0] axi_b_rd_desc_len;
+    reg  [AXI_B_DMA_TAG_WIDTH-1:0] axi_b_rd_desc_tag;
+    reg                            axi_b_rd_desc_valid;
+    wire                           axi_b_rd_desc_ready;
+    wire                           axi_b_rd_status_valid;
 
-/*
-
-    // ========================================
-    //       RD (OLD) VECTOR FROM MVM
-    // ========================================
-    
-    localparam DMA_LEN_WIDTH = $clog2(BYTES_PER_PARTITION+1);
-    localparam DMA_BURST_LEN = 128;
-    localparam DMA_TAG_WIDTH = 8;
-
-    localparam AXI_RAM_ADDR_WIDTH  = $clog2(AXI_RAM_WORDS_PER_PARTITION * AXI_RAM_STRB_WIDTH);
-    localparam [ADDR_WIDTH-1:0] PARTITION_ALIGN = (1 << AXI_RAM_ADDR_WIDTH);
-
-    wire [ADDR_WIDTH-1:0] dma_desc_addr = AXI_RAM_BASE_ADDR + (partition_index * PARTITION_ALIGN);
-    wire [DMA_LEN_WIDTH-1:0] dma_desc_len = BYTES_PER_PARTITION;
-
-    reg  dma_desc_valid;
-    wire dma_desc_ready;
-    
-    wire [7:0] dma_desc_tag  = TAG;
-    wire [7:0] dma_desc_id   = TAG;
-    wire [7:0] dma_desc_dest = 8'd0;
-    wire       dma_desc_user = 1'b0;
-        
-    wire [7:0] dma_status_tag;
-    wire [3:0] dma_status_error;
-    wire       dma_status_valid;
+    assign axi_b_rd_desc_len = AXI_B_BYTES_PER_REGION;
+    assign axi_b_rd_desc_addr = (axi_b_region_sel == REGION_VEC_INIT) ? VEC_INIT_OFFSET  :
+                                (axi_b_region_sel == REGION_OUTER)    ? VEC_OUTER_OFFSET : VEC_INNER_OFFSET;
 
     always @(posedge clk) begin
-        if (!rstn || !done_rstn)
-            dma_desc_valid <= 1'b0;
-        else if (!dma_desc_valid)
-            dma_desc_valid <= start;
-        else if (dma_desc_ready)
-            dma_desc_valid <= 1'b0;
+        if (!rstn) begin
+            axi_b_rd_desc_valid <= 1'b0;
+            axi_b_rd_desc_tag   <= {AXI_B_DMA_TAG_WIDTH{1'b0}};
+        end else begin
+            // Associate tag with region
+            if (start_axi_b_mm2s && !axi_b_rd_desc_valid)
+                axi_b_rd_desc_tag <= {{(AXI_B_DMA_TAG_WIDTH-2){1'b0}}, axi_b_region_sel};
+
+            // Program descriptor
+            if      (!axi_b_rd_desc_valid) axi_b_rd_desc_valid <= start_axi_b_mm2s;
+            else if ( axi_b_rd_desc_ready) axi_b_rd_desc_valid <= 1'b0;
+        end
     end
-        
+
+    // Output signals
+    wire [AXI_B_DATA_WIDTH-1:0] b_dma_axis_tdata;
+    wire                        b_dma_axis_tvalid;
+    wire                        b_dma_axis_tready;
+    wire                        b_dma_axis_tlast;
+
+    localparam AXI_B_DMA_LEN_WIDTH = $clog2(AXI_B_BYTES_PER_REGION + 1);
+    localparam AXI_B_DMA_BURST_LEN = 256;
+    localparam AXI_B_DMA_TAG_WIDTH = 8;
+
     axi_dma_rd #(
-        .AXI_DATA_WIDTH(AXI_RAM_DATA_WIDTH),
-        .AXI_ADDR_WIDTH(ADDR_WIDTH),
-        .AXI_STRB_WIDTH(AXI_RAM_STRB_WIDTH),
-        .AXI_ID_WIDTH(ID_WIDTH),
-        .AXI_MAX_BURST_LEN(DMA_BURST_LEN),
-        .AXIS_USER_ENABLE(0),
-        .LEN_WIDTH(DMA_LEN_WIDTH),
-        .TAG_WIDTH(DMA_TAG_WIDTH)
-    ) dma_rd (
-        .clk(clk),
-        .rstn(rstn),
+        .AXI_DATA_WIDTH(AXI_B_DATA_WIDTH),
+        .AXI_ADDR_WIDTH(AXI_B_ADDR_WIDTH),
+        .AXI_STRB_WIDTH(AXI_B_STRB_WIDTH),
+        .AXI_ID_WIDTH  (ID_WIDTH),
+        .AXI_MAX_BURST_LEN(AXI_B_DMA_BURST_LEN),
+        .AXIS_USER_ENABLE (0),
+        .LEN_WIDTH(AXI_B_DMA_LEN_WIDTH),
+        .TAG_WIDTH(AXI_B_DMA_TAG_WIDTH)
+    ) dma (
+        .clk(clk), .rstn(rstn),
     
-        .s_axis_read_desc_addr(dma_desc_addr),
-        .s_axis_read_desc_len(dma_desc_len),
-        .s_axis_read_desc_tag(dma_desc_tag),
-        .s_axis_read_desc_id(dma_desc_id),
-        .s_axis_read_desc_dest(dma_desc_dest),
-        .s_axis_read_desc_user(dma_desc_user),
-        .s_axis_read_desc_valid(dma_desc_valid),
-        .s_axis_read_desc_ready(dma_desc_ready),
+        .s_axis_read_desc_addr (axi_b_rd_desc_addr),
+        .s_axis_read_desc_len  (axi_b_rd_desc_len),
+        .s_axis_read_desc_tag  (axi_b_rd_desc_tag),
+        .s_axis_read_desc_id   ({ID_WIDTH{1'b0}}),
+        .s_axis_read_desc_dest (8'b0),
+        .s_axis_read_desc_user (1'b0),
+        .s_axis_read_desc_valid(axi_b_rd_desc_valid),
+        .s_axis_read_desc_ready(axi_b_rd_desc_ready),
     
-        .m_axis_read_desc_status_tag(dma_status_tag),
-        .m_axis_read_desc_status_error(dma_status_error),
-        .m_axis_read_desc_status_valid(dma_status_valid),
+        .m_axis_read_desc_status_tag  (),
+        .m_axis_read_desc_status_error(),
+        .m_axis_read_desc_status_valid(axi_b_rd_status_valid),
     
-        .m_axis_read_data_tdata(m_axis_dmaout_tdata),
-        .m_axis_read_data_tkeep(),
-        .m_axis_read_data_tvalid(m_axis_dmaout_tvalid),
-        .m_axis_read_data_tready(m_axis_dmaout_tready),
-        .m_axis_read_data_tlast(m_axis_dmaout_tlast),
-        .m_axis_read_data_tid(),
-        .m_axis_read_data_tdest(),
-        .m_axis_read_data_tuser(),
+        .m_axis_read_data_tdata (b_dma_axis_tdata ),
+        .m_axis_read_data_tkeep (),
+        .m_axis_read_data_tvalid(b_dma_axis_tvalid),
+        .m_axis_read_data_tready(b_dma_axis_tready),
+        .m_axis_read_data_tlast (b_dma_axis_tlast ),
+        .m_axis_read_data_tid   (),
+        .m_axis_read_data_tdest (),
+        .m_axis_read_data_tuser (),
     
-        .m_axi_arid(m_axi_arid),
-        .m_axi_araddr(m_axi_araddr),
-        .m_axi_arlen(m_axi_arlen),
-        .m_axi_arsize(m_axi_arsize),
-        .m_axi_arburst(m_axi_arburst),
-        .m_axi_arlock(m_axi_arlock),
-        .m_axi_arcache(m_axi_arcache),
-        .m_axi_arprot(m_axi_arprot),
-        .m_axi_arvalid(m_axi_arvalid),
-        .m_axi_arready(m_axi_arready),
-        .m_axi_rid(m_axi_rid),
-        .m_axi_rdata(m_axi_rdata),
-        .m_axi_rresp(m_axi_rresp),
-        .m_axi_rlast(m_axi_rlast),
-        .m_axi_rvalid(m_axi_rvalid),
-        .m_axi_rready(m_axi_rready),
+        .m_axi_arid   (axi_b_ram_arid),
+        .m_axi_araddr (axi_b_ram_araddr),
+        .m_axi_arlen  (axi_b_ram_arlen),
+        .m_axi_arsize (axi_b_ram_arsize),
+        .m_axi_arburst(axi_b_ram_arburst),
+        .m_axi_arlock (axi_b_ram_arlock),
+        .m_axi_arcache(axi_b_ram_arcache),
+        .m_axi_arprot (axi_b_ram_arprot),
+        .m_axi_arvalid(axi_b_ram_arvalid),
+        .m_axi_arready(axi_b_ram_arready),
+        .m_axi_rid    (axi_b_ram_rid),
+        .m_axi_rdata  (axi_b_ram_rdata),
+        .m_axi_rresp  (axi_b_ram_rresp),
+        .m_axi_rlast  (axi_b_ram_rlast),
+        .m_axi_rvalid (axi_b_ram_rvalid),
+        .m_axi_rready (axi_b_ram_rready),
     
         .enable(1'b1)
     );
 
-    axi_ram #(
-        .DATA_WIDTH(AXI_RAM_DATA_WIDTH),
-        .ADDR_WIDTH(AXI_RAM_ADDR_WIDTH),
-        .STRB_WIDTH(AXI_RAM_STRB_WIDTH),
-        .ID_WIDTH  (AXI_RAM_ID_WIDTH),
-        .NUM_WORDS (AXI_RAM_WORDS_PER_PARTITION)
-    ) axi_ram_inst (
+    // Output routing
+    wire [AXI_B_DATA_WIDTH-1:0] vec_init_axis_tdata;
+    wire                        vec_init_axis_tvalid;
+    wire                        vec_init_axis_tready;
+    wire                        vec_init_axis_tlast;
+
+    wire [AXI_B_DATA_WIDTH-1:0] uhat_inner_axis_tdata;
+    wire                        uhat_inner_axis_tvalid;
+    wire                        uhat_inner_axis_tready;
+    wire                        uhat_inner_axis_tlast;
+
+    wire [AXI_B_DATA_WIDTH-1:0] int_outer_axis_tdata;
+    wire                        int_outer_axis_tvalid;
+    wire                        int_outer_axis_tready;
+    wire                        int_outer_axis_tlast;
+
+    assign vec_init_axis_tdata  = b_dma_axis_tdata;
+    assign vec_init_axis_tvalid = (axi_b_region_sel == REGION_VEC_INIT) ? b_dma_axis_tvalid : 1'b0;
+    assign vec_init_axis_tlast  = b_dma_axis_tlast;
+    
+    assign int_outer_axis_tdata  = b_dma_axis_tdata;
+    assign int_outer_axis_tvalid = (axi_b_region_sel == REGION_OUTER) ? b_dma_axis_tvalid : 1'b0;
+    assign int_outer_axis_tlast  = b_dma_axis_tlast;
+    
+    assign uhat_inner_axis_tdata  = b_dma_axis_tdata;
+    assign uhat_inner_axis_tvalid = (axi_b_region_sel == REGION_INNER) ? b_dma_axis_tvalid : 1'b0;
+    assign uhat_inner_axis_tlast  = b_dma_axis_tlast;
+    
+    assign b_dma_axis_tready =
+        (axi_b_region_sel == REGION_VEC_INIT) ? vec_init_axis_tready   :
+        (axi_b_region_sel == REGION_OUTER)    ? int_outer_axis_tready : uhat_inner_axis_tready;
+
+    // ========================================
+    //               CONTROLLER
+    // ========================================
+
+    wire [ELEMENT_WIDTH-1:0] vec_next_axis_tdata;
+    wire                     vec_next_axis_tvalid;
+    wire                     vec_next_axis_tready;
+    wire                     vec_next_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] err_axis_tdata;
+    wire                     err_axis_tvalid;
+    wire                     err_axis_tready;
+
+    wire [ELEMENT_WIDTH-1:0] vec_in_axis_tdata;
+    wire                     vec_in_axis_tvalid;
+    wire                     vec_in_axis_tready;
+    wire                     vec_in_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] vec_result_axis_tdata;
+    wire                     vec_result_axis_tvalid;
+    wire                     vec_result_axis_tready;
+    wire                     vec_result_axis_tlast;
+
+    check_convergence #(
+        .DATA_WIDTH(DATA_WIDTH)
+    ) chk_inst (
         .clk(clk), .rstn(rstn),
 
-        .s_axi_awid   (ram_m_axi_awid   [k]),
-        .s_axi_awaddr (ram_m_axi_awaddr [k][AXI_RAM_ADDR_WIDTH-1:0]),
-        .s_axi_awlen  (ram_m_axi_awlen  [k]),
-        .s_axi_awsize (ram_m_axi_awsize [k]),
-        .s_axi_awburst(ram_m_axi_awburst[k]),
-        .s_axi_awlock (ram_m_axi_awlock [k]),
-        .s_axi_awcache(ram_m_axi_awcache[k]),
-        .s_axi_awprot (ram_m_axi_awprot [k]),
-        .s_axi_awvalid(ram_m_axi_awvalid[k]),
-        .s_axi_awready(ram_m_axi_awready[k]),
-        
-        .s_axi_wdata  (ram_m_axi_wdata  [k]),
-        .s_axi_wstrb  (ram_m_axi_wstrb  [k]),
-        .s_axi_wlast  (ram_m_axi_wlast  [k]),
-        .s_axi_wvalid (ram_m_axi_wvalid [k]),
-        .s_axi_wready (ram_m_axi_wready [k]),
-        
-        .s_axi_bid    (ram_m_axi_bid    [k]),
-        .s_axi_bresp  (ram_m_axi_bresp  [k]),
-        .s_axi_bvalid (ram_m_axi_bvalid [k]),
-        .s_axi_bready (ram_m_axi_bready [k]),
+        // Initial guess
+        .vec_init_axis_tdata (vec_init_axis_tdata ),
+        .vec_init_axis_tvalid(vec_init_axis_tvalid),
+        .vec_init_axis_tready(vec_init_axis_tready),
+        .vec_init_axis_tlast (vec_init_axis_tlast ),
 
-        .s_axi_arid   (ram_m_axi_arid   [k]),
-        .s_axi_araddr (ram_m_axi_araddr [k][AXI_RAM_ADDR_WIDTH-1:0]),
-        .s_axi_arlen  (ram_m_axi_arlen  [k]),
-        .s_axi_arsize (ram_m_axi_arsize [k]),
-        .s_axi_arburst(ram_m_axi_arburst[k]),
-        .s_axi_arlock (ram_m_axi_arlock [k]),
-        .s_axi_arcache(ram_m_axi_arcache[k]),
-        .s_axi_arprot (ram_m_axi_arprot [k]),
-        .s_axi_arvalid(ram_m_axi_arvalid[k]),
-        .s_axi_arready(ram_m_axi_arready[k]),
-    
-        .s_axi_rid    (ram_m_axi_rid    [k]),
-        .s_axi_rdata  (ram_m_axi_rdata  [k]),
-        .s_axi_rresp  (ram_m_axi_rresp  [k]),
-        .s_axi_rlast  (ram_m_axi_rlast  [k]),
-        .s_axi_rvalid (ram_m_axi_rvalid [k]),
-        .s_axi_rready (ram_m_axi_rready [k])
+        // This iteration output
+        .vec_next_axis_tdata (vec_next_axis_tdata),
+        .vec_next_axis_tvalid(vec_next_axis_tvalid),
+        .vec_next_axis_tready(vec_next_axis_tready),
+        .vec_next_axis_tlast (vec_next_axis_tlast),
+
+        // This iteration error
+        .err_axis_tdata (err_axis_tdata),
+        .err_axis_tvalid(err_axis_tvalid),
+        .err_axis_tready(err_axis_tready),
+
+        // Next iteration input
+        .vec_in_axis_tdata (vec_in_axis_tdata),
+        .vec_in_axis_tvalid(vec_in_axis_tvalid),
+        .vec_in_axis_tready(vec_in_axis_tready),
+        .vec_in_axis_tlast (vec_in_axis_tlast),
+        
+        // Result
+        .vec_result_axis_tdata (vec_result_axis_tdata),
+        .vec_result_axis_tvalid(vec_result_axis_tvalid),
+        .vec_result_axis_tready(vec_result_axis_tready),
+        .vec_result_axis_tlast (vec_result_axis_tlast)
     );
 
+    // ========================================
+    //           FROM VEC_IN TO MVM
+    // ========================================
+
+    localparam I_EXP = 64'h0000_0000; // TODO: get real value
+
+    wire [ELEMENT_WIDTH-1:0] pow0_axis_tdata;
+    wire                     pow0_axis_tvalid;
+    wire                     pow0_axis_tready;
+    wire                     pow0_axis_tlast;
+
     pow #(
-        .DATA_WIDTH(DATA_WIDTH)
-    ) pow_inst (
+        .DATA_WIDTH(ELEMENT_WIDTH)
+    ) pow_inst0 (
         .clk(clk), .rstn(rstn),
 
         // base
-        .s_axis_1_tdata(s_axis_1_tdata),
-        .s_axis_1_tvalid(s_axis_1_tvalid),
-        .s_axis_1_tready(s_axis_1_tready),
-        .s_axis_1_tlast(s_axis_1_tlast),
+        .s_axis_1_tdata (vec_in_axis_tdata),
+        .s_axis_1_tvalid(vec_in_axis_tvalid),
+        .s_axis_1_tready(vec_in_axis_tready),
+        .s_axis_1_tlast (vec_in_axis_tlast),
 
         // exp
-        .s_axis_2_tdata(s_axis_2_tdata),
-        .s_axis_2_tvalid(s_axis_2_tvalid),
-        .s_axis_2_tready(s_axis_2_tready),
+        .s_axis_2_tdata (I_EXP),
+        .s_axis_2_tvalid(), // ??
+        .s_axis_2_tready(), // ??
         
         // result 
-        .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
-        .m_axis_tready(m_axis_tready),
-        .m_axis_tlast(m_axis_tlast)
+        .m_axis_tdata (pow0_axis_tdata),
+        .m_axis_tvalid(pow0_axis_tvalid),
+        .m_axis_tready(pow0_axis_tready),
+        .m_axis_tlast (pow0_axis_tlast)
     );
 
-    fp64_mult mult (
+    wire [ELEMENT_WIDTH-1:0] mult0_axis_tdata;
+    wire                     mult0_axis_tvalid;
+    wire                     mult0_axis_tready;
+    wire                     mult0_axis_tlast;
+
+    fp64_mult mult_inst0 (
         .aclk(clk), .aresetn(rstn),
 
-        .s_axis_a_tvalid(s_axis_a_tvalid),
-        .s_axis_a_tready(s_axis_a_tready),
-        .s_axis_a_tdata(s_axis_a_tdata),
-        .s_axis_a_tlast(s_axis_a_tlast),
+        .s_axis_a_tdata(pow0_axis_tdata),
+        .s_axis_a_tvalid(pow0_axis_tvalid),
+        .s_axis_a_tready(pow0_axis_tready),
+        .s_axis_a_tlast(pow0_axis_tlast),
 
-        .s_axis_b_tvalid(s_axis_b_tvalid),
-        .s_axis_b_tready(s_axis_b_tready),
-        .s_axis_b_tdata(s_axis_b_tdata),
+        .s_axis_b_tdata (int_outer_axis_tdata),
+        .s_axis_b_tvalid(int_outer_axis_tvalid),
+        .s_axis_b_tready(int_outer_axis_tready),
 
-        .m_axis_result_tvalid(m_axis_result_tvalid),
-        .m_axis_result_tready(m_axis_result_tready),
-        .m_axis_result_tdata(m_axis_result_tdata),
-        .m_axis_result_tlast(m_axis_result_tlast)
+        .m_axis_result_tdata (mult0_axis_tdata),
+        .m_axis_result_tvalid(mult0_axis_tvalid),
+        .m_axis_result_tready(mult0_axis_tready),
+        .m_axis_result_tlast (mult0_axis_tlast)
     );
 
+    // ELEMENT_WIDTH -> MVM_RAM_DATA_WIDTH
+    wire [MVM_RAM_DATA_WIDTH-1:0] wconv_axis_tdata;
+    wire                          wconv_axis_tvalid;
+    wire                          wconv_axis_tready;
+    wire                          wconv_axis_tlast;
+
+    axis_wconv16to256 wconv_inst (
+        .aclk(clk), .aresetn(rstn),
+
+        .s_axis_tdata (mult0_axis_tdata),
+        .s_axis_tvalid(mult0_axis_tvalid),
+        .s_axis_tready(mult0_axis_tready),
+        .s_axis_tlast (mult0_axis_tlast),
+
+        .m_axis_tdata (wconv_axis_tdata),
+        .m_axis_tvalid(wconv_axis_tvalid),
+        .m_axis_tready(wconv_axis_tready),
+        .m_axis_tlast (wconv_axis_tlast)
+    );
+
+    localparam VEC_IN_DMA_LEN_WIDTH = AXI_B_DMA_LEN_WIDTH;
+    localparam VEC_IN_DMA_BURST_LEN = AXI_B_DMA_BURST_LEN;
+    localparam VEC_IN_DMA_TAG_WIDTH = AXI_B_DMA_TAG_WIDTH;
+
+    axi_dma_wr #(
+        .AXI_DATA_WIDTH(MVM_RAM_DATA_WIDTH),
+        .AXI_ADDR_WIDTH(MVM_RAM_ADDR_WIDTH),
+        .AXI_STRB_WIDTH(MVM_RAM_STRB_WIDTH),
+        .AXI_ID_WIDTH  (ID_WIDTH),
+        .AXI_MAX_BURST_LEN(VEC_IN_DMA_BURST_LEN),
+        .AXIS_USER_ENABLE (0),
+        .LEN_WIDTH(VEC_IN_DMA_LEN_WIDTH),
+        .TAG_WIDTH(VEC_IN_DMA_TAG_WIDTH)
+    ) vec_in_dma (
+        .clk(clk), .rstn(rstn),
+    
+        .s_axis_write_desc_addr (),
+        .s_axis_write_desc_len  (),
+        .s_axis_write_desc_tag  (),
+        .s_axis_write_desc_valid(),
+        .s_axis_write_desc_ready(),
+    
+        .m_axis_write_desc_status_len  (),
+        .m_axis_write_desc_status_tag  (),
+        .m_axis_write_desc_status_id   (),
+        .m_axis_write_desc_status_dest (),
+        .m_axis_write_desc_status_user (),
+        .m_axis_write_desc_status_error(),
+        .m_axis_write_desc_status_valid(),
+    
+        .s_axis_write_data_tdata (),
+        .s_axis_write_data_tkeep (),
+        .s_axis_write_data_tvalid(),
+        .s_axis_write_data_tready(),
+        .s_axis_write_data_tlast (),
+        .s_axis_write_data_tid   (),
+        .s_axis_write_data_tdest (),
+        .s_axis_write_data_tuser (),
+    
+        .m_axi_awid   (),
+        .m_axi_awaddr (),
+        .m_axi_awlen  (),
+        .m_axi_awsize (),
+        .m_axi_awburst(),
+        .m_axi_awlock (),
+        .m_axi_awcache(),
+        .m_axi_awprot (),
+        .m_axi_awvalid(),
+        .m_axi_awready(),
+        .m_axi_wdata  (),
+        .m_axi_wstrb  (),
+        .m_axi_wlast  (),
+        .m_axi_wvalid (),
+        .m_axi_wready (),
+        .m_axi_bid    (),
+        .m_axi_bresp  (),
+        .m_axi_bvalid (),
+        .m_axi_bready (),
+    
+        .enable(1'b1),
+        .abort(1'b0)
+    );
+
+    // ========================================
+    //           FROM MVM TO CHK
+    // ========================================
+
+    // TODO
+
+/*
     err #(
         .DATA_WIDTH(DATA_WIDTH)
     ) l2 (
@@ -831,29 +914,12 @@ module ile_iter #(
 
     );
 
-    check_convergence #(
-        .DATA_WIDTH(DATA_WIDTH)
-    )(
-
-        .clk(clk), .rstn(rstn),
-
-        // Input stream 1 
-        input  wire [DATA_WIDTH-1:0] s_axis_1_tdata,
-        input  wire                  s_axis_1_tvalid,
-        output wire                  s_axis_1_tready,
-
-        // Input stream 2
-        input  wire [DATA_WIDTH-1:0] s_axis_2_tdata,
-        input  wire                  s_axis_2_tvalid,
-        output wire                  s_axis_2_tready,
-        
-        // Result stream
-        output wire [DATA_WIDTH-1:0] m_axis_tdata,
-        output wire                  m_axis_tvalid,
-        input  wire                  m_axis_tready,
-        output wire                  m_axis_tlast
-    );
-
 */
+
+    // ========================================
+    //           FORWARD OUTPUTS
+    // ========================================
+
+    // TODO
 
 endmodule
