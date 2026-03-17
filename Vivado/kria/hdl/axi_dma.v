@@ -75,7 +75,7 @@ module axi_dma #
 )
 (
     input  wire                       clk,
-    input  wire                       rst,
+    input  wire                       rstn,
 
     /*
      * AXI read descriptor input
@@ -210,7 +210,7 @@ axi_dma_rd #(
 )
 axi_dma_rd_inst (
     .clk(clk),
-    .rst(rst),
+    .rstn(rstn),
 
     /*
      * AXI read descriptor input
@@ -292,7 +292,7 @@ axi_dma_wr #(
 )
 axi_dma_wr_inst (
     .clk(clk),
-    .rst(rst),
+    .rstn(rstn),
 
     /*
      * AXI write descriptor input
