@@ -75,7 +75,7 @@ module axi_dma_wr #
 )
 (
     input  wire                       clk,
-    input  wire                       rst,
+    input  wire                       rstn,
 
     /*
      * AXI write descriptor input
@@ -859,7 +859,7 @@ always @(posedge clk) begin
         active_count_av_reg <= active_count_reg < 2**STATUS_FIFO_ADDR_WIDTH;
     end
 
-    if (rst) begin
+    if (!rstn) begin
         state_reg <= STATE_IDLE;
 
         s_axis_write_desc_ready_reg <= 1'b0;
@@ -930,7 +930,7 @@ always @(posedge clk) begin
         out_fifo_rd_ptr_reg <= out_fifo_rd_ptr_reg + 1;
     end
 
-    if (rst) begin
+    if (!rstn) begin
         out_fifo_wr_ptr_reg <= 0;
         out_fifo_rd_ptr_reg <= 0;
         m_axi_wvalid_reg <= 1'b0;

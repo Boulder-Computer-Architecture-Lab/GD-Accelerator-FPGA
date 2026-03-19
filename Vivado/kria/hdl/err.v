@@ -39,7 +39,6 @@ module err #(
 
     generate
         if (DATA_WIDTH == 64) begin
-
             fp64_sub sub(
                 .aclk(clk), .aresetn(rstn),
                 
@@ -93,11 +92,111 @@ module err #(
             );
         
         end else if (DATA_WIDTH == 32) begin
+            fp32_sub sub(
+                .aclk(clk), .aresetn(rstn),
+                
+                .s_axis_a_tdata (s_axis_1_tdata),
+                .s_axis_a_tvalid(s_axis_1_tvalid),
+                .s_axis_a_tready(s_axis_1_tready),
+                .s_axis_a_tlast (),
+
+                .s_axis_b_tdata (s_axis_2_tdata),
+                .s_axis_b_tvalid(s_axis_2_tvalid),
+                .s_axis_b_tready(s_axis_2_tready),
+                .s_axis_b_tlast (),
+
+                .m_axis_result_tdata (sub_out_tdata),
+                .m_axis_result_tvalid(sub_out_tvalid),
+                .m_axis_result_tready(sub_out_tready),
+                .m_axis_result_tlast ()
+            );
+
+            fp32_mult sq(
+                .aclk(clk), .aresetn(rstn),
+                
+                .s_axis_a_tdata (sub_out_tdata),
+                .s_axis_a_tvalid(sub_out_tvalid),
+                .s_axis_a_tready(sub_out_tready),
+                .s_axis_a_tlast (),
+
+                .s_axis_b_tdata (sub_out_tdata),
+                .s_axis_b_tvalid(sub_out_tvalid),
+                .s_axis_b_tready(sub_out_tready),
+                .s_axis_b_tlast (),
+
+                .m_axis_result_tdata (mult_out_tdata),
+                .m_axis_result_tvalid(mult_out_tvalid),
+                .m_axis_result_tready(mult_out_tready),
+                .m_axis_result_tlast ()
+            );
+
+            fp32_accum acc(
+                .aclk(clk), .aresetn(rstn),
+            
+                .s_axis_a_tdata (acc_axis_a_tdata),
+                .s_axis_a_tvalid(acc_axis_a_tvalid),
+                .s_axis_a_tready(acc_axis_a_tready),
+                .s_axis_a_tlast (acc_axis_a_tlast),
+            
+                .m_axis_result_tdata (m_axis_tdata),
+                .m_axis_result_tvalid(m_axis_tvalid),
+                .m_axis_result_tready(m_axis_tready),
+                .m_axis_result_tlast (m_axis_tlast)
+            );
 
         end else if (DATA_WIDTH == 16) begin
+            fp16_sub sub(
+                .aclk(clk), .aresetn(rstn),
+                
+                .s_axis_a_tdata (s_axis_1_tdata),
+                .s_axis_a_tvalid(s_axis_1_tvalid),
+                .s_axis_a_tready(s_axis_1_tready),
+                .s_axis_a_tlast (),
+
+                .s_axis_b_tdata (s_axis_2_tdata),
+                .s_axis_b_tvalid(s_axis_2_tvalid),
+                .s_axis_b_tready(s_axis_2_tready),
+                .s_axis_b_tlast (),
+
+                .m_axis_result_tdata (sub_out_tdata),
+                .m_axis_result_tvalid(sub_out_tvalid),
+                .m_axis_result_tready(sub_out_tready),
+                .m_axis_result_tlast ()
+            );
+
+            fp16_mult sq(
+                .aclk(clk), .aresetn(rstn),
+                
+                .s_axis_a_tdata (sub_out_tdata),
+                .s_axis_a_tvalid(sub_out_tvalid),
+                .s_axis_a_tready(sub_out_tready),
+                .s_axis_a_tlast (),
+
+                .s_axis_b_tdata (sub_out_tdata),
+                .s_axis_b_tvalid(sub_out_tvalid),
+                .s_axis_b_tready(sub_out_tready),
+                .s_axis_b_tlast (),
+
+                .m_axis_result_tdata (mult_out_tdata),
+                .m_axis_result_tvalid(mult_out_tvalid),
+                .m_axis_result_tready(mult_out_tready),
+                .m_axis_result_tlast ()
+            );
+
+            fp16_accum acc(
+                .aclk(clk), .aresetn(rstn),
+            
+                .s_axis_a_tdata (acc_axis_a_tdata),
+                .s_axis_a_tvalid(acc_axis_a_tvalid),
+                .s_axis_a_tready(acc_axis_a_tready),
+                .s_axis_a_tlast (acc_axis_a_tlast),
+            
+                .m_axis_result_tdata (m_axis_tdata),
+                .m_axis_result_tvalid(m_axis_tvalid),
+                .m_axis_result_tready(m_axis_tready),
+                .m_axis_result_tlast (m_axis_tlast)
+            );
 
         end
-
     endgenerate
-
 endmodule
