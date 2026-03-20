@@ -1,10 +1,10 @@
 {
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
-    "xci_name": "axis_wconv",
+    "xci_name": "axis_wconv256to128",
     "component_reference": "xilinx.com:ip:axis_dwidth_converter:1.1",
     "ip_revision": "28",
-    "gen_directory": "../../build/kria-accelerator.gen/sources_1/ip/axis_wconv",
+    "gen_directory": "../../build/kria-accelerator.gen/sources_1/ip/axis_wconv256to128",
     "parameters": {
       "component_parameters": {
         "S_TDATA_NUM_BYTES": [ { "value": "32", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -18,7 +18,7 @@
         "HAS_TKEEP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "HAS_ACLKEN": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "HAS_MI_TKEEP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "Component_Name": [ { "value": "axis_wconv", "resolve_type": "user", "usage": "all" } ]
+        "Component_Name": [ { "value": "axis_wconv256to128", "resolve_type": "user", "usage": "all" } ]
       },
       "model_parameters": {
         "C_FAMILY": [ { "value": "zynquplus", "resolve_type": "generated", "usage": "all" } ],
@@ -47,7 +47,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "28" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../build/kria-accelerator.gen/sources_1/ip/axis_wconv" } ],
+        "OUTPUTDIR": [ { "value": "../../build/kria-accelerator.gen/sources_1/ip/axis_wconv256to128" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2023.2" } ],

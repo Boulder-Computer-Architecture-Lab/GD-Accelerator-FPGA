@@ -171,7 +171,7 @@ module ile_iter #(
     // Indicates next iteration.
     // Generated when vec_in s2mm
     // transfer completes.
-    wire start_mvm;
+    reg  [MAX_CH-1:0] start_mvm_ch;
 
     // M-AXI interface for RAM
     wire [MATRIX_ID_WIDTH-1:0]   ram_m_axi_awid    [MAX_CH-1:0];
@@ -311,7 +311,7 @@ module ile_iter #(
                     else if (!dma_wr_desc_valid[k] && dma_wr_status_valid[k]) dma_wr_desc_valid[k] <= 1'b1;
 
                     // Program read descriptor
-                    if      (!dma_rd_desc_valid[k]) dma_rd_desc_valid[k] <= start_mvm;
+                    if      (!dma_rd_desc_valid[k]) dma_rd_desc_valid[k] <= start_mvm_ch[k];
                     else if ( dma_rd_desc_ready[k]) dma_rd_desc_valid[k] <= 1'b0;
                 end
             end
@@ -698,8 +698,8 @@ module ile_iter #(
     localparam AXI_B_DMA_BURST_LEN = 256;
     localparam AXI_B_DMA_TAG_WIDTH = 8;
 
-    reg  [1:0] axi_b_region_sel; // driven elsewhere
-    reg        start_axi_b_mm2s; // driven elsewhere
+    reg  [1:0] axi_b_region_sel; // driven from GLOBAL DMA CONTROLLER
+    reg        start_axi_b_mm2s; // driven from GLOBAL DMA CONTROLLER
 
     // Descriptor
     wire [AXI_B_ADDR_WIDTH-1:0]    axi_b_rd_desc_addr;
@@ -816,35 +816,77 @@ module ile_iter #(
     assign uhat_inner_axis_tvalid = (axi_b_region_sel == REGION_INNER) ? b_dma_axis_tvalid : 1'b0;
     assign uhat_inner_axis_tlast  = b_dma_axis_tlast;
     
-    assign b_dma_axis_tready =
-        (axi_b_region_sel == REGION_VEC_INIT) ? vec_init_axis_tready   :
-        (axi_b_region_sel == REGION_OUTER)    ? int_outer_axis_tready : uhat_inner_axis_tready;
+    assign b_dma_axis_tready = (axi_b_region_sel == REGION_VEC_INIT) ? vec_init_axis_tready  :
+                               (axi_b_region_sel == REGION_OUTER   ) ? int_outer_axis_tready : uhat_inner_axis_tready;
 
     // ========================================
-    //               CONTROLLER
+    //          CONVERGENCE CHECKER
     // ========================================
-
-    wire [ELEMENT_WIDTH-1:0] vec_next_axis_tdata;
-    wire                     vec_next_axis_tvalid;
-    wire                     vec_next_axis_tready;
-    wire                     vec_next_axis_tlast;
 
     wire [ELEMENT_WIDTH-1:0] err_axis_tdata;
     wire                     err_axis_tvalid;
     wire                     err_axis_tready;
-
-    wire [ELEMENT_WIDTH-1:0] vec_in_axis_tdata;
-    wire                     vec_in_axis_tvalid;
-    wire                     vec_in_axis_tready;
-    wire                     vec_in_axis_tlast;
 
     wire [ELEMENT_WIDTH-1:0] vec_result_axis_tdata;
     wire                     vec_result_axis_tvalid;
     wire                     vec_result_axis_tready;
     wire                     vec_result_axis_tlast;
 
+    // vec_next has 2 consumers: err and chk
+    wire [ELEMENT_WIDTH-1:0] vec_next_axis_tdata;
+    wire                     vec_next_axis_tvalid;
+    wire                     vec_next_axis_tready;
+    wire                     vec_next_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] vec_next_err_axis_tdata;
+    wire                     vec_next_err_axis_tvalid;
+    wire                     vec_next_err_axis_tready;
+    wire                     vec_next_err_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] vec_next_chk_axis_tdata;
+    wire                     vec_next_chk_axis_tvalid;
+    wire                     vec_next_chk_axis_tready;
+    wire                     vec_next_chk_axis_tlast;
+
+    assign vec_next_err_axis_tdata  = vec_next_axis_tdata;
+    assign vec_next_err_axis_tvalid = vec_next_axis_tvalid;
+    assign vec_next_err_axis_tlast  = vec_next_axis_tlast;
+
+    assign vec_next_chk_axis_tdata  = vec_next_axis_tdata;
+    assign vec_next_chk_axis_tvalid = vec_next_axis_tvalid;
+    assign vec_next_chk_axis_tlast  = vec_next_axis_tlast;
+
+    assign vec_next_axis_tready = vec_next_err_axis_tready && vec_next_chk_axis_tready; // wait on both consumers
+
+    // vec_in has 2 consumers: pow0 and err
+    wire [ELEMENT_WIDTH-1:0] vec_in_axis_tdata;
+    wire                     vec_in_axis_tvalid;
+    wire                     vec_in_axis_tready;
+    wire                     vec_in_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] vec_in_pow_axis_tdata;
+    wire                     vec_in_pow_axis_tvalid;
+    wire                     vec_in_pow_axis_tready;
+    wire                     vec_in_pow_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] vec_in_fifo_axis_tdata;
+    wire                     vec_in_fifo_axis_tvalid;
+    wire                     vec_in_fifo_axis_tready;
+    wire                     vec_in_fifo_axis_tlast;
+
+    assign vec_in_pow_axis_tdata  = vec_in_axis_tdata;
+    assign vec_in_pow_axis_tvalid = vec_in_axis_tvalid;
+    assign vec_in_pow_axis_tlast  = vec_in_axis_tlast;
+
+    assign vec_in_fifo_axis_tdata  = vec_in_axis_tdata;
+    assign vec_in_fifo_axis_tvalid = vec_in_axis_tvalid;
+    assign vec_in_fifo_axis_tlast  = vec_in_axis_tlast;
+
+    assign vec_in_axis_tready = vec_in_pow_axis_tready && vec_in_fifo_axis_tready; // wait on both consumers
+
     check_convergence #(
-        .DATA_WIDTH(ELEMENT_WIDTH)
+        .ELEMENT_WIDTH(ELEMENT_WIDTH),
+        .ELEMENTS_PER_ROW(ELEMENTS_PER_ROW)
     ) chk_inst (
         .clk(clk), .rstn(rstn),
 
@@ -855,33 +897,36 @@ module ile_iter #(
         .vec_init_axis_tlast (vec_init_axis_tlast ),
 
         // This iteration output
-        .vec_next_axis_tdata (vec_next_axis_tdata),
-        .vec_next_axis_tvalid(vec_next_axis_tvalid),
-        .vec_next_axis_tready(vec_next_axis_tready),
-        .vec_next_axis_tlast (vec_next_axis_tlast),
+        .vec_next_axis_tdata (vec_next_chk_axis_tdata ),
+        .vec_next_axis_tvalid(vec_next_chk_axis_tvalid),
+        .vec_next_axis_tready(vec_next_chk_axis_tready),
+        .vec_next_axis_tlast (vec_next_chk_axis_tlast ),
 
         // This iteration error
-        .err_axis_tdata (err_axis_tdata),
+        .err_axis_tdata (err_axis_tdata ),
         .err_axis_tvalid(err_axis_tvalid),
         .err_axis_tready(err_axis_tready),
 
         // Next iteration input
-        .vec_in_axis_tdata (vec_in_axis_tdata),
+        .vec_in_axis_tdata (vec_in_axis_tdata ),
         .vec_in_axis_tvalid(vec_in_axis_tvalid),
         .vec_in_axis_tready(vec_in_axis_tready),
-        .vec_in_axis_tlast (vec_in_axis_tlast),
+        .vec_in_axis_tlast (vec_in_axis_tlast ),
         
         // Result
-        .vec_result_axis_tdata (vec_result_axis_tdata),
+        .vec_result_axis_tdata (vec_result_axis_tdata ),
         .vec_result_axis_tvalid(vec_result_axis_tvalid),
         .vec_result_axis_tready(vec_result_axis_tready),
-        .vec_result_axis_tlast (vec_result_axis_tlast)
+        .vec_result_axis_tlast (vec_result_axis_tlast )
     );
 
     // ========================================
     //           FROM VEC_IN TO MVM
     // ========================================
 
+    // Full dataflow for this section: chk -> pow -> mult -> wconv -> s2mm -> mvm
+
+    // 1. pow
     localparam I_EXP64 = 64'h0000_0000; // TODO: get real value
     localparam I_EXP32 = 32'h0000_0000; // TODO: get real value
     localparam I_EXP16 = 16'h0000_0000; // TODO: get real value
@@ -896,13 +941,13 @@ module ile_iter #(
     wire                     pow0_axis_tlast;
 
     generate
-        if          (ELEMENT_WIDTH == 64) begin : exp64 assign i_exp_tdata = I_EXP64;
-        end else if (ELEMENT_WIDTH == 32) begin : exp32 assign i_exp_tdata = I_EXP32;
-        end else if (ELEMENT_WIDTH == 16) begin : exp16 assign i_exp_tdata = I_EXP16;
+        if          (ELEMENT_WIDTH == 64) begin : exp0_64 assign i_exp_tdata = I_EXP64;
+        end else if (ELEMENT_WIDTH == 32) begin : exp0_32 assign i_exp_tdata = I_EXP32;
+        end else if (ELEMENT_WIDTH == 16) begin : exp0_16 assign i_exp_tdata = I_EXP16;
         end
     endgenerate
 
-    assign i_exp_tvalid = vec_in_axis_tvalid;
+    assign i_exp_tvalid = vec_in_pow_axis_tvalid;
 
     pow #(
         .DATA_WIDTH(ELEMENT_WIDTH)
@@ -910,10 +955,10 @@ module ile_iter #(
         .clk(clk), .rstn(rstn),
 
         // base
-        .s_axis_1_tdata (vec_in_axis_tdata),
-        .s_axis_1_tvalid(vec_in_axis_tvalid),
-        .s_axis_1_tready(vec_in_axis_tready),
-        .s_axis_1_tlast (vec_in_axis_tlast),
+        .s_axis_1_tdata (vec_in_pow_axis_tdata),
+        .s_axis_1_tvalid(vec_in_pow_axis_tvalid),
+        .s_axis_1_tready(vec_in_pow_axis_tready),
+        .s_axis_1_tlast (vec_in_pow_axis_tlast),
 
         // exp
         .s_axis_2_tdata (i_exp_tdata),
@@ -927,20 +972,21 @@ module ile_iter #(
         .m_axis_tlast (pow0_axis_tlast)
     );
 
+    // 2. mult 
     wire [ELEMENT_WIDTH-1:0] mult0_axis_tdata;
     wire                     mult0_axis_tvalid;
     wire                     mult0_axis_tready;
     wire                     mult0_axis_tlast;
 
     generate
-        if (ELEMENT_WIDTH == 64) begin : mult64_gen
+        if (ELEMENT_WIDTH == 64) begin : mult0_64_gen
             fp64_mult mult_inst0 (
                 .aclk(clk), .aresetn(rstn),
 
-                .s_axis_a_tdata(pow0_axis_tdata),
+                .s_axis_a_tdata (pow0_axis_tdata),
                 .s_axis_a_tvalid(pow0_axis_tvalid),
                 .s_axis_a_tready(pow0_axis_tready),
-                .s_axis_a_tlast(pow0_axis_tlast),
+                .s_axis_a_tlast (pow0_axis_tlast),
 
                 .s_axis_b_tdata (int_outer_axis_tdata),
                 .s_axis_b_tvalid(int_outer_axis_tvalid),
@@ -951,14 +997,14 @@ module ile_iter #(
                 .m_axis_result_tready(mult0_axis_tready),
                 .m_axis_result_tlast (mult0_axis_tlast)
             );
-        end else if (ELEMENT_WIDTH == 32) begin: mult32_gen
+        end else if (ELEMENT_WIDTH == 32) begin: mult0_32_gen
             fp32_mult mult_inst0 (
                 .aclk(clk), .aresetn(rstn),
 
-                .s_axis_a_tdata(pow0_axis_tdata),
+                .s_axis_a_tdata (pow0_axis_tdata),
                 .s_axis_a_tvalid(pow0_axis_tvalid),
                 .s_axis_a_tready(pow0_axis_tready),
-                .s_axis_a_tlast(pow0_axis_tlast),
+                .s_axis_a_tlast (pow0_axis_tlast),
 
                 .s_axis_b_tdata (int_outer_axis_tdata),
                 .s_axis_b_tvalid(int_outer_axis_tvalid),
@@ -969,14 +1015,14 @@ module ile_iter #(
                 .m_axis_result_tready(mult0_axis_tready),
                 .m_axis_result_tlast (mult0_axis_tlast)
             );
-        end else if (ELEMENT_WIDTH == 16) begin: mult16_gen
+        end else if (ELEMENT_WIDTH == 16) begin: mult0_16_gen
             fp16_mult mult_inst0 (
                 .aclk(clk), .aresetn(rstn),
 
-                .s_axis_a_tdata(pow0_axis_tdata),
+                .s_axis_a_tdata (pow0_axis_tdata),
                 .s_axis_a_tvalid(pow0_axis_tvalid),
                 .s_axis_a_tready(pow0_axis_tready),
-                .s_axis_a_tlast(pow0_axis_tlast),
+                .s_axis_a_tlast (pow0_axis_tlast),
 
                 .s_axis_b_tdata (int_outer_axis_tdata),
                 .s_axis_b_tvalid(int_outer_axis_tvalid),
@@ -990,14 +1036,14 @@ module ile_iter #(
         end
     endgenerate
 
-    // ELEMENT_WIDTH -> MVM_RAM_DATA_WIDTH
+    // 3. ELEMENT_WIDTH -> MVM_RAM_DATA_WIDTH
     wire [MVM_RAM_DATA_WIDTH-1:0] wconv_axis_tdata;
     wire                          wconv_axis_tvalid;
     wire                          wconv_axis_tready;
     wire                          wconv_axis_tlast;
 
     generate
-        if (ELEMENT_WIDTH == 64) begin: wconv64_gen
+        if (ELEMENT_WIDTH == 64) begin: axis_wconv64_gen
             axis_wconv64to256 wconv_inst (
                 .aclk(clk), .aresetn(rstn),
 
@@ -1011,7 +1057,7 @@ module ile_iter #(
                 .m_axis_tready(wconv_axis_tready),
                 .m_axis_tlast (wconv_axis_tlast)
             );
-        end else if (ELEMENT_WIDTH == 32) begin: wconv32_gen
+        end else if (ELEMENT_WIDTH == 32) begin: axis_wconv32_gen
             axis_wconv32to256 wconv_inst (
                 .aclk(clk), .aresetn(rstn),
 
@@ -1025,7 +1071,7 @@ module ile_iter #(
                 .m_axis_tready(wconv_axis_tready),
                 .m_axis_tlast (wconv_axis_tlast)
             );
-        end else if (ELEMENT_WIDTH == 16) begin: wconv16_gen
+        end else if (ELEMENT_WIDTH == 16) begin: axis_wconv16_gen
             axis_wconv16to256 wconv_inst (
                 .aclk(clk), .aresetn(rstn),
 
@@ -1172,38 +1218,399 @@ module ile_iter #(
     //           FROM MVM TO CHK
     // ========================================
 
-    // TODO
+    // Full dataflow for this section: mvm -> mux -> pow -> mult -> err -> chk
 
-    // mvm_out -> pow -> mult -> err -> chk
+    // 1. MUX MVM outputs from 4 channels into one vec_next stream
+    localparam MVM_OUT_ELEMS_PER_CH = ELEMENTS_PER_ROW / MAX_CH;
+    localparam MVM_OUT_CH_IDX_W     = (MAX_CH > 1) ? $clog2(MAX_CH) : 1;
+    localparam MVM_OUT_ELEM_CNT_W   = $clog2(ELEMENTS_PER_ROW + 1);
 
-/*
+    reg  [MVM_OUT_ELEM_CNT_W-1:0] mvm_out_elem_idx;
+    wire [MVM_OUT_CH_IDX_W-1:0]   mvm_out_ch_sel;
+
+    assign mvm_out_ch_sel = mvm_out_elem_idx / MVM_OUT_ELEMS_PER_CH;
+
+    wire [ELEMENT_WIDTH-1:0] vec_new_axis_tdata  = mvm_m_axis_tdata [mvm_out_ch_sel*ELEMENT_WIDTH +: ELEMENT_WIDTH];
+    wire                     vec_new_axis_tlast  = mvm_m_axis_tvalid[mvm_out_ch_sel] && (mvm_out_elem_idx == ELEMENTS_PER_ROW-1);
+    wire                     vec_new_axis_tvalid = mvm_m_axis_tvalid[mvm_out_ch_sel];
+    wire                     vec_new_axis_tready;
+
+    genvar mux_k;
+    generate
+        for (mux_k = 0; mux_k < MAX_CH; mux_k = mux_k + 1) begin : out_mux_gen
+            assign mvm_m_axis_tready[mux_k] =
+                (mvm_out_ch_sel == mux_k) ? vec_new_axis_tready : 1'b0;
+        end
+    endgenerate
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            mvm_out_elem_idx <= {MVM_OUT_ELEM_CNT_W{1'b0}};
+        end else if (vec_new_axis_tvalid && vec_new_axis_tready) begin
+            if (mvm_out_elem_idx == ELEMENTS_PER_ROW-1) begin
+                mvm_out_elem_idx <= {MVM_OUT_ELEM_CNT_W{1'b0}};
+            end else begin
+                mvm_out_elem_idx <= mvm_out_elem_idx + 1'b1;
+            end
+        end
+    end
+
+    // 2. pow
+    localparam U_EXP64 = 64'h0000_0000; // TODO: get real value
+    localparam U_EXP32 = 32'h0000_0000; // TODO: get real value
+    localparam U_EXP16 = 16'h0000_0000; // TODO: get real value
+
+    wire [ELEMENT_WIDTH-1:0] pow1_axis_tdata;
+    wire                     pow1_axis_tvalid;
+    wire                     pow1_axis_tready;
+    wire                     pow1_axis_tlast;
+
+    wire [ELEMENT_WIDTH-1:0] u_exp_tdata;   
+    wire                     u_exp_tvalid;
+    wire                     u_exp_tready;
+
+    generate
+        if          (ELEMENT_WIDTH == 64) begin : exp64 assign u_exp_tdata = U_EXP64;
+        end else if (ELEMENT_WIDTH == 32) begin : exp32 assign u_exp_tdata = U_EXP32;
+        end else if (ELEMENT_WIDTH == 16) begin : exp16 assign u_exp_tdata = U_EXP16;
+        end
+    endgenerate
+
+    assign u_exp_tvalid = vec_new_axis_tvalid;
+
+    pow #(
+        .DATA_WIDTH(ELEMENT_WIDTH)
+    ) pow_inst1 (
+        .clk(clk), .rstn(rstn),
+
+        // base
+        .s_axis_1_tdata (vec_new_axis_tdata),
+        .s_axis_1_tvalid(vec_new_axis_tvalid),
+        .s_axis_1_tready(vec_new_axis_tready),
+        .s_axis_1_tlast (vec_new_axis_tlast),
+
+        // exp
+        .s_axis_2_tdata (u_exp_tdata),
+        .s_axis_2_tvalid(u_exp_tvalid),
+        .s_axis_2_tready(u_exp_tready),
+        
+        // result 
+        .m_axis_tdata (pow1_axis_tdata),
+        .m_axis_tvalid(pow1_axis_tvalid),
+        .m_axis_tready(pow1_axis_tready),
+        .m_axis_tlast (pow1_axis_tlast)
+    );
+
+    // 3. mult 
+    generate
+        if (ELEMENT_WIDTH == 64) begin : mult1_64_gen
+            fp64_mult mult_inst1 (
+                .aclk(clk), .aresetn(rstn),
+
+                .s_axis_a_tdata (pow1_axis_tdata),
+                .s_axis_a_tvalid(pow1_axis_tvalid),
+                .s_axis_a_tready(pow1_axis_tready),
+                .s_axis_a_tlast (pow1_axis_tlast),
+
+                .s_axis_b_tdata (uhat_inner_axis_tdata),
+                .s_axis_b_tvalid(uhat_inner_axis_tvalid),
+                .s_axis_b_tready(uhat_inner_axis_tready),
+
+                .m_axis_result_tdata (vec_next_axis_tdata),
+                .m_axis_result_tvalid(vec_next_axis_tvalid),
+                .m_axis_result_tready(vec_next_axis_tready),
+                .m_axis_result_tlast (vec_next_axis_tlast)
+            );
+        end else if (ELEMENT_WIDTH == 32) begin: mult1_32_gen
+            fp32_mult mult_inst1 (
+                .aclk(clk), .aresetn(rstn),
+
+                .s_axis_a_tdata (pow1_axis_tdata),
+                .s_axis_a_tvalid(pow1_axis_tvalid),
+                .s_axis_a_tready(pow1_axis_tready),
+                .s_axis_a_tlast (pow1_axis_tlast),
+
+                .s_axis_b_tdata (uhat_inner_axis_tdata),
+                .s_axis_b_tvalid(uhat_inner_axis_tvalid),
+                .s_axis_b_tready(uhat_inner_axis_tready),
+
+                .m_axis_result_tdata (vec_next_axis_tdata),
+                .m_axis_result_tvalid(vec_next_axis_tvalid),
+                .m_axis_result_tready(vec_next_axis_tready),
+                .m_axis_result_tlast (vec_next_axis_tlast)
+            );
+        end else if (ELEMENT_WIDTH == 16) begin: mult1_16_gen
+            fp16_mult mult_inst1 (
+                .aclk(clk), .aresetn(rstn),
+
+                .s_axis_a_tdata (pow1_axis_tdata),
+                .s_axis_a_tvalid(pow1_axis_tvalid),
+                .s_axis_a_tready(pow1_axis_tready),
+                .s_axis_a_tlast (pow1_axis_tlast),
+
+                .s_axis_b_tdata (uhat_inner_axis_tdata),
+                .s_axis_b_tvalid(uhat_inner_axis_tvalid),
+                .s_axis_b_tready(uhat_inner_axis_tready),
+
+                .m_axis_result_tdata (vec_next_axis_tdata),
+                .m_axis_result_tvalid(vec_next_axis_tvalid),
+                .m_axis_result_tready(vec_next_axis_tready),
+                .m_axis_result_tlast (vec_next_axis_tlast)
+            );
+        end
+    endgenerate
+
+    // 4. Buffer last iteration's vector
+    wire [ELEMENT_WIDTH-1:0] vec_old_axis_tdata;
+    wire                     vec_old_axis_tvalid;
+    wire                     vec_old_axis_tready;
+    wire                     vec_old_axis_tlast;
+
+    axis_fifo #(
+        .DEPTH(ELEMENTS_PER_ROW),
+        .DATA_WIDTH(ELEMENT_WIDTH),
+        .KEEP_ENABLE(0),
+        .LAST_ENABLE(1),
+        .ID_ENABLE(0),
+        .DEST_ENABLE(0),
+        .USER_ENABLE(0),
+        .RAM_PIPELINE(1),
+        .OUTPUT_FIFO_ENABLE(0),
+        .FRAME_FIFO(0),
+        .DROP_OVERSIZE_FRAME(0),
+        .DROP_BAD_FRAME(0),
+        .DROP_WHEN_FULL(0),
+        .MARK_WHEN_FULL(0),
+        .PAUSE_ENABLE(0)
+    ) vec_old_fifo (
+        .clk(clk),
+        .rstn(rstn),
+    
+        .s_axis_tdata (vec_in_fifo_axis_tdata ),
+        .s_axis_tkeep (),
+        .s_axis_tvalid(vec_in_fifo_axis_tvalid),
+        .s_axis_tready(vec_in_fifo_axis_tready),
+        .s_axis_tlast (vec_in_fifo_axis_tlast ),
+        .s_axis_tid   (8'b0),
+        .s_axis_tdest (8'b0),
+        .s_axis_tuser (1'b0),
+    
+        .m_axis_tdata (vec_old_axis_tdata),
+        .m_axis_tkeep (),
+        .m_axis_tvalid(vec_old_axis_tvalid),
+        .m_axis_tready(vec_old_axis_tready),
+        .m_axis_tlast (vec_old_axis_tlast ), // err doesn't need tlast
+        .m_axis_tid   (),
+        .m_axis_tdest (),
+        .m_axis_tuser (),
+    
+        .pause_req(1'b0),
+        .pause_ack(),
+    
+        .status_depth       (),
+        .status_depth_commit(),
+        .status_overflow    (),
+        .status_bad_frame   (),
+        .status_good_frame  ()
+    );
+
+    // 5. err
     err #(
-        .DATA_WIDTH(DATA_WIDTH)
+        .DATA_WIDTH(ELEMENT_WIDTH)
     ) l2 (
         .clk(clk), .rstn(rstn),
 
-        .s_axis_1_tdata(s_axis_1_tdata),
-        .s_axis_1_tvalid(s_axis_1_tvalid),
-        .s_axis_1_tready(s_axis_1_tready),
+        .s_axis_1_tdata (vec_next_err_axis_tdata ),
+        .s_axis_1_tvalid(vec_next_err_axis_tvalid),
+        .s_axis_1_tready(vec_next_err_axis_tready),
+        .s_axis_1_tlast (vec_next_err_axis_tlast ),
 
-        .s_axis_2_tdata(s_axis_2_tdata),
-        .s_axis_2_tvalid(s_axis_2_tvalid),
-        .s_axis_2_tready(s_axis_2_tready),
+        .s_axis_2_tdata (vec_old_axis_tdata ),
+        .s_axis_2_tvalid(vec_old_axis_tvalid),
+        .s_axis_2_tready(vec_old_axis_tready),
         
-        .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
-        .m_axis_tready(m_axis_tready),
-        .m_axis_tlast(m_axis_tlast)
-
+        .m_axis_tdata (err_axis_tdata ),
+        .m_axis_tvalid(err_axis_tvalid),
+        .m_axis_tready(err_axis_tready)
     );
 
-*/
+    // ========================================
+    //         GLOBAL DMA CONTROLLER
+    // ========================================
+
+    // === 1. s2mm channel for vec_in ===
+
+    // Trigger: first beatof axis_wconv
+    reg  wconv_in_frame;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            wconv_in_frame <= 1'b0;
+        end else begin
+            if (wconv_axis_tvalid && wconv_axis_tready) begin
+                if (wconv_axis_tlast) wconv_in_frame <= 1'b0;
+                else                  wconv_in_frame <= 1'b1;
+            end
+        end
+    end
+
+    assign start_vec_in_dma = wconv_axis_tvalid && wconv_axis_tready && !wconv_in_frame;    
+
+    // === 2. mm2s channel on matrix buffer ===
+
+    // Trigger: as DMA from #1 completes each frame
+    always @(posedge clk) begin
+        if (!rstn) begin
+            start_mvm_ch <= {MAX_CH{1'b0}};
+        end else begin
+            start_mvm_ch <= {MAX_CH{1'b0}};
+    
+            if (vec_in_active && vec_in_status_valid)
+                start_mvm_ch[vec_in_part_idx] <= 1'b1;
+        end
+    end
+
+    // === 3. mm2s channel on shared buffer ===
+
+    reg start_mm2s_outer;
+    reg start_mm2s_inner;
+    reg start_mm2s_init;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            start_axi_b_mm2s <= 1'b0;
+            axi_b_region_sel <= 2'b0;
+        end else begin
+            start_axi_b_mm2s <= 1'b0;
+
+            if (start_mm2s_outer) begin
+                axi_b_region_sel <= REGION_OUTER;
+                start_axi_b_mm2s <= 1'b1;
+            end else if (start_mm2s_inner) begin
+                axi_b_region_sel <= REGION_INNER;
+                start_axi_b_mm2s <= 1'b1;
+            end else if (start_mm2s_init) begin
+                axi_b_region_sel <= REGION_VEC_INIT;
+                start_axi_b_mm2s <= 1'b1;
+            end
+        end
+    end
+
+    // --- 3a. read int_outer from shared buffer ---
+
+    // Trigger: first beat of pow0
+    reg pow0_in_frame;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            pow0_in_frame    <= 1'b0;
+            start_mm2s_outer <= 1'b0;
+        end else begin
+            start_mm2s_outer <= 1'b0;
+
+            if (vec_in_pow_axis_tvalid && vec_in_pow_axis_tready) begin
+                if (!pow0_in_frame) start_mm2s_outer <= 1'b1;
+
+                if (vec_in_pow_axis_tlast) pow0_in_frame <= 1'b0;
+                else                       pow0_in_frame <= 1'b1;
+            end
+        end
+    end
+    
+    // --- 3b. read uhat_inner from shared buffer ---
+
+    // Trigger: first beat of pow1
+    reg pow1_in_frame;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            pow1_in_frame    <= 1'b0;
+            start_mm2s_inner <= 1'b0;
+        end else begin
+            start_mm2s_inner <= 1'b0;
+
+            if (vec_new_axis_tvalid && vec_new_axis_tready) begin
+                if (!pow1_in_frame) start_mm2s_inner <= 1'b1;
+
+                if (vec_new_axis_tlast) pow1_in_frame <= 1'b0;
+                else                    pow1_in_frame <= 1'b1;
+            end
+        end
+    end
+
+    // --- 3c. read vec_init from shared buffer ---
+
+    // Trigger: write to region 0 of shared buffer completes
+    reg [1:0] axi_b_wr_region;
+    reg       axi_b_wr_pending;
+    
+    wire [1:0] axi_b_aw_region_sel;
+
+    assign axi_b_aw_region_sel =
+        (axi_b_ram_awaddr < VEC_OUTER_OFFSET) ? REGION_VEC_INIT :
+        (axi_b_ram_awaddr < VEC_INNER_OFFSET) ? REGION_OUTER    :
+                                                REGION_INNER;
+    
+    always @(posedge clk) begin
+        if (!rstn) begin
+            axi_b_wr_region  <= REGION_VEC_INIT;
+            axi_b_wr_pending <= 1'b0;
+            start_mm2s_init  <= 1'b0;
+        end else begin
+            start_mm2s_init <= 1'b0;
+    
+            if (axi_b_ram_awvalid && axi_b_ram_awready) begin
+                axi_b_wr_region  <= axi_b_aw_region_sel;
+                axi_b_wr_pending <= 1'b1;
+            end
+
+            if (axi_b_ram_bvalid && axi_b_ram_bready && axi_b_wr_pending) begin
+                if (axi_b_wr_region == REGION_VEC_INIT) start_mm2s_init <= 1'b1;
+                axi_b_wr_pending <= 1'b0;
+            end
+        end
+    end
 
     // ========================================
     //           FORWARD OUTPUTS
     // ========================================
+    
+    // DEMUX controller output across 4 m_axis channels
 
-    // TODO
+    localparam OUT_ELEMS_PER_CH = ELEMENTS_PER_ROW / MAX_CH;
+    localparam OUT_CH_IDX_W     = (MAX_CH > 1) ? $clog2(MAX_CH) : 1;
+    localparam OUT_ELEM_CNT_W   = $clog2(ELEMENTS_PER_ROW + 1);
+
+    reg  [OUT_ELEM_CNT_W-1:0] out_elem_idx;
+    wire [OUT_CH_IDX_W-1:0] out_ch_sel;
+
+    assign out_ch_sel = out_elem_idx / OUT_ELEMS_PER_CH;
+    assign vec_result_axis_tready = m_axis_tready[out_ch_sel];
+
+    genvar out_k;
+    generate
+        for (out_k = 0; out_k < MAX_CH; out_k = out_k + 1) begin : out_demux_gen
+            assign m_axis_tdata [out_k*ELEMENT_WIDTH +: ELEMENT_WIDTH] = (out_ch_sel == out_k) ? 
+                                                               vec_result_axis_tdata : {ELEMENT_WIDTH{1'b0}};
+
+            assign m_axis_tlast[out_k] = (out_ch_sel == out_k) && vec_result_axis_tvalid 
+                                                               && (out_elem_idx % OUT_ELEMS_PER_CH == OUT_ELEMS_PER_CH-1);
+
+            assign m_axis_tvalid[out_k] = (out_ch_sel == out_k) ? vec_result_axis_tvalid : 1'b0;
+        end
+    endgenerate
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            out_elem_idx <= {OUT_ELEM_CNT_W{1'b0}};
+        end else if (vec_result_axis_tvalid && vec_result_axis_tready) begin
+            if (vec_result_axis_tlast) begin
+                out_elem_idx <= {OUT_ELEM_CNT_W{1'b0}};
+            end else begin
+                out_elem_idx <= out_elem_idx + 1'b1;
+            end
+        end
+    end
 
 endmodule
 
